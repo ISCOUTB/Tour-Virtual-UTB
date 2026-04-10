@@ -165,10 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                poi.title,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              Text(poi.title, style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 4),
               Text(
                 poi.category,
@@ -260,7 +257,8 @@ class _HomeScreenState extends State<HomeScreen> {
           key: ValueKey('recorrido'),
           assetPath: 'android/app/src/assets/recorrido.png',
           title: 'Recorrido inmersivo',
-          message: 'Siguiente etapa: vista 360 en primera persona con hotspots.',
+          message:
+              'Siguiente etapa: vista 360 en primera persona con hotspots.',
         );
       default:
         return const _PagePlaceholder(
@@ -303,9 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: CustomPaint(
-                    painter: _CampusPlaceholderPainter(),
-                  ),
+                  child: CustomPaint(painter: _CampusPlaceholderPainter()),
                 ),
                 ..._buildPoiMarkers(),
                 if (_tapPulsePosition != null)
@@ -340,8 +336,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomNavigation(BuildContext context) {
     const selectedNavColor = Color(0xFF093AD8);
     const navItems = [
-      _NavItem(label: 'Explorar', assetPath: 'android/app/src/assets/explorar.png'),
-      _NavItem(label: 'Recorrido', assetPath: 'android/app/src/assets/recorrido.png'),
+      _NavItem(
+        label: 'Explorar',
+        assetPath: 'android/app/src/assets/explorar.png',
+      ),
+      _NavItem(
+        label: 'Recorrido',
+        assetPath: 'android/app/src/assets/recorrido.png',
+      ),
       _NavItem(label: 'Perfil', assetPath: 'android/app/src/assets/perfil.png'),
     ];
 
@@ -383,7 +385,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: TweenAnimationBuilder<Color?>(
                           tween: ColorTween(
                             begin: const Color(0xFF1F2B55),
-                            end: isSelected ? selectedNavColor : const Color(0xFF1F2B55),
+                            end: isSelected
+                                ? selectedNavColor
+                                : const Color(0xFF1F2B55),
                           ),
                           duration: 220.ms,
                           builder: (context, tintColor, child) {
@@ -470,23 +474,27 @@ class _PagePlaceholder extends StatelessWidget {
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(assetPath, width: 118, fit: BoxFit.contain),
-              const SizedBox(height: 16),
-              Text(title, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ],
-          )
-              .animate()
-              .fadeIn(duration: 280.ms)
-              .slideY(begin: 0.04, end: 0, duration: 280.ms),
+          child:
+              Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(assetPath, width: 118, fit: BoxFit.contain),
+                      const SizedBox(height: 16),
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
+                  )
+                  .animate()
+                  .fadeIn(duration: 280.ms)
+                  .slideY(begin: 0.04, end: 0, duration: 280.ms),
         ),
       ),
     );
@@ -510,59 +518,60 @@ class _PoiMarker extends StatelessWidget {
     return SizedBox(
       width: 44,
       height: 56,
-      child: Stack(
-        alignment: Alignment.topCenter,
-        clipBehavior: Clip.none,
-        children: [
-          IgnorePointer(
-            child: Container(
-              width: 34,
-              height: 34,
-              margin: const EdgeInsets.only(top: 9),
-              decoration: const BoxDecoration(
-                color: Color(0x5539D353),
-                shape: BoxShape.circle,
+      child:
+          Stack(
+                alignment: Alignment.topCenter,
+                clipBehavior: Clip.none,
+                children: [
+                  IgnorePointer(
+                    child:
+                        Container(
+                              width: 34,
+                              height: 34,
+                              margin: const EdgeInsets.only(top: 9),
+                              decoration: const BoxDecoration(
+                                color: Color(0x5539D353),
+                                shape: BoxShape.circle,
+                              ),
+                            )
+                            .animate(
+                              onPlay: (controller) => controller.repeat(),
+                            )
+                            .scale(
+                              begin: const Offset(0.55, 0.55),
+                              end: const Offset(1.6, 1.6),
+                              duration: 1300.ms,
+                              curve: Curves.easeOut,
+                            )
+                            .fadeOut(begin: 0.78, duration: 1300.ms),
+                  ),
+                  Icon(
+                    Icons.location_on_rounded,
+                    size: 36,
+                    color: const Color(0xFF41DC4D),
+                    shadows: const [
+                      Shadow(color: Color(0xAA5FFF70), blurRadius: 12),
+                    ],
+                  ),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(top: 13),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF17723A),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              )
+              .animate(delay: (index * 120).ms)
+              .fadeIn(duration: 280.ms)
+              .scale(
+                begin: const Offset(0.2, 0.2),
+                end: const Offset(1, 1),
+                curve: Curves.elasticOut,
+                duration: 520.ms,
               ),
-            )
-                .animate(onPlay: (controller) => controller.repeat())
-                .scale(
-                  begin: const Offset(0.55, 0.55),
-                  end: const Offset(1.6, 1.6),
-                  duration: 1300.ms,
-                  curve: Curves.easeOut,
-                )
-                .fadeOut(begin: 0.78, duration: 1300.ms),
-          ),
-          Icon(
-            Icons.location_on_rounded,
-            size: 36,
-            color: const Color(0xFF41DC4D),
-            shadows: const [
-              Shadow(
-                color: Color(0xAA5FFF70),
-                blurRadius: 12,
-              ),
-            ],
-          ),
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 13),
-            decoration: const BoxDecoration(
-              color: Color(0xFF17723A),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
-      )
-          .animate(delay: (index * 120).ms)
-          .fadeIn(duration: 280.ms)
-          .scale(
-            begin: const Offset(0.2, 0.2),
-            end: const Offset(1, 1),
-            curve: Curves.elasticOut,
-            duration: 520.ms,
-          ),
     );
   }
 }
@@ -573,22 +582,23 @@ class _TapPulse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0x88106AC0), width: 3),
-        ),
-      )
-          .animate()
-          .scale(
-            begin: const Offset(0.2, 0.2),
-            end: const Offset(1.4, 1.4),
-            duration: 380.ms,
-            curve: Curves.easeOut,
-          )
-          .fadeOut(duration: 380.ms),
+      child:
+          Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0x88106AC0), width: 3),
+                ),
+              )
+              .animate()
+              .scale(
+                begin: const Offset(0.2, 0.2),
+                end: const Offset(1.4, 1.4),
+                duration: 380.ms,
+                curve: Curves.easeOut,
+              )
+              .fadeOut(duration: 380.ms),
     );
   }
 }
@@ -661,7 +671,8 @@ class _CampusPlaceholderPainter extends CustomPainter {
 
       final radius = 1.6 + random.nextDouble() * 1.3;
       final treePaint = Paint()
-        ..color = Color.lerp(
+        ..color =
+            Color.lerp(
               const Color(0xFF4D7C47),
               const Color(0xFF739E6C),
               random.nextDouble(),

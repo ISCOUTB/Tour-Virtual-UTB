@@ -1,5 +1,5 @@
 import 'dart:math';
-
+import 'recorrido_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -154,39 +154,13 @@ class _HomeScreenState extends State<HomeScreen> {
       );
   }
 
-  void _onPoiTap(CampusPoi poi) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(poi.title, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 4),
-              Text(
-                poi.category,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF2F4A84),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Hotspot activo en el mapa placeholder. Aqui conectaremos la ficha completa con multimedia del recorrido inmersivo.',
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Entendido'),
-              ),
-            ],
-          ),
-        );
-      },
+void _onPoiTap(CampusPoi poi) {
+    // Por ahora, pasamos el ID 1 directamente asumiendo que es el lugar que creamos en BD.
+    // En el futuro, el CampusPoi tendrá su propio ID dinámico.
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const RecorridoScreen(lugarId: 1),
+      ),
     );
   }
 

@@ -1,0 +1,405 @@
+openapi: 3.1.0
+
+info:
+  title: UTB Tour Virtual API
+  version: 1.0.0
+  description: |
+    Contrato entre la API .NET, la aplicacion movil Flutter y el panel de
+    administracion. Es la fuente de verdad de la interfaz: los clientes de Dart
+    y TypeScript se generan a partir de este archivo.
+
+    Estado de los caminos:
+      - `/Escenas/lugar/{lugarId}` y `/Hotspots/escena/{escenaId}` ya estan
+        implementados y son los que consume `recorrido_screen.dart`.
+      - El resto corresponde a la Fase 1 y todavia no existe en el servidor.
+
+    Autenticacion: token JWT emitido por Supabase Auth. Los visitantes externos
+    usan una sesion anonima, que tambien produce un token valido, de modo que
+    todos los caminos requieren cabecera Authorization salvo indicacion
+    contraria.
+
+servers:
+  - url: http://localhost:5209/api
+    description: Desarrollo local. El puerto cambia entre maquinas.
+  - url: https://api.utbtour.example/api
+    description: Produccion (pendiente de aprovisionar)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Escenas
+    description: Escenas panoramicas 360 que componen el recorrido.
+  - name: Hotspots
+    description: Puntos tactiles sobre una escena, para navegar o abrir una ficha.
+  - name: POIs
+    description: Puntos de interes del campus y su contenido multimedia.
+  - name: Rutas
+    description: Recorridos curados segun el perfil del usuario.
+  - name: Perfil
+    description: Rol y datos del usuario autenticado.
+  - name: Analitica
+    description: Emision de eventos de uso para los KPI del MVP.
+
+paths:
+  /Escenas/lugar/{lugarId}:
+    get:
+      tags: [Escenas]
+      summary: Escenas panoramicas de un lugar
+      description: |
+        Devuelve todas las escenas del lugar. El cliente inicia el recorrido en
+        la marcada con `esEscenaPrincipal`; la base de datos garantiza que solo
+        exista una por lugar.
+      operationId: obtenerEscenasPorLugar
+      parameters:
+        - $ref: '#/components/parameters/LugarId'
+      responses:
+        '200':
+          description: Listado de escenas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Escena' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /Hotspots/escena/{escenaId}:
+    get:
+      tags: [Hotspots]
+      summary: Hotspots de una escena
+      operationId: obtenerHotspotsPorEscena
+      parameters:
+        - name: escenaId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Listado de hotspots
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Hotspot' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /Pois/lugar/{lugarId}:
+    get:
+      tags: [POIs]
+      summary: Puntos de interes de un lugar
+      description: |
+        El servidor filtra por la audiencia que corresponde al rol del token.
+        El cliente no debe intentar filtrar por su cuenta ni confiar en poder
+        solicitar contenido de otra audiencia.
+      operationId: obtenerPoisPorLugar
+      parameters:
+        - $ref: '#/components/parameters/LugarId'
+      responses:
+        '200':
+          description: Listado de POIs visibles para el solicitante
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Poi' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+
+  /Pois/{poiId}:
+    get:
+      tags: [POIs]
+      summary: Detalle de un POI con su contenido multimedia
+      operationId: obtenerPoi
+      parameters:
+        - name: poiId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Detalle del POI
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PoiDetalle' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /Rutas/actual:
+    get:
+      tags: [Rutas]
+      summary: Recorrido curado para el perfil del solicitante
+      description: |
+        Devuelve la ruta correspondiente al rol del token: institucional para
+        externos, de servicios para estudiantes, academica para docentes.
+      operationId: obtenerRutaActual
+      responses:
+        '200':
+          description: Ruta asignada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ruta' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+
+  /Perfil:
+    get:
+      tags: [Perfil]
+      summary: Perfil del usuario autenticado
+      operationId: obtenerPerfil
+      responses:
+        '200':
+          description: Perfil
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Perfil' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+
+  /Perfil/declarar:
+    post:
+      tags: [Perfil]
+      summary: Autodeclaracion de perfil
+      description: |
+        Permite a un usuario con correo institucional declararse estudiante o
+        docente. El rol resultante queda con `verificado` en false hasta que un
+        administrador lo confirme. El rol `admin` no se puede obtener por esta
+        via.
+      operationId: declararPerfil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rol]
+              properties:
+                rol:
+                  type: string
+                  enum: [estudiante, docente]
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Perfil' }
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+        '403':
+          description: El solicitante no tiene correo institucional
+
+  /Eventos:
+    post:
+      tags: [Analitica]
+      summary: Registrar eventos de uso
+      description: |
+        Recibe eventos por lote para no penalizar la bateria ni la red. Solo se
+        aceptan si el usuario dio consentimiento de analitica; el cliente es
+        responsable de no emitirlos en caso contrario.
+      operationId: registrarEventos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              maxItems: 100
+              items: { $ref: '#/components/schemas/Evento' }
+      responses:
+        '202':
+          description: Eventos aceptados
+        '401': { $ref: '#/components/responses/NoAutorizado' }
+        '422':
+          description: El lote supera el maximo o algun evento es invalido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    LugarId:
+      name: lugarId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+
+  responses:
+    NoAutorizado:
+      description: Falta el token, esta vencido o no es valido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+    NoEncontrado:
+      description: El recurso no existe o no es visible para el solicitante
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo:  { type: string }
+        mensaje: { type: string }
+
+    Escena:
+      type: object
+      required: [id, lugarId, imagenUrl, esEscenaPrincipal]
+      properties:
+        id:       { type: integer, format: int64 }
+        lugarId:  { type: integer, format: int64 }
+        poiId:
+          type: [integer, 'null']
+          format: int64
+        nombre:   { type: [string, 'null'] }
+        imagenUrl:
+          type: string
+          format: uri
+          description: Panoramica equirectangular alojada en Cloudflare R2.
+        imagenUrlBaja:
+          type: [string, 'null']
+          format: uri
+          description: Variante de menor resolucion para dispositivos de gama baja.
+        esEscenaPrincipal: { type: boolean }
+        orden: { type: integer }
+
+    Hotspot:
+      type: object
+      required: [id, escenaId, tipo, pitch, yaw]
+      properties:
+        id:       { type: integer, format: int64 }
+        escenaId: { type: integer, format: int64 }
+        tipo:
+          type: string
+          enum: [navegacion, info]
+        pitch:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: Grados. El visor lo consume como Hotspot.latitude.
+        yaw:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: Grados. El visor lo consume como Hotspot.longitude.
+        escenaDestinoId:
+          type: [integer, 'null']
+          format: int64
+          description: Obligatorio cuando tipo es 'navegacion'.
+        poiId:
+          type: [integer, 'null']
+          format: int64
+          description: Obligatorio cuando tipo es 'info'.
+        etiqueta: { type: [string, 'null'] }
+
+    Poi:
+      type: object
+      required: [id, lugarId, nombre]
+      properties:
+        id:       { type: integer, format: int64 }
+        lugarId:  { type: integer, format: int64 }
+        nombre:   { type: string }
+        categoria: { type: [string, 'null'] }
+        descripcion: { type: [string, 'null'] }
+        mapX:
+          type: [number, 'null']
+          format: double
+          minimum: 0
+          maximum: 1
+          description: Posicion normalizada del marcador sobre el render ilustrado.
+        mapY:
+          type: [number, 'null']
+          format: double
+          minimum: 0
+          maximum: 1
+        escenaPrincipalId:
+          type: [integer, 'null']
+          format: int64
+
+    PoiDetalle:
+      allOf:
+        - $ref: '#/components/schemas/Poi'
+        - type: object
+          properties:
+            medios:
+              type: array
+              items: { $ref: '#/components/schemas/Medio' }
+
+    Medio:
+      type: object
+      required: [id, tipo, url]
+      properties:
+        id:   { type: integer, format: int64 }
+        tipo:
+          type: string
+          enum: [imagen, video, audio]
+        url:  { type: string, format: uri }
+        orden: { type: integer }
+        duracionSeg: { type: [integer, 'null'] }
+        textoAlt:
+          type: [string, 'null']
+          description: Requerido por accesibilidad para medios de tipo imagen.
+        subtitulosUrl:
+          type: [string, 'null']
+          format: uri
+          description: Requerido por accesibilidad para medios de tipo video.
+
+    Ruta:
+      type: object
+      required: [id, nombre, audiencia, pois]
+      properties:
+        id:     { type: integer, format: int64 }
+        nombre: { type: string }
+        descripcion: { type: [string, 'null'] }
+        audiencia:
+          type: string
+          enum: [externo, estudiante, docente]
+        pois:
+          type: array
+          items: { $ref: '#/components/schemas/Poi' }
+
+    Perfil:
+      type: object
+      required: [userId, rol, verificado]
+      properties:
+        userId: { type: string, format: uuid }
+        rol:
+          type: string
+          enum: [externo, estudiante, docente, admin]
+        verificado:
+          type: boolean
+          description: true solo cuando un administrador confirmo el rol.
+
+    Evento:
+      type: object
+      required: [sesionId, tipo, ts]
+      properties:
+        sesionId:
+          type: string
+          format: uuid
+          description: Generado en el cliente. Permite medir recorridos anonimos.
+        tipo:
+          type: string
+          enum:
+            - virtual_map_open
+            - scene_viewed
+            - hotspot_tapped
+            - poi_media_played
+            - tour_completed
+        poiId:
+          type: [integer, 'null']
+          format: int64
+        escenaId:
+          type: [integer, 'null']
+          format: int64
+        payload:
+          type: object
+          additionalProperties: true
+        ts: { type: string, format: date-time }

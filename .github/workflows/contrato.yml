@@ -1,0 +1,25 @@
+name: Contrato API
+
+on:
+  push:
+    paths:
+      - 'packages/contracts/**'
+      - '.github/workflows/contrato.yml'
+  pull_request:
+    paths:
+      - 'packages/contracts/**'
+      - '.github/workflows/contrato.yml'
+
+jobs:
+  lint:
+    name: Validar OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validar contrato
+        run: npx --yes @redocly/cli@latest lint packages/contracts/openapi.yaml

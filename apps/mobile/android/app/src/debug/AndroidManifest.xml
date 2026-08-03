@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- El permiso INTERNET se movio al manifest principal, porque la app tambien
+         lo necesita en release. Aqui solo se relaja la politica de texto plano
+         para poder consumir la API .NET local durante el desarrollo. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>

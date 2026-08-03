@@ -76,9 +76,15 @@ as $$
 declare
   id_afectado text;
 begin
+  -- Las tablas de contenido se identifican por 'id', pero perfiles lo hace por
+  -- 'user_id'. Sin este segundo par, auditar un cambio de rol -- la operacion
+  -- mas sensible del sistema -- dejaba entidad_id en nulo y el registro no
+  -- servia para rastrear a quien se le cambio que.
   id_afectado := coalesce(
-    (to_jsonb(new) ->> 'id'),
-    (to_jsonb(old) ->> 'id')
+    to_jsonb(new) ->> 'id',
+    to_jsonb(old) ->> 'id',
+    to_jsonb(new) ->> 'user_id',
+    to_jsonb(old) ->> 'user_id'
   );
 
   insert into public.auditoria (actor_id, accion, entidad, entidad_id, antes, despues)

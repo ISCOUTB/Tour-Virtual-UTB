@@ -9,6 +9,7 @@ import 'package:utb_tour/loading_screen.dart';
 import 'package:utb_tour/main.dart';
 import 'package:utb_tour/nucleo/errores.dart';
 import 'package:utb_tour/nucleo/rutas.dart';
+import 'package:utb_tour/recorrido_screen.dart';
 
 // Dos peculiaridades de estas pantallas condicionan como se prueban:
 //
@@ -46,9 +47,14 @@ Finder etiquetaSemantica(String etiqueta) => find.byWidgetPredicate(
 
 /// Repositorio de prueba: las pruebas no tocan la red ni Supabase.
 class RepositorioFalso implements RepositorioContenido {
-  RepositorioFalso({this.pois = const [], this.fallo});
+  RepositorioFalso({
+    this.pois = const [],
+    this.recorrido = const Recorrido(escenas: [], hotspotsPorEscena: {}),
+    this.fallo,
+  });
 
   final List<Poi> pois;
+  final Recorrido recorrido;
 
   /// Cuando no es nulo, toda consulta falla con este error.
   final FalloApp? fallo;
@@ -65,7 +71,7 @@ class RepositorioFalso implements RepositorioContenido {
   @override
   Future<Recorrido> obtenerRecorrido(int lugarId) async {
     if (fallo != null) throw fallo!;
-    return const Recorrido(escenas: [], hotspotsPorEscena: {});
+    return recorrido;
   }
 
   @override
@@ -208,6 +214,45 @@ void main() {
     await tester.pump();
 
     expect(repositorio.llamadasAPois, 2);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('una panoramica que no carga muestra el error, no un vacio', (
+    WidgetTester tester,
+  ) async {
+    // PanoramaViewer no dibuja su hijo: lo usa como textura, asi que el
+    // errorBuilder de un Image.network entregado ahi nunca aparece. En la app
+    // eso se veia como un area gris sin explicacion. La imagen se resuelve
+    // antes de construir el visor, y esto lo comprueba.
+    //
+    // En las pruebas toda peticion HTTP falla, asi que cualquier NetworkImage
+    // sirve para provocar el caso.
+    await tester.pumpWidget(
+      envolver(
+        const RecorridoScreen(lugarId: 1),
+        repositorio: RepositorioFalso(
+          recorrido: const Recorrido(
+            escenas: [
+              Escena(
+                id: 1,
+                lugarId: 1,
+                nombre: 'Entrada principal',
+                imagenUrl: 'https://placeholder.invalid/360/entrada.jpg',
+                esEscenaPrincipal: true,
+              ),
+            ],
+            hotspotsPorEscena: {},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.textContaining('No pudimos cargar esta panoramica'), findsOne);
+    expect(find.text('Reintentar'), findsOne);
 
     await drenarTemporizadores(tester);
   });

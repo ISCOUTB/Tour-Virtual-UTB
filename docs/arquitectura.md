@@ -32,6 +32,31 @@ Los mockups del panel administrativo mencionan «configurar navegación y visual
 | Perfil «externo» | Visitantes externos a la UTB | Aspirantes, familias y público general; no implica internacionalización inmediata |
 | Autenticación | Supabase Auth: anónima + OTP por dominio | Los externos no poseen cuenta institucional; forzar login los excluiría |
 | Internacionalización | Diferida a Fase 4, esquema creado en Fase 0 | Añadir el modelo de traducciones más tarde es un retrofit costoso |
+| Ruta de datos del móvil | Supabase directo | RLS aplica el filtrado por audiencia sin intermediario; elimina el riesgo de que un salto extra lo anule |
+
+### 1.1) Ruta de datos y el riesgo de `service_role`
+
+La aplicación móvil consume Supabase directamente mediante `supabase_flutter`:
+autenticación y lectura de contenido pasan por PostgREST, donde las políticas
+RLS ya resuelven el filtrado por audiencia verificado en la Fase 0.
+
+La API .NET conserva un alcance acotado:
+
+- Escrituras del panel de administración que requieren lógica de negocio.
+- Agregación de analítica para el módulo de reportes.
+- Cualquier operación que combine varias fuentes o aplique reglas que no
+  convenga expresar en SQL.
+
+> **Regla que no se puede relajar.** Todo componente que consulte Postgres en
+> nombre de un usuario final debe reenviar el JWT de ese usuario. Conectarse
+> con `service_role` **omite RLS por completo**: el filtrado por audiencia
+> dejaría de aplicar y cualquier usuario podría leer el contenido curado para
+> otro perfil. `service_role` queda reservado para tareas de servidor sin
+> usuario asociado, como la purga programada de eventos.
+
+En consecuencia, los caminos de lectura descritos en el contrato OpenAPI
+(`/Escenas`, `/Hotspots`, `/Pois`, `/Rutas`) documentan la API .NET, no la ruta
+que sigue la aplicación móvil.
 
 ---
 

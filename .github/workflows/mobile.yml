@@ -30,6 +30,14 @@ jobs:
       - name: Resolver dependencias
         run: flutter pub get
 
+      - name: Generar codigo
+        run: dart run build_runner build
+
+      # Los archivos generados estan versionados. Si alguien cambia un modelo y
+      # no regenera, esto lo detecta aqui y no en tiempo de ejecucion.
+      - name: Verificar que el codigo generado esta al dia
+        run: git diff --exit-code -- '*.g.dart' '*.freezed.dart'
+
       - name: Verificar formato
         run: dart format --output=none --set-exit-if-changed .
 
@@ -57,6 +65,7 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      - run: dart run build_runner build
       - run: flutter build apk --debug
 
       - uses: actions/upload-artifact@v4

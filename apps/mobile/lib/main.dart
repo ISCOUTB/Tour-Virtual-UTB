@@ -1,63 +1,68 @@
 import 'dart:math';
-import 'recorrido_screen.dart';
-import 'loading_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-void main() {
-  runApp(const UtbVirtualApp());
+import 'datos/modelos/modelos.dart';
+import 'datos/proveedores.dart';
+import 'nucleo/configuracion.dart';
+import 'nucleo/rutas.dart';
+import 'ui/vista_async.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await inicializarSupabase();
+  runApp(const ProviderScope(child: UtbVirtualApp()));
 }
 
-class UtbVirtualApp extends StatelessWidget {
-  const UtbVirtualApp({super.key});
+class UtbVirtualApp extends StatefulWidget {
+  const UtbVirtualApp({super.key, this.enrutador});
+
+  /// Permite inyectar un router propio en las pruebas.
+  final GoRouter? enrutador;
+
+  @override
+  State<UtbVirtualApp> createState() => _UtbVirtualAppState();
+}
+
+class _UtbVirtualAppState extends State<UtbVirtualApp> {
+  late final GoRouter _enrutador = widget.enrutador ?? crearEnrutador();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'UTB Virtual',
+      title: 'UTB Tour Virtual',
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFD8D9DB),
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1F2B55)),
       ),
-      home: const LoadingScreen(),
+      routerConfig: _enrutador,
     );
   }
 }
 
-class CampusPoi {
-  final String title;
-  final String category;
-  final Offset normalizedOffset;
-
-  const CampusPoi({
-    required this.title,
-    required this.category,
-    required this.normalizedOffset,
-  });
-}
-
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const double _mapViewportSize = 330;
   static const double _mapCanvasSize = 560;
 
   final TransformationController _mapController = TransformationController();
   int _selectedIndex = 0;
   Offset? _tapPulsePosition;
-  late final List<CampusPoi> _pois;
 
   @override
   void initState() {
     super.initState();
-    _pois = _buildRandomPois();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final initialOffset = -(_mapCanvasSize - _mapViewportSize) / 2;
@@ -70,58 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _mapController.dispose();
     super.dispose();
-  }
-
-  List<CampusPoi> _buildRandomPois() {
-    const titles = [
-      'Zona de comidas',
-      'Murales UTB',
-      'Salones representativos',
-      'Biblioteca',
-      'Bienestar universitario',
-    ];
-    const categories = [
-      'Servicios',
-      'Cultura',
-      'Academico',
-      'Recursos',
-      'Comunidad',
-    ];
-
-    final random = Random();
-    final usedOffsets = <Offset>[];
-
-    return List.generate(titles.length, (index) {
-      final offset = _generatePoiOffset(random, usedOffsets);
-      usedOffsets.add(offset);
-      return CampusPoi(
-        title: titles[index],
-        category: categories[index],
-        normalizedOffset: offset,
-      );
-    });
-  }
-
-  Offset _generatePoiOffset(Random random, List<Offset> usedOffsets) {
-    for (var attempt = 0; attempt < 70; attempt++) {
-      final candidate = Offset(
-        0.18 + random.nextDouble() * 0.64,
-        0.18 + random.nextDouble() * 0.64,
-      );
-
-      final isFarEnough = usedOffsets.every(
-        (existing) => (existing - candidate).distance > 0.14,
-      );
-
-      if (isFarEnough) {
-        return candidate;
-      }
-    }
-
-    return Offset(
-      0.22 + random.nextDouble() * 0.56,
-      0.22 + random.nextDouble() * 0.56,
-    );
   }
 
   void _onMapTap(Offset localPosition) {
@@ -138,28 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       setState(() => _tapPulsePosition = null);
     });
-
-    final approxLat = 10.99 + normalized.dy * 0.01;
-    final approxLng = -74.79 + normalized.dx * 0.01;
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          duration: 1200.ms,
-          content: Text(
-            'Toque en mapa (mock): ${approxLat.toStringAsFixed(4)}, ${approxLng.toStringAsFixed(4)}',
-          ),
-        ),
-      );
   }
 
-  void _onPoiTap(CampusPoi poi) {
-    // Por ahora, pasamos el ID 1 directamente asumiendo que es el lugar que creamos en BD.
-    // En el futuro, el CampusPoi tendrá su propio ID dinámico.
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const RecorridoScreen(lugarId: 1)),
+  void _onPoiTap(Poi poi) {
+    context.push(
+      Rutas.haciaRecorrido(poi.lugarId, escenaId: poi.escenaPrincipalId),
     );
   }
 
@@ -207,21 +143,31 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
+        final pois = ref.watch(poisProvider(Configuracion.lugarPorDefecto));
+
         return Container(
           key: const ValueKey('explorar'),
           color: const Color(0xFFD8D9DB),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-              child: _buildInteractiveMap()
-                  .animate()
-                  .fadeIn(duration: 520.ms)
-                  .scale(
-                    begin: const Offset(0.96, 0.96),
-                    end: const Offset(1, 1),
-                    duration: 520.ms,
-                    curve: Curves.easeOutBack,
-                  ),
+          child: VistaAsync<List<Poi>>(
+            valor: pois,
+            alReintentar: () =>
+                ref.invalidate(poisProvider(Configuracion.lugarPorDefecto)),
+            enDatos: (lista) => Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 16,
+                ),
+                child: _buildInteractiveMap(lista)
+                    .animate()
+                    .fadeIn(duration: 520.ms)
+                    .scale(
+                      begin: const Offset(0.96, 0.96),
+                      end: const Offset(1, 1),
+                      duration: 520.ms,
+                      curve: Curves.easeOutBack,
+                    ),
+              ),
             ),
           ),
         );
@@ -243,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildInteractiveMap() {
+  Widget _buildInteractiveMap(List<Poi> pois) {
     return Container(
       width: _mapViewportSize,
       height: _mapViewportSize,
@@ -276,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Positioned.fill(
                   child: CustomPaint(painter: _CampusPlaceholderPainter()),
                 ),
-                ..._buildPoiMarkers(),
+                ..._buildPoiMarkers(pois),
                 if (_tapPulsePosition != null)
                   Positioned(
                     left: _tapPulsePosition!.dx * _mapCanvasSize - 24,
@@ -291,16 +237,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<Widget> _buildPoiMarkers() {
-    return List.generate(_pois.length, (index) {
-      final poi = _pois[index];
+  /// Marcadores posicionados con las coordenadas normalizadas de la base.
+  ///
+  /// Un POI sin calibrar (`map_x` o `map_y` nulos) no se dibuja: inventarle una
+  /// posicion es justo lo que hacia la version anterior, que repartia los cinco
+  /// puntos al azar en cada arranque y no correspondia a ningun lugar real.
+  List<Widget> _buildPoiMarkers(List<Poi> pois) {
+    final ubicables = pois.where((p) => p.tienePosicionEnMapa).toList();
+
+    return List.generate(ubicables.length, (index) {
+      final poi = ubicables[index];
 
       return Positioned(
-        left: poi.normalizedOffset.dx * _mapCanvasSize - 22,
-        top: poi.normalizedOffset.dy * _mapCanvasSize - 42,
-        child: GestureDetector(
-          onTap: () => _onPoiTap(poi),
-          child: _PoiMarker(index: index),
+        left: poi.mapX! * _mapCanvasSize - 22,
+        top: poi.mapY! * _mapCanvasSize - 42,
+        child: Semantics(
+          button: true,
+          label: poi.nombre,
+          child: GestureDetector(
+            onTap: () => _onPoiTap(poi),
+            child: _PoiMarker(index: index),
+          ),
         ),
       );
     });

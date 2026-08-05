@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'main.dart';
+
+import 'nucleo/rutas.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -23,9 +25,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     Future.delayed(const Duration(seconds: 4), () {
       if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      context.go(Rutas.inicio);
     });
   }
 

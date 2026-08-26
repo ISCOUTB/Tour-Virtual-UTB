@@ -53,45 +53,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  static const double _mapViewportSize = 330;
-  static const double _mapCanvasSize = 560;
-
-  final TransformationController _mapController = TransformationController();
   int _selectedIndex = 0;
-  Offset? _tapPulsePosition;
-
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final initialOffset = -(_mapCanvasSize - _mapViewportSize) / 2;
-      _mapController.value = Matrix4.identity()
-        ..translateByDouble(initialOffset, initialOffset, 0, 1);
-    });
-  }
-
-  @override
-  void dispose() {
-    _mapController.dispose();
-    super.dispose();
-  }
-
-  void _onMapTap(Offset localPosition) {
-    final normalized = Offset(
-      (localPosition.dx / _mapCanvasSize).clamp(0.0, 1.0),
-      (localPosition.dy / _mapCanvasSize).clamp(0.0, 1.0),
-    );
-
-    setState(() => _tapPulsePosition = normalized);
-
-    Future.delayed(900.ms, () {
-      if (!mounted || _tapPulsePosition != normalized) {
-        return;
-      }
-      setState(() => _tapPulsePosition = null);
-    });
-  }
 
   void _onPoiTap(Poi poi) {
     context.push(
@@ -147,28 +109,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         return Container(
           key: const ValueKey('explorar'),
-          color: const Color(0xFFD8D9DB),
+          // El render trae su propio fondo claro que llega hasta los bordes,
+          // asi que el gris del resto de la app dibujaria una costura alrededor
+          // del mapa. Aqui la superficie es la ilustracion misma.
+          color: Colors.white,
           child: VistaAsync<List<Poi>>(
             valor: pois,
             alReintentar: () =>
                 ref.invalidate(poisProvider(Configuracion.lugarPorDefecto)),
-            enDatos: (lista) => Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 16,
-                ),
-                child: _buildInteractiveMap(lista)
-                    .animate()
-                    .fadeIn(duration: 520.ms)
-                    .scale(
-                      begin: const Offset(0.96, 0.96),
-                      end: const Offset(1, 1),
-                      duration: 520.ms,
-                      curve: Curves.easeOutBack,
-                    ),
-              ),
-            ),
+            enDatos: (lista) => _MapaCampus(
+              pois: lista,
+              alTocarPoi: _onPoiTap,
+            ).animate().fadeIn(duration: 420.ms),
           ),
         );
       case 1:
@@ -187,80 +139,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           message: 'Aqui mostraremos avance del tour y POI visitados.',
         );
     }
-  }
-
-  Widget _buildInteractiveMap(List<Poi> pois) {
-    return Container(
-      width: _mapViewportSize,
-      height: _mapViewportSize,
-      decoration: BoxDecoration(
-        color: const Color(0xFFECECEB),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x24000000),
-            blurRadius: 14,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: InteractiveViewer(
-        transformationController: _mapController,
-        minScale: 0.55,
-        maxScale: 3.4,
-        constrained: false,
-        boundaryMargin: const EdgeInsets.all(260),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: (details) => _onMapTap(details.localPosition),
-          child: SizedBox(
-            width: _mapCanvasSize,
-            height: _mapCanvasSize,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(painter: _CampusPlaceholderPainter()),
-                ),
-                ..._buildPoiMarkers(pois),
-                if (_tapPulsePosition != null)
-                  Positioned(
-                    left: _tapPulsePosition!.dx * _mapCanvasSize - 24,
-                    top: _tapPulsePosition!.dy * _mapCanvasSize - 24,
-                    child: const _TapPulse(),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Marcadores posicionados con las coordenadas normalizadas de la base.
-  ///
-  /// Un POI sin calibrar (`map_x` o `map_y` nulos) no se dibuja: inventarle una
-  /// posicion es justo lo que hacia la version anterior, que repartia los cinco
-  /// puntos al azar en cada arranque y no correspondia a ningun lugar real.
-  List<Widget> _buildPoiMarkers(List<Poi> pois) {
-    final ubicables = pois.where((p) => p.tienePosicionEnMapa).toList();
-
-    return List.generate(ubicables.length, (index) {
-      final poi = ubicables[index];
-
-      return Positioned(
-        left: poi.mapX! * _mapCanvasSize - 22,
-        top: poi.mapY! * _mapCanvasSize - 42,
-        child: Semantics(
-          button: true,
-          label: poi.nombre,
-          child: GestureDetector(
-            onTap: () => _onPoiTap(poi),
-            child: _PoiMarker(index: index),
-          ),
-        ),
-      );
-    });
   }
 
   Widget _buildBottomNavigation(BuildContext context) {
@@ -438,6 +316,135 @@ class _NavItem {
   const _NavItem({required this.label, required this.assetPath});
 }
 
+/// Mapa isometrico del campus con los marcadores de puntos de interes.
+///
+/// El render entregado por la universidad mide 4096x2304. El lienzo tiene que
+/// respetar esa proporcion: mientras fue cuadrado, toda coordenada normalizada
+/// caia desplazada en vertical.
+class _MapaCampus extends StatefulWidget {
+  const _MapaCampus({required this.pois, required this.alTocarPoi});
+
+  final List<Poi> pois;
+  final void Function(Poi) alTocarPoi;
+
+  @override
+  State<_MapaCampus> createState() => _MapaCampusState();
+}
+
+class _MapaCampusState extends State<_MapaCampus> {
+  static const _rutaMapa = 'android/app/src/assets/mapa_campus.webp';
+  static const double _relacion = 4096 / 2304;
+
+  /// El lienzo se dibuja mas ancho que la ventana para que el zoom inicial
+  /// muestre los edificios a un tamano legible, en vez del campus entero en
+  /// miniatura. Es un mapa apaisado dentro de una pantalla vertical.
+  static const double _amplitud = 1.9;
+
+  final _controlador = TransformationController();
+  bool _encuadrado = false;
+
+  @override
+  void dispose() {
+    _controlador.dispose();
+    super.dispose();
+  }
+
+  /// Centra la vista sobre los POI la primera vez que se conoce el tamano.
+  ///
+  /// El campus ocupa una franja diagonal y deja mucho margen vacio alrededor,
+  /// asi que centrar en el conjunto de puntos encuadra mejor que centrar en la
+  /// imagen.
+  void _encuadrar(Size ventana, Size lienzo) {
+    if (_encuadrado || ventana.isEmpty) return;
+    _encuadrado = true;
+
+    var focoX = 0.5;
+    var focoY = 0.5;
+    final ubicables = widget.pois.where((p) => p.tienePosicionEnMapa).toList();
+    if (ubicables.isNotEmpty) {
+      final xs = ubicables.map((p) => p.mapX!);
+      final ys = ubicables.map((p) => p.mapY!);
+      focoX = (xs.reduce(min) + xs.reduce(max)) / 2;
+      focoY = (ys.reduce(min) + ys.reduce(max)) / 2;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _controlador.value = Matrix4.identity()
+        ..translateByDouble(
+          ventana.width / 2 - focoX * lienzo.width,
+          ventana.height / 2 - focoY * lienzo.height,
+          0,
+          1,
+        );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        final ancho = restricciones.maxWidth * _amplitud;
+        final lienzo = Size(ancho, ancho / _relacion);
+        _encuadrar(restricciones.biggest, lienzo);
+
+        return InteractiveViewer(
+          transformationController: _controlador,
+          constrained: false,
+          minScale: 0.4,
+          maxScale: 2.6,
+          boundaryMargin: EdgeInsets.symmetric(
+            horizontal: restricciones.maxWidth,
+            vertical: restricciones.maxHeight,
+          ),
+          child: SizedBox(
+            width: lienzo.width,
+            height: lienzo.height,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    _rutaMapa,
+                    fit: BoxFit.fill,
+                    filterQuality: FilterQuality.medium,
+                    // Decodificar los 4096 px completos costaria unos 38 MB de
+                    // memoria. A 2560 sigue nitido hasta el zoom maximo y baja
+                    // a unos 15 MB, que es lo que tolera la gama baja.
+                    cacheWidth: 2560,
+                  ),
+                ),
+                ..._marcadores(lienzo),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _marcadores(Size lienzo) {
+    final ubicables = widget.pois.where((p) => p.tienePosicionEnMapa).toList();
+
+    return [
+      for (final (indice, poi) in ubicables.indexed)
+        Positioned(
+          // El pin ancla por su punta inferior, no por su centro.
+          left: poi.mapX! * lienzo.width - 22,
+          top: poi.mapY! * lienzo.height - 42,
+          child: Semantics(
+            button: true,
+            label: poi.nombre,
+            child: GestureDetector(
+              onTap: () => widget.alTocarPoi(poi),
+              child: _PoiMarker(index: indice),
+            ),
+          ),
+        ),
+    ];
+  }
+}
+
 class _PoiMarker extends StatelessWidget {
   final int index;
 
@@ -504,288 +511,4 @@ class _PoiMarker extends StatelessWidget {
               ),
     );
   }
-}
-
-class _TapPulse extends StatelessWidget {
-  const _TapPulse();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child:
-          Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0x88106AC0), width: 3),
-                ),
-              )
-              .animate()
-              .scale(
-                begin: const Offset(0.2, 0.2),
-                end: const Offset(1.4, 1.4),
-                duration: 380.ms,
-                curve: Curves.easeOut,
-              )
-              .fadeOut(duration: 380.ms),
-    );
-  }
-}
-
-class _CampusPlaceholderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()..color = const Color(0xFFF1F2EF);
-    canvas.drawRect(Offset.zero & size, backgroundPaint);
-
-    final islandPath = Path()
-      ..moveTo(size.width * 0.14, size.height * 0.24)
-      ..quadraticBezierTo(
-        size.width * 0.28,
-        size.height * 0.05,
-        size.width * 0.54,
-        size.height * 0.10,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.85,
-        size.height * 0.16,
-        size.width * 0.91,
-        size.height * 0.34,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.95,
-        size.height * 0.55,
-        size.width * 0.85,
-        size.height * 0.72,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.72,
-        size.height * 0.91,
-        size.width * 0.50,
-        size.height * 0.92,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.27,
-        size.height * 0.90,
-        size.width * 0.13,
-        size.height * 0.71,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.04,
-        size.height * 0.54,
-        size.width * 0.14,
-        size.height * 0.24,
-      )
-      ..close();
-
-    final islandFill = Paint()..color = const Color(0xFFC8DDB8);
-    canvas.drawPath(islandPath, islandFill);
-    canvas.drawPath(
-      islandPath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..color = const Color(0xFF8BA37F),
-    );
-
-    final random = Random(11);
-    for (var i = 0; i < 170; i++) {
-      final x = size.width * random.nextDouble();
-      final y = size.height * random.nextDouble();
-      final point = Offset(x, y);
-
-      if (!islandPath.contains(point)) {
-        continue;
-      }
-
-      final radius = 1.6 + random.nextDouble() * 1.3;
-      final treePaint = Paint()
-        ..color =
-            Color.lerp(
-              const Color(0xFF4D7C47),
-              const Color(0xFF739E6C),
-              random.nextDouble(),
-            ) ??
-            const Color(0xFF5F8B58);
-      canvas.drawCircle(point, radius, treePaint);
-    }
-
-    final roadMain = Path()
-      ..moveTo(size.width * 0.20, size.height * 0.16)
-      ..quadraticBezierTo(
-        size.width * 0.32,
-        size.height * 0.31,
-        size.width * 0.52,
-        size.height * 0.42,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.65,
-        size.height * 0.48,
-        size.width * 0.74,
-        size.height * 0.67,
-      );
-
-    final roadSecondary = Path()
-      ..moveTo(size.width * 0.23, size.height * 0.60)
-      ..quadraticBezierTo(
-        size.width * 0.41,
-        size.height * 0.53,
-        size.width * 0.58,
-        size.height * 0.62,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.69,
-        size.height * 0.68,
-        size.width * 0.82,
-        size.height * 0.60,
-      );
-
-    final roadPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.046
-      ..strokeCap = StrokeCap.round
-      ..color = const Color(0xFF5A5A5F);
-
-    final lanePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.013
-      ..strokeCap = StrokeCap.round
-      ..color = const Color(0xFFD7D9DA);
-
-    canvas.drawPath(roadMain, roadPaint);
-    canvas.drawPath(roadSecondary, roadPaint);
-    canvas.drawPath(roadMain, lanePaint);
-    canvas.drawPath(roadSecondary, lanePaint);
-
-    final fieldRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.61,
-        size.height * 0.28,
-        size.width * 0.19,
-        size.height * 0.21,
-      ),
-      const Radius.circular(9),
-    );
-    canvas.drawRRect(fieldRect, Paint()..color = const Color(0xFFA9D18E));
-
-    final fieldLinePaint = Paint()
-      ..color = const Color(0x88FFFFFF)
-      ..strokeWidth = 2;
-    for (var i = 1; i < 6; i++) {
-      final y = size.height * (0.28 + i * 0.035);
-      canvas.drawLine(
-        Offset(size.width * 0.62, y),
-        Offset(size.width * 0.79, y),
-        fieldLinePaint,
-      );
-    }
-
-    _drawBuilding(
-      canvas,
-      size,
-      leftFactor: 0.18,
-      topFactor: 0.26,
-      widthFactor: 0.14,
-      heightFactor: 0.08,
-      angle: -0.27,
-      color: const Color(0xFFBC5843),
-    );
-    _drawBuilding(
-      canvas,
-      size,
-      leftFactor: 0.28,
-      topFactor: 0.52,
-      widthFactor: 0.10,
-      heightFactor: 0.07,
-      angle: -0.12,
-      color: const Color(0xFFBF6E4B),
-    );
-    _drawBuilding(
-      canvas,
-      size,
-      leftFactor: 0.43,
-      topFactor: 0.57,
-      widthFactor: 0.12,
-      heightFactor: 0.09,
-      angle: -0.08,
-      color: const Color(0xFFBE7B4E),
-    );
-    _drawBuilding(
-      canvas,
-      size,
-      leftFactor: 0.44,
-      topFactor: 0.36,
-      widthFactor: 0.12,
-      heightFactor: 0.10,
-      angle: 0.08,
-      color: const Color(0xFFD7D9D8),
-    );
-    _drawBuilding(
-      canvas,
-      size,
-      leftFactor: 0.52,
-      topFactor: 0.34,
-      widthFactor: 0.09,
-      heightFactor: 0.07,
-      angle: 0.24,
-      color: const Color(0xFF7EA2C8),
-    );
-    _drawBuilding(
-      canvas,
-      size,
-      leftFactor: 0.57,
-      topFactor: 0.52,
-      widthFactor: 0.13,
-      heightFactor: 0.10,
-      angle: 0.16,
-      color: const Color(0xFFDF9A50),
-    );
-  }
-
-  void _drawBuilding(
-    Canvas canvas,
-    Size size, {
-    required double leftFactor,
-    required double topFactor,
-    required double widthFactor,
-    required double heightFactor,
-    required double angle,
-    required Color color,
-  }) {
-    final rect = Rect.fromLTWH(
-      size.width * leftFactor,
-      size.height * topFactor,
-      size.width * widthFactor,
-      size.height * heightFactor,
-    );
-
-    canvas.save();
-    canvas.translate(rect.center.dx, rect.center.dy);
-    canvas.rotate(angle);
-
-    final centeredRect = Rect.fromCenter(
-      center: Offset.zero,
-      width: rect.width,
-      height: rect.height,
-    );
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(centeredRect, const Radius.circular(4)),
-      Paint()..color = color,
-    );
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(centeredRect, const Radius.circular(4)),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = const Color(0x55000000),
-    );
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _CampusPlaceholderPainter oldDelegate) => false;
 }

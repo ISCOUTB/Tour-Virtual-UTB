@@ -1,0 +1,13 @@
+
+# -----------------------------------------------------------------------------
+# Material institucional
+#
+# El mapa del campus y sus derivados son contenido de la universidad y no se
+# publican en el repositorio. Ademas, segun docs/arquitectura.md los medios
+# viven en Cloudflare R2, no versionados junto al codigo.
+#
+# Para trabajar en local hace falta pedir estos archivos al equipo y colocarlos
+# en las rutas indicadas.
+# -----------------------------------------------------------------------------
+/assets/
+apps/mobile/android/app/src/assets/mapa_campus.webp

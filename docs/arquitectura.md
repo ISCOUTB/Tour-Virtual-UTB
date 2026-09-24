@@ -1,3 +1,28 @@
+> **Superado por el SRS v3.1 (23 de septiembre de 2026).**
+>
+> `docs/SRSIEEE830TourVirtualUTBv3.1.pdf` es desde ahora la fuente de verdad de
+> requisitos y decide donde contradiga a este documento. Decision del 23 de
+> septiembre de 2026.
+>
+> Contradicciones conocidas, todas resueltas a favor del SRS:
+>
+> | Tema | Este documento | SRS v3.1 |
+> |---|---|---|
+> | Backend | Supabase + Postgres con RLS | Node.js / Firebase con Firestore |
+> | Mapa | Render isometrico con coordenadas normalizadas | Google Maps / Mapbox / OSM |
+> | Realidad aumentada | Descartada explicitamente | En alcance: F-06, RF-26 a RF-34 |
+>
+> **Lo que la migracion pone en riesgo y hay que reconstruir:** el filtrado por
+> audiencia lo garantiza hoy RLS dentro de la base, verificado sobre HTTP (un
+> cliente anonimo recibe 4 de 5 POI). Firestore usa Security Rules, que son otro
+> modelo. Tambien pierden su equivalente directo la auditoria por trigger, la
+> purga de eventos a 12 meses y los constraints de integridad.
+>
+> Lo demas de este documento sigue vigente, en particular la seccion 7 de
+> cumplimiento legal, que el SRS no cubre.
+
+---
+
 # UTB Tour Virtual — Arquitectura y plan de desarrollo
 
 **Fecha:** 3 de agosto de 2026

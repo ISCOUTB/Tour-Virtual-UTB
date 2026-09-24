@@ -9,6 +9,7 @@ import 'datos/modelos/modelos.dart';
 import 'datos/proveedores.dart';
 import 'nucleo/configuracion.dart';
 import 'nucleo/rutas.dart';
+import 'ui/ficha_poi.dart';
 import 'ui/vista_async.dart';
 
 Future<void> main() async {
@@ -56,8 +57,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
 
   void _onPoiTap(Poi poi) {
-    context.push(
-      Rutas.haciaRecorrido(poi.lugarId, escenaId: poi.escenaPrincipalId),
+    mostrarFichaPoi(
+      context,
+      poiId: poi.id,
+      alVerEn360: () {
+        // Cerrar la ficha antes de navegar: al volver del visor el usuario
+        // espera el mapa, no una hoja abierta sobre el.
+        Navigator.of(context).pop();
+        context.push(
+          Rutas.haciaRecorrido(poi.lugarId, escenaId: poi.escenaPrincipalId),
+        );
+      },
     );
   }
 
@@ -340,6 +350,9 @@ class _MapaCampusState extends State<_MapaCampus> {
   /// miniatura. Es un mapa apaisado dentro de una pantalla vertical.
   static const double _amplitud = 1.9;
 
+  static const double _escalaMinimaAbsoluta = 0.15;
+  static const double _escalaMaxima = 2.6;
+
   final _controlador = TransformationController();
   bool _encuadrado = false;
 
@@ -349,34 +362,53 @@ class _MapaCampusState extends State<_MapaCampus> {
     super.dispose();
   }
 
-  /// Centra la vista sobre los POI la primera vez que se conoce el tamano.
+  /// Encuadra la vista sobre los POI la primera vez que se conoce el tamano.
   ///
-  /// El campus ocupa una franja diagonal y deja mucho margen vacio alrededor,
-  /// asi que centrar en el conjunto de puntos encuadra mejor que centrar en la
-  /// imagen.
+  /// El encuadre se calcula a partir de los puntos y no de la imagen. La
+  /// ilustracion trae su propio margen claro alrededor del campus, asi que
+  /// centrarla dejaba bandas vacias que se comian mas de un cuarto de una
+  /// pantalla vertical. Ajustando a la caja de los POI el margen queda fuera
+  /// solo, sea cual sea el asset que entregue la universidad.
   void _encuadrar(Size ventana, Size lienzo) {
     if (_encuadrado || ventana.isEmpty) return;
     _encuadrado = true;
 
-    var focoX = 0.5;
-    var focoY = 0.5;
     final ubicables = widget.pois.where((p) => p.tienePosicionEnMapa).toList();
+
+    // Caja de los POI en coordenadas del lienzo, con holgura para que ninguno
+    // quede pegado al borde ni bajo la barra inferior.
+    var izq = 0.0, arr = 0.0;
+    var der = lienzo.width, aba = lienzo.height;
     if (ubicables.isNotEmpty) {
-      final xs = ubicables.map((p) => p.mapX!);
-      final ys = ubicables.map((p) => p.mapY!);
-      focoX = (xs.reduce(min) + xs.reduce(max)) / 2;
-      focoY = (ys.reduce(min) + ys.reduce(max)) / 2;
+      final xs = ubicables.map((p) => p.mapX! * lienzo.width);
+      final ys = ubicables.map((p) => p.mapY! * lienzo.height);
+      const holgura = 90.0;
+      izq = xs.reduce(min) - holgura;
+      der = xs.reduce(max) + holgura;
+      arr = ys.reduce(min) - holgura;
+      aba = ys.reduce(max) + holgura;
     }
+
+    final anchoCaja = max(der - izq, 1.0);
+    final altoCaja = max(aba - arr, 1.0);
+    final escala = min(
+      ventana.width / anchoCaja,
+      ventana.height / altoCaja,
+    ).clamp(_escalaMinimaAbsoluta, _escalaMaxima);
+
+    final centroX = (izq + der) / 2;
+    final centroY = (arr + aba) / 2;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _controlador.value = Matrix4.identity()
         ..translateByDouble(
-          ventana.width / 2 - focoX * lienzo.width,
-          ventana.height / 2 - focoY * lienzo.height,
+          ventana.width / 2 - centroX * escala,
+          ventana.height / 2 - centroY * escala,
           0,
           1,
-        );
+        )
+        ..scaleByDouble(escala, escala, 1, 1);
     });
   }
 
@@ -384,15 +416,29 @@ class _MapaCampusState extends State<_MapaCampus> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, restricciones) {
-        final ancho = restricciones.maxWidth * _amplitud;
+        // El lienzo tiene que cubrir la ventana por los dos lados. Calculado
+        // solo desde el ancho, un mapa apaisado dentro de una pantalla vertical
+        // queda mas bajo que el area disponible y flota entre dos bandas
+        // vacias que ocupaban mas de un cuarto de la pantalla.
+        final ancho = max(
+          restricciones.maxWidth * _amplitud,
+          restricciones.maxHeight * _relacion,
+        );
         final lienzo = Size(ancho, ancho / _relacion);
         _encuadrar(restricciones.biggest, lienzo);
+
+        // Alejar siempre tiene que poder mostrar el campus entero, por mucho
+        // que haya crecido el lienzo para cubrir el alto.
+        final escalaMinima = (restricciones.maxWidth / lienzo.width).clamp(
+          _escalaMinimaAbsoluta,
+          0.6,
+        );
 
         return InteractiveViewer(
           transformationController: _controlador,
           constrained: false,
-          minScale: 0.4,
-          maxScale: 2.6,
+          minScale: escalaMinima,
+          maxScale: _escalaMaxima,
           boundaryMargin: EdgeInsets.symmetric(
             horizontal: restricciones.maxWidth,
             vertical: restricciones.maxHeight,
@@ -430,12 +476,16 @@ class _MapaCampusState extends State<_MapaCampus> {
       for (final (indice, poi) in ubicables.indexed)
         Positioned(
           // El pin ancla por su punta inferior, no por su centro.
-          left: poi.mapX! * lienzo.width - 22,
-          top: poi.mapY! * lienzo.height - 42,
+          left: poi.mapX! * lienzo.width - _PoiMarker.ancho / 2,
+          top: poi.mapY! * lienzo.height - _PoiMarker.alto + 8,
           child: Semantics(
             button: true,
             label: poi.nombre,
             child: GestureDetector(
+              // Sin `opaque` el toque solo lo absorbe el glifo pintado y el
+              // resto de la caja queda muerto: eran 36 dp reales frente a los
+              // 48 que exige Material.
+              behavior: HitTestBehavior.opaque,
               onTap: () => widget.alTocarPoi(poi),
               child: _PoiMarker(index: indice),
             ),
@@ -446,6 +496,16 @@ class _MapaCampusState extends State<_MapaCampus> {
 }
 
 class _PoiMarker extends StatelessWidget {
+  /// Caja tactil. Material exige 48 dp como minimo en ambos ejes.
+  static const double ancho = 56;
+  static const double alto = 64;
+
+  /// El verde anterior daba 1,11:1 sobre el cesped del render: invisible justo
+  /// encima de las zonas verdes del campus. Este teja mide 3,73:1 en el peor de
+  /// los fondos del mapa, cumple el minimo de 3:1 para elementos graficos y
+  /// pertenece a la paleta de la propia ilustracion.
+  static const Color relleno = Color(0xFF8C2F12);
+
   final int index;
 
   const _PoiMarker({required this.index});
@@ -453,8 +513,8 @@ class _PoiMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 44,
-      height: 56,
+      width: ancho,
+      height: alto,
       child:
           Stack(
                 alignment: Alignment.topCenter,
@@ -467,7 +527,7 @@ class _PoiMarker extends StatelessWidget {
                               height: 34,
                               margin: const EdgeInsets.only(top: 9),
                               decoration: const BoxDecoration(
-                                color: Color(0x5539D353),
+                                color: Color(0x448C2F12),
                                 shape: BoxShape.circle,
                               ),
                             )
@@ -482,12 +542,19 @@ class _PoiMarker extends StatelessWidget {
                             )
                             .fadeOut(begin: 0.78, duration: 1300.ms),
                   ),
+                  // El reborde blanco separa el pin del fondo sea cual sea:
+                  // techos claros, cesped o asfalto.
+                  Icon(
+                    Icons.location_on_rounded,
+                    size: 42,
+                    color: Colors.white,
+                  ),
                   Icon(
                     Icons.location_on_rounded,
                     size: 36,
-                    color: const Color(0xFF41DC4D),
+                    color: relleno,
                     shadows: const [
-                      Shadow(color: Color(0xAA5FFF70), blurRadius: 12),
+                      Shadow(color: Color(0x55000000), blurRadius: 6),
                     ],
                   ),
                   Container(
@@ -495,7 +562,7 @@ class _PoiMarker extends StatelessWidget {
                     height: 8,
                     margin: const EdgeInsets.only(top: 13),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF17723A),
+                      color: Colors.white,
                       shape: BoxShape.circle,
                     ),
                   ),

@@ -45,6 +45,19 @@ Finder etiquetaSemantica(String etiqueta) => find.byWidgetPredicate(
   (widget) => widget is Semantics && widget.properties.label == etiqueta,
 );
 
+/// Desplaza la ficha hasta que el objetivo entre en pantalla.
+///
+/// La ficha es un ListView, asi que solo construye lo visible: sus secciones
+/// inferiores no existen en el arbol hasta que se desplaza hacia ellas.
+Future<void> desplazarFichaHasta(WidgetTester tester, Finder objetivo) async {
+  await tester.scrollUntilVisible(
+    objetivo,
+    180,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pump();
+}
+
 /// Repositorio de prueba: las pruebas no tocan la red ni Supabase.
 class RepositorioFalso implements RepositorioContenido {
   RepositorioFalso({
@@ -186,9 +199,105 @@ void main() {
 
     // Tres POIs, pero solo dos traen map_x/map_y. El tercero se omite en lugar
     // de inventarle una posicion.
-    expect(find.byIcon(Icons.location_on_rounded), findsNWidgets(2));
+    //
+    // Se comprueba por etiqueta y no contando iconos: cada marcador dibuja dos
+    // glifos superpuestos para que el reborde blanco lo separe del fondo, asi
+    // que contar iconos mide el estilo, no el comportamiento.
     expect(etiquetaSemantica('Biblioteca'), findsOneWidget);
+    expect(etiquetaSemantica('Zona de comidas'), findsOneWidget);
     expect(etiquetaSemantica('Murales UTB'), findsNothing);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('tocar un marcador abre la ficha del POI, no el visor 360', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      envolver(
+        const HomeScreen(),
+        repositorio: RepositorioFalso(pois: poisDePrueba),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(etiquetaSemantica('Biblioteca'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Antes se saltaba directo a descargar una panoramica a pantalla completa,
+    // de modo que un POI sin panoramica no ofrecia nada.
+    expect(find.byType(RecorridoScreen), findsNothing);
+    expect(find.text('Biblioteca'), findsWidgets);
+
+    await desplazarFichaHasta(tester, find.text('Ver en 360'));
+    expect(find.text('Ver en 360'), findsOneWidget);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('la ficha nombra cada recurso que falta en vez de callarlo', (
+    WidgetTester tester,
+  ) async {
+    // RF-16, prioridad alta. Hoy es el caso corriente y no la excepcion:
+    // ningun POI tiene multimedia cargada todavia.
+    await tester.pumpWidget(
+      envolver(
+        const HomeScreen(),
+        repositorio: RepositorioFalso(pois: poisDePrueba),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(etiquetaSemantica('Biblioteca'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.textContaining('no hay descripción'), findsOneWidget);
+    expect(find.textContaining('no tiene fotos'), findsOneWidget);
+
+    await desplazarFichaHasta(tester, find.textContaining('no tiene video'));
+    expect(find.textContaining('no tiene video'), findsOneWidget);
+
+    await desplazarFichaHasta(
+      tester,
+      find.textContaining('no tiene audio narrado'),
+    );
+    expect(find.textContaining('no tiene audio narrado'), findsOneWidget);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('el marcador responde en toda su caja, no solo en el glifo', (
+    WidgetTester tester,
+  ) async {
+    // El fallo original: el GestureDetector usaba HitTestBehavior.deferToChild,
+    // asi que solo el glifo pintado absorbia el toque. Medido en emulador daba
+    // 36x36 dp efectivos frente a los 48 que exige Material. Esta prueba toca
+    // cerca de la esquina de la caja -fuera del glifo- y exige que abra igual.
+    await tester.pumpWidget(
+      envolver(
+        const HomeScreen(),
+        repositorio: RepositorioFalso(pois: poisDePrueba),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final marcador = etiquetaSemantica('Biblioteca');
+    final caja = tester.getRect(marcador);
+    expect(caja.width, greaterThanOrEqualTo(48));
+    expect(caja.height, greaterThanOrEqualTo(48));
+
+    // Cuatro pixeles hacia dentro desde la esquina superior izquierda: zona
+    // muerta con el comportamiento anterior.
+    await tester.tapAt(caja.topLeft + const Offset(4, 4));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Biblioteca'), findsWidgets);
 
     await drenarTemporizadores(tester);
   });

@@ -16,6 +16,11 @@ class RepositorioContenido {
 
   static const _tiempoLimite = Duration(seconds: 15);
 
+  // Ojo con `order()`: en el cliente de Supabase es DESCENDENTE por defecto.
+  // Sin `ascending: true` el recorrido se listaba del ultimo al primero y las
+  // escenas salian en orden inverso, lo que ademas cambia cual cae en
+  // `escenas.first` cuando ninguna esta marcada como principal.
+
   /// POIs visibles para el usuario actual.
   ///
   /// La lista puede ser mas corta que el total en base: RLS descarta los que no
@@ -27,7 +32,7 @@ class RepositorioContenido {
           .select()
           .eq('lugar_id', lugarId)
           .eq('activo', true)
-          .order('id')
+          .order('id', ascending: true)
           .timeout(_tiempoLimite);
 
       return filas.map(Poi.fromJson).toList();
@@ -45,7 +50,7 @@ class RepositorioContenido {
           .from('escenas')
           .select()
           .eq('lugar_id', lugarId)
-          .order('orden')
+          .order('orden', ascending: true)
           .timeout(_tiempoLimite);
 
       final escenas = filasEscenas.map(Escena.fromJson).toList();
@@ -89,7 +94,7 @@ class RepositorioContenido {
           .from('medios')
           .select()
           .eq('poi_id', poiId)
-          .order('orden')
+          .order('orden', ascending: true)
           .timeout(_tiempoLimite);
 
       return PoiDetalle(

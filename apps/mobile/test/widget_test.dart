@@ -8,7 +8,10 @@ import 'package:utb_tour/datos/repositorio_contenido.dart';
 import 'package:utb_tour/loading_screen.dart';
 import 'package:utb_tour/main.dart';
 import 'package:utb_tour/nucleo/errores.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:utb_tour/datos/progreso.dart';
 import 'package:utb_tour/nucleo/rutas.dart';
+import 'package:utb_tour/ui/recorrido_completado.dart';
 import 'package:utb_tour/recorrido_screen.dart';
 
 // Dos peculiaridades de estas pantallas condicionan como se prueban:
@@ -125,6 +128,10 @@ Widget envolver(Widget hijo, {RepositorioContenido? repositorio}) {
 }
 
 void main() {
+  // El progreso se guarda en el dispositivo; sin esto el canal nativo no existe
+  // en las pruebas y cada lectura cae al manejador de error.
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   testWidgets('arranca en la pantalla de carga', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -298,6 +305,137 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Biblioteca'), findsWidgets);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('la pestana Recorrido lista los lugares y ofrece empezar', (
+    WidgetTester tester,
+  ) async {
+    // Antes era un marcador de posicion, y el unico camino al visor 360 era
+    // acertar a un punto sin rotulo en el mapa (RF-21).
+    await tester.pumpWidget(
+      envolver(
+        const HomeScreen(),
+        repositorio: RepositorioFalso(pois: poisDePrueba),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(etiquetaSemantica('Recorrido'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('0 de 3 lugares'), findsOneWidget);
+    expect(find.text('Empezar recorrido'), findsOneWidget);
+    // Incluye el POI sin coordenadas: la lista no depende de estar calibrado.
+    expect(find.text('Murales UTB'), findsOneWidget);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('el progreso se refleja en el contador y en cada fila', (
+    WidgetTester tester,
+  ) async {
+    // RF-19: el mapa no sabia decir cuales ya habia visto el usuario.
+    late WidgetRef referencia;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositorioContenidoProvider.overrideWithValue(
+            RepositorioFalso(pois: poisDePrueba),
+          ),
+        ],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) {
+              referencia = ref;
+              return const HomeScreen();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(etiquetaSemantica('Recorrido'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('0 de 3 lugares'), findsOneWidget);
+
+    referencia.read(progresoProvider.notifier).marcarVisitado(1);
+    await tester.pump();
+
+    expect(find.text('1 de 3 lugares'), findsOneWidget);
+    expect(etiquetaSemantica('Biblioteca, ya visitado'), findsOneWidget);
+    expect(find.text('Continuar recorrido'), findsOneWidget);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('visitar todo cambia el estado del recorrido', (
+    WidgetTester tester,
+  ) async {
+    late WidgetRef referencia;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositorioContenidoProvider.overrideWithValue(
+            RepositorioFalso(pois: poisDePrueba),
+          ),
+        ],
+        child: MaterialApp(
+          home: Consumer(
+            builder: (context, ref, _) {
+              referencia = ref;
+              return const HomeScreen();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(etiquetaSemantica('Recorrido'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    for (final poi in poisDePrueba) {
+      referencia.read(progresoProvider.notifier).marcarVisitado(poi.id);
+    }
+    await tester.pump();
+
+    expect(find.text('3 de 3 lugares'), findsOneWidget);
+    expect(find.text('Recorrido completo'), findsOneWidget);
+    expect(find.text('Volver a empezar'), findsOneWidget);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('el cierre del recorrido reconoce el logro', (
+    WidgetTester tester,
+  ) async {
+    // RF-20. El KPI declarado es completar los cinco POI y la aplicacion no
+    // reconocia ese momento de ninguna forma.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () => mostrarRecorridoCompletado(context),
+              child: const Text('abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('abrir'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Conociste todo el recorrido'), findsOneWidget);
+    expect(find.text('Seguir explorando'), findsOneWidget);
 
     await drenarTemporizadores(tester);
   });

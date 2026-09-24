@@ -10,6 +10,7 @@ import 'datos/proveedores.dart';
 import 'nucleo/configuracion.dart';
 import 'nucleo/rutas.dart';
 import 'ui/ficha_poi.dart';
+import 'ui/pestana_recorrido.dart';
 import 'ui/vista_async.dart';
 
 Future<void> main() async {
@@ -56,19 +57,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
 
-  void _onPoiTap(Poi poi) {
-    mostrarFichaPoi(
-      context,
-      poiId: poi.id,
-      alVerEn360: () {
-        // Cerrar la ficha antes de navegar: al volver del visor el usuario
-        // espera el mapa, no una hoja abierta sobre el.
-        Navigator.of(context).pop();
-        context.push(
-          Rutas.haciaRecorrido(poi.lugarId, escenaId: poi.escenaPrincipalId),
-        );
-      },
-    );
+  void _onPoiTap(Poi poi, int totalPois) {
+    abrirPoi(context, ref, poi: poi, totalPois: totalPois);
   }
 
   @override
@@ -129,18 +119,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ref.invalidate(poisProvider(Configuracion.lugarPorDefecto)),
             enDatos: (lista) => _MapaCampus(
               pois: lista,
-              alTocarPoi: _onPoiTap,
+              alTocarPoi: (poi) => _onPoiTap(poi, lista.length),
             ).animate().fadeIn(duration: 420.ms),
           ),
         );
       case 1:
-        return const _PagePlaceholder(
-          key: ValueKey('recorrido'),
-          assetPath: 'android/app/src/assets/recorrido.png',
-          title: 'Recorrido inmersivo',
-          message:
-              'Siguiente etapa: vista 360 en primera persona con hotspots.',
-        );
+        return const PestanaRecorrido(key: ValueKey('recorrido'));
       default:
         return const _PagePlaceholder(
           key: ValueKey('perfil'),

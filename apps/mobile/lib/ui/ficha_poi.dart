@@ -2,10 +2,48 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../datos/modelos/modelos.dart';
+import '../datos/progreso.dart';
 import '../datos/proveedores.dart';
+import '../nucleo/rutas.dart';
+import 'recorrido_completado.dart';
 import 'reproductores.dart';
 import 'vista_async.dart';
+
+/// Abre un punto de interés y registra la visita (RF-19).
+///
+/// Es la puerta única desde el mapa y desde la lista del recorrido, para que
+/// ambas superficies cuenten el progreso igual.
+Future<void> abrirPoi(
+  BuildContext context,
+  WidgetRef ref, {
+  required Poi poi,
+  required int totalPois,
+}) async {
+  final primeraVez = ref.read(progresoProvider.notifier).marcarVisitado(poi.id);
+
+  await mostrarFichaPoi(
+    context,
+    poiId: poi.id,
+    alVerEn360: () {
+      // Cerrar la ficha antes de navegar: al volver del visor el usuario
+      // espera el mapa, no una hoja abierta sobre él.
+      Navigator.of(context).pop();
+      context.push(
+        Rutas.haciaRecorrido(poi.lugarId, escenaId: poi.escenaPrincipalId),
+      );
+    },
+  );
+
+  // El cierre se muestra al salir de la ficha y no encima de ella: apilar dos
+  // hojas esconde justo el momento que se quiere celebrar.
+  if (!primeraVez || !context.mounted) return;
+  if (ref.read(progresoProvider).length >= totalPois) {
+    await mostrarRecorridoCompletado(context);
+  }
+}
 
 /// Abre la ficha de un punto de interés.
 ///

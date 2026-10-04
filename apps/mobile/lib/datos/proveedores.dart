@@ -29,24 +29,11 @@ final poiDetalleProvider = FutureProvider.family<PoiDetalle, int>((ref, poiId) {
   return ref.watch(repositorioContenidoProvider).obtenerPoiDetalle(poiId);
 });
 
-/// Escena que se esta viendo dentro de un recorrido.
-///
-/// Vive aparte de [recorridoProvider] para que moverse entre escenas no vuelva
-/// a pedir datos: el grafo ya esta cargado en memoria.
-final escenaActualProvider = NotifierProvider.family<EscenaActual, int?, int>(
-  EscenaActual.new,
-);
-
-class EscenaActual extends FamilyNotifier<int?, int> {
-  @override
-  int? build(int lugarId) {
-    // Arranca en la escena principal en cuanto el recorrido este disponible.
-    final recorrido = ref.watch(recorridoProvider(lugarId)).valueOrNull;
-    return recorrido?.escenaInicial?.id;
-  }
-
-  void irA(int escenaId) => state = escenaId;
-}
+// La escena que se esta viendo NO vive en un provider. Estuvo en uno indexado
+// por lugarId, que se autoinicializaba a la escena principal del lugar; como
+// los cinco POI comparten lugar, ese valor nunca era nulo y tapaba la escena
+// que pedia la ruta: cualquier POI abria la Biblioteca. Ahora es estado de
+// RecorridoScreen, que es su alcance real: una pantalla, un recorrido.
 
 /// Garantiza una sesion antes de consultar contenido.
 ///

@@ -67,6 +67,8 @@ _Escena _$EscenaFromJson(Map<String, dynamic> json) => _Escena(
   imagenUrlBaja: json['imagen_url_baja'] as String?,
   esEscenaPrincipal: json['es_escena_principal'] as bool? ?? false,
   orden: (json['orden'] as num?)?.toInt() ?? 0,
+  vistaInicialYaw: (json['vista_inicial_yaw'] as num?)?.toDouble(),
+  vistaInicialPitch: (json['vista_inicial_pitch'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$EscenaToJson(_Escena instance) => <String, dynamic>{
@@ -78,6 +80,8 @@ Map<String, dynamic> _$EscenaToJson(_Escena instance) => <String, dynamic>{
   'imagen_url_baja': instance.imagenUrlBaja,
   'es_escena_principal': instance.esEscenaPrincipal,
   'orden': instance.orden,
+  'vista_inicial_yaw': instance.vistaInicialYaw,
+  'vista_inicial_pitch': instance.vistaInicialPitch,
 };
 
 _Hotspot _$HotspotFromJson(Map<String, dynamic> json) => _Hotspot(

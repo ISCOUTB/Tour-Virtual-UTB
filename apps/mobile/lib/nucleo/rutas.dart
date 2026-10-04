@@ -17,12 +17,25 @@ abstract final class Rutas {
   }
 }
 
+/// Pantalla por la que arranca la aplicacion.
+///
+/// Normalmente es la de carga. Se puede cambiar en tiempo de compilacion para
+/// abrir una pantalla concreta sin navegar hasta ella, que es lo que permite
+/// inspeccionar el visor 360 sin depender de clics sinteticos:
+///
+/// ```bash
+/// flutter run -d windows --dart-define=RUTA_INICIAL=/recorrido/1
+/// ```
+const _rutaInicialConfigurada = String.fromEnvironment('RUTA_INICIAL');
+
 /// Router de la aplicacion.
 ///
 /// Es una fabrica y no una constante para que cada prueba pueda partir de un
 /// historial de navegacion limpio.
-GoRouter crearEnrutador({String ubicacionInicial = Rutas.carga}) => GoRouter(
-  initialLocation: ubicacionInicial,
+GoRouter crearEnrutador({String? ubicacionInicial}) => GoRouter(
+  initialLocation:
+      ubicacionInicial ??
+      (_rutaInicialConfigurada.isEmpty ? Rutas.carga : _rutaInicialConfigurada),
   routes: [
     GoRoute(
       path: Rutas.carga,

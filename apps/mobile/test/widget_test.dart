@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,11 +67,13 @@ class RepositorioFalso implements RepositorioContenido {
   RepositorioFalso({
     this.pois = const [],
     this.recorrido = const Recorrido(escenas: [], hotspotsPorEscena: {}),
+    this.medios = const [],
     this.fallo,
   });
 
   final List<Poi> pois;
   final Recorrido recorrido;
+  final List<Medio> medios;
 
   /// Cuando no es nulo, toda consulta falla con este error.
   final FalloApp? fallo;
@@ -93,7 +96,10 @@ class RepositorioFalso implements RepositorioContenido {
   @override
   Future<PoiDetalle> obtenerPoiDetalle(int poiId) async {
     if (fallo != null) throw fallo!;
-    return PoiDetalle(poi: pois.firstWhere((p) => p.id == poiId));
+    return PoiDetalle(
+      poi: pois.firstWhere((p) => p.id == poiId),
+      medios: medios.where((m) => m.poiId == poiId).toList(),
+    );
   }
 
   @override
@@ -213,6 +219,66 @@ void main() {
     expect(etiquetaSemantica('Biblioteca'), findsOneWidget);
     expect(etiquetaSemantica('Zona de comidas'), findsOneWidget);
     expect(etiquetaSemantica('Murales UTB'), findsNothing);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('el encuadre inicial del mapa no deja bandas vacias', (
+    WidgetTester tester,
+  ) async {
+    // El lienzo se ajustaba a la caja de los POI aunque eso lo dejara mas bajo
+    // que el visor, y encima y debajo del campus quedaba el fondo a la vista:
+    // unos 45 px arriba y 50 abajo en un telefono vertical. Parecia margen de
+    // la ilustracion y era la camara.
+    //
+    // Hace falta proporcion de telefono: el lienzo de prueba por defecto es
+    // apaisado, 800x600, y ahi el ajuste a los POI ya cubre el visor de sobra.
+    // Con esa medida la prueba pasa aunque el defecto siga puesto.
+    tester.view.physicalSize = const Size(430, 936);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      envolver(
+        const HomeScreen(),
+        repositorio: RepositorioFalso(pois: poisDePrueba),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    // El encuadre se aplica en un addPostFrameCallback.
+    await tester.pump();
+
+    final visor = find.byType(InteractiveViewer);
+    expect(visor, findsOneWidget);
+
+    final hueco = tester.getRect(visor);
+    // El hijo del InteractiveViewer es el lienzo: la ilustracion mas los
+    // marcadores, ya transformado por la matriz de la camara.
+    final lienzo = tester.getRect(
+      find.descendant(of: visor, matching: find.byType(Stack)).first,
+    );
+
+    expect(
+      lienzo.top,
+      lessThanOrEqualTo(hueco.top + precisionErrorTolerance),
+      reason: 'banda vacia sobre el mapa',
+    );
+    expect(
+      lienzo.bottom,
+      greaterThanOrEqualTo(hueco.bottom - precisionErrorTolerance),
+      reason: 'banda vacia bajo el mapa',
+    );
+    expect(
+      lienzo.left,
+      lessThanOrEqualTo(hueco.left + precisionErrorTolerance),
+      reason: 'banda vacia a la izquierda del mapa',
+    );
+    expect(
+      lienzo.right,
+      greaterThanOrEqualTo(hueco.right - precisionErrorTolerance),
+      reason: 'banda vacia a la derecha del mapa',
+    );
 
     await drenarTemporizadores(tester);
   });
@@ -436,6 +502,86 @@ void main() {
 
     expect(find.text('Conociste todo el recorrido'), findsOneWidget);
     expect(find.text('Seguir explorando'), findsOneWidget);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('el audio narrado va delante del video en la ficha', (
+    WidgetTester tester,
+  ) async {
+    // Es el unico medio que existe para los cinco lugares. Detras de la
+    // seccion de video, vacia en todos, quedaba escondido bajo un hueco.
+    await tester.pumpWidget(
+      envolver(
+        const HomeScreen(),
+        repositorio: RepositorioFalso(
+          pois: poisDePrueba,
+          medios: const [
+            Medio(
+              id: 1,
+              poiId: 1,
+              tipo: TipoMedio.audio,
+              url: 'https://placeholder.invalid/audio/biblioteca.mp3',
+              textoAlt: 'Audio narrado de la Biblioteca',
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(etiquetaSemantica('Biblioteca'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await desplazarFichaHasta(tester, find.text('Video'));
+
+    final audio = tester.getTopLeft(find.text('Audio narrado')).dy;
+    final video = tester.getTopLeft(find.text('Video')).dy;
+    expect(audio, lessThan(video));
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('el visor abre la escena que pide la ruta, no la principal', (
+    WidgetTester tester,
+  ) async {
+    // Los cinco POI comparten lugar, y la escena actual vivia en un provider
+    // indexado por lugarId que se autoinicializaba a la escena principal del
+    // lugar. Como nunca valia null, la escena de la ruta jamas se consultaba
+    // y cualquier POI abria la Biblioteca.
+    await tester.pumpWidget(
+      envolver(
+        const RecorridoScreen(lugarId: 1, escenaInicialId: 3),
+        repositorio: RepositorioFalso(
+          recorrido: const Recorrido(
+            escenas: [
+              Escena(
+                id: 1,
+                lugarId: 1,
+                nombre: 'Biblioteca',
+                imagenUrl: 'https://placeholder.invalid/360/biblioteca.jpg',
+                esEscenaPrincipal: true,
+              ),
+              Escena(
+                id: 3,
+                lugarId: 1,
+                nombre: 'Enfermeria',
+                imagenUrl: 'https://placeholder.invalid/360/enfermeria.jpg',
+              ),
+            ],
+            hotspotsPorEscena: {},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Enfermeria'), findsOneWidget);
+    expect(find.text('Biblioteca'), findsNothing);
 
     await drenarTemporizadores(tester);
   });

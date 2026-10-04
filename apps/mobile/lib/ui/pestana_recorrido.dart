@@ -86,8 +86,12 @@ class _Lista extends ConsumerWidget {
         const SizedBox(height: 22),
 
         FilledButton.icon(
-          onPressed: () =>
-              abrirPoi(context, ref, poi: siguiente, totalPois: pois.length),
+          onPressed: () {
+            // «Volver a empezar» no reiniciaba nada: abría el primer lugar y
+            // el recorrido seguía marcado como completo.
+            if (completo) ref.read(progresoProvider.notifier).reiniciar();
+            abrirPoi(context, ref, poi: siguiente, totalPois: pois.length);
+          },
           icon: Icon(
             completo ? Icons.replay_rounded : Icons.play_arrow_rounded,
           ),

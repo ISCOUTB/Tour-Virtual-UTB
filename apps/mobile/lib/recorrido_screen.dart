@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,34 +57,39 @@ class RecorridoScreen extends ConsumerWidget {
         valor: recorrido,
         sobreFondoOscuro: true,
         alReintentar: () => ref.invalidate(recorridoProvider(lugarId)),
-        enDatos: (datos) => _Visor(
-          lugarId: lugarId,
-          recorrido: datos,
-          escenaInicialId: escenaInicialId,
-        ),
+        enDatos: (datos) =>
+            _Visor(recorrido: datos, escenaInicialId: escenaInicialId),
       ),
     );
   }
 }
 
-class _Visor extends ConsumerWidget {
-  const _Visor({
-    required this.lugarId,
-    required this.recorrido,
-    this.escenaInicialId,
-  });
+class _Visor extends StatefulWidget {
+  const _Visor({required this.recorrido, this.escenaInicialId});
 
-  final int lugarId;
   final Recorrido recorrido;
   final int? escenaInicialId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Prioridad: escena que el usuario eligio navegando, luego la de entrada
-    // pedida por la ruta, y por ultimo la principal del lugar. Se resuelve al
-    // leer y no escribiendo estado durante el build.
-    final escenaId = ref.watch(escenaActualProvider(lugarId));
-    final escena = switch (escenaId ?? escenaInicialId) {
+  State<_Visor> createState() => _VisorState();
+}
+
+class _VisorState extends State<_Visor> {
+  /// Escena a la que el usuario ha navegado con los hotspots.
+  ///
+  /// Nula mientras no se mueva, y entonces manda la que pidio la ruta. Vivio
+  /// en un provider indexado por lugarId que se autoinicializaba a la escena
+  /// principal del lugar: como nunca era nulo, la escena de la ruta no se
+  /// llegaba a mirar y todos los POI abrian la Biblioteca.
+  int? _elegida;
+
+  @override
+  Widget build(BuildContext context) {
+    final recorrido = widget.recorrido;
+
+    // Prioridad: lo que el usuario eligio navegando, luego la entrada que pide
+    // la ruta, y por ultimo la escena principal del lugar.
+    final escena = switch (_elegida ?? widget.escenaInicialId) {
       final int id => recorrido.escenaPorId(id) ?? recorrido.escenaInicial,
       null => recorrido.escenaInicial,
     };
@@ -115,7 +122,7 @@ class _Visor extends ConsumerWidget {
                 height: 60,
                 widget: _BotonHotspot(
                   hotspot: hotspot,
-                  alTocar: () => _tocarHotspot(context, ref, hotspot),
+                  alTocar: () => _tocarHotspot(context, hotspot),
                 ),
               ),
           ],
@@ -131,12 +138,12 @@ class _Visor extends ConsumerWidget {
     );
   }
 
-  void _tocarHotspot(BuildContext context, WidgetRef ref, Hotspot hotspot) {
+  void _tocarHotspot(BuildContext context, Hotspot hotspot) {
     switch (hotspot.tipo) {
       case TipoHotspot.navegacion:
         final destino = hotspot.escenaDestinoId;
-        if (destino != null && recorrido.escenaPorId(destino) != null) {
-          ref.read(escenaActualProvider(lugarId).notifier).irA(destino);
+        if (destino != null && widget.recorrido.escenaPorId(destino) != null) {
+          setState(() => _elegida = destino);
         }
       case TipoHotspot.info:
         final poiId = hotspot.poiId;
@@ -175,7 +182,7 @@ class _Panorama extends StatefulWidget {
 enum _EstadoPanorama { cargando, lista, fallida }
 
 class _PanoramaState extends State<_Panorama> {
-  late ImageProvider _proveedor;
+  ImageProvider? _proveedor;
   ImageStream? _flujo;
   ImageStreamListener? _oyente;
   var _estado = _EstadoPanorama.cargando;
@@ -200,28 +207,66 @@ class _PanoramaState extends State<_Panorama> {
     _oyente = null;
   }
 
-  void _resolver() {
+  /// Carga primero la version ligera y luego la completa.
+  ///
+  /// Una equirectangular de 4096 px tarda en llegar por una wifi compartida, y
+  /// hasta ahora el usuario solo veia un indicador de progreso sin tamano. La
+  /// ligera pesa unas veinte veces menos y deja ver la escena de inmediato.
+  Future<void> _resolver() async {
     _desuscribir();
     setState(() => _estado = _EstadoPanorama.cargando);
 
-    _proveedor = NetworkImage(widget.escena.imagenUrl);
-    _oyente = ImageStreamListener(
+    final baja = widget.escena.imagenUrlBaja;
+    var hayAlgo = false;
+    if (baja != null && baja.isNotEmpty) {
+      hayAlgo = await _intentar(NetworkImage(baja));
+    }
+
+    final completa = await _intentar(NetworkImage(widget.escena.imagenUrl));
+
+    // Solo es un fallo si no se pudo mostrar ninguna de las dos.
+    if (!completa && !hayAlgo && mounted) {
+      setState(() => _estado = _EstadoPanorama.fallida);
+    }
+  }
+
+  /// Resuelve un proveedor y lo adopta si carga. Devuelve si lo consiguio.
+  Future<bool> _intentar(ImageProvider proveedor) {
+    final listo = Completer<bool>();
+    late final ImageStreamListener oyente;
+
+    void terminar(bool exito) {
+      if (!listo.isCompleted) listo.complete(exito);
+    }
+
+    oyente = ImageStreamListener(
       (_, _) {
-        if (mounted) setState(() => _estado = _EstadoPanorama.lista);
+        if (mounted) {
+          setState(() {
+            _proveedor = proveedor;
+            _estado = _EstadoPanorama.lista;
+          });
+        }
+        terminar(true);
       },
       onError: (error, pila) {
         // Sin esto la excepcion sube al manejador global y el usuario solo ve
         // un area en blanco.
-        debugPrint('Panoramica ${widget.escena.imagenUrl} fallo: $error');
-        if (mounted) setState(() => _estado = _EstadoPanorama.fallida);
+        debugPrint('Panoramica fallo: $error');
+        terminar(false);
       },
     );
-    _flujo = _proveedor.resolve(const ImageConfiguration())
-      ..addListener(_oyente!);
+
+    final flujo = proveedor.resolve(const ImageConfiguration())
+      ..addListener(oyente);
+
+    return listo.future.whenComplete(() => flujo.removeListener(oyente));
   }
 
   @override
   Widget build(BuildContext context) {
+    final proveedor = _proveedor;
+
     return switch (_estado) {
       _EstadoPanorama.cargando => const ColoredBox(
         color: Colors.black,
@@ -257,12 +302,19 @@ class _PanoramaState extends State<_Panorama> {
           ),
         ),
       ),
-      _EstadoPanorama.lista => pv.PanoramaViewer(
-        animSpeed: 1.0,
+      _EstadoPanorama.lista when proveedor != null => pv.PanoramaViewer(
+        // Sin `animSpeed` el visor se queda quieto, que es el valor por
+        // defecto del paquete. Antes se le pasaba 1.0 y la escena giraba sola
+        // sin parar: arrastraba los hotspots fuera de cuadro, dejaba el
+        // AnimationController en repeat() para siempre y era justo el
+        // movimiento continuo que WCAG 2.2 pide no imponer. Ya no se pasa.
+        longitude: widget.escena.vistaInicialYaw ?? 0,
+        latitude: widget.escena.vistaInicialPitch ?? 0,
         sensorControl: _controlDeSensores,
         hotspots: widget.hotspots,
-        child: Image(image: _proveedor, fit: BoxFit.cover),
+        child: Image(image: proveedor, fit: BoxFit.cover),
       ),
+      _ => const ColoredBox(color: Colors.black),
     };
   }
 }

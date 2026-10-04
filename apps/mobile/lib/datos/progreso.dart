@@ -14,22 +14,45 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ProgresoRecorrido extends Notifier<Set<int>> {
   static const _clave = 'poisVisitados';
 
-  SharedPreferences? _prefs;
+  late final Future<SharedPreferences?> _prefs;
+  late final Future<void> _cargado;
+
+  /// Se completa cuando el progreso guardado ya está en memoria.
+  ///
+  /// Hay que esperarlo antes de preguntar si un lugar es nuevo. Sin esto, el
+  /// primer toque tras arrancar veía el conjunto todavía vacío, lo contaba
+  /// como primera visita y, para cuando se cerraba la ficha, la carga había
+  /// traído los lugares de sesiones anteriores: el cierre del recorrido
+  /// aparecía habiendo visitado uno solo.
+  Future<void> get cargado => _cargado;
 
   @override
   Set<int> build() {
-    _cargar();
+    _prefs = _abrir();
+    _cargado = _cargar();
     return const {};
   }
 
-  Future<void> _cargar() async {
+  Future<SharedPreferences?> _abrir() async {
     try {
-      _prefs = await SharedPreferences.getInstance();
-      final guardados = _prefs?.getStringList(_clave) ?? const [];
-      final ids = guardados.map(int.tryParse).nonNulls.toSet();
-      if (ids.isNotEmpty) state = ids;
+      return await SharedPreferences.getInstance();
     } catch (error) {
       // Perder el progreso no debe impedir usar la aplicación.
+      debugPrint('No se pudo abrir el almacén del progreso: $error');
+      return null;
+    }
+  }
+
+  Future<void> _cargar() async {
+    final prefs = await _prefs;
+    if (prefs == null) return;
+    try {
+      final guardados = prefs.getStringList(_clave) ?? const [];
+      final ids = guardados.map(int.tryParse).nonNulls.toSet();
+      // Unión y no asignación: entre el arranque y esta línea el usuario pudo
+      // marcar un lugar, y asignar lo borraría.
+      if (ids.isNotEmpty) state = {...state, ...ids};
+    } catch (error) {
       debugPrint('No se pudo leer el progreso: $error');
     }
   }
@@ -48,8 +71,12 @@ class ProgresoRecorrido extends Notifier<Set<int>> {
   }
 
   Future<void> _guardar() async {
+    // Esperar el almacén en vez de saltarse la escritura si todavía no está:
+    // antes, las visitas de los primeros segundos se perdían en silencio.
+    final prefs = await _prefs;
+    if (prefs == null) return;
     try {
-      await _prefs?.setStringList(
+      await prefs.setStringList(
         _clave,
         state.map((id) => id.toString()).toList(),
       );

@@ -22,7 +22,13 @@ Future<void> abrirPoi(
   required Poi poi,
   required int totalPois,
 }) async {
-  final primeraVez = ref.read(progresoProvider.notifier).marcarVisitado(poi.id);
+  final progreso = ref.read(progresoProvider.notifier);
+  // Milisegundos la primera vez, ya resuelto despues. Sin esperarlo, el
+  // conjunto todavia vacio hacia pasar por nuevo un lugar ya visitado.
+  await progreso.cargado;
+  if (!context.mounted) return;
+
+  final primeraVez = progreso.marcarVisitado(poi.id);
 
   await mostrarFichaPoi(
     context,
@@ -144,17 +150,9 @@ class _Contenido extends StatelessWidget {
           child: _Galeria(imagenes: detalle.imagenes),
         ),
 
-        const SizedBox(height: 26),
-        _Seccion(
-          titulo: 'Video',
-          child: detalle.video == null
-              ? const _Ausente(
-                  icono: Icons.videocam_off_outlined,
-                  mensaje: 'Este lugar aún no tiene video.',
-                )
-              : ReproductorVideo(medio: detalle.video!),
-        ),
-
+        // El audio va justo detrás de la descripción y la galería: es el
+        // contenido que sí existe para los cinco lugares, y dejarlo tras la
+        // sección de video —vacía en todos— lo escondía bajo un hueco.
         const SizedBox(height: 26),
         _Seccion(
           titulo: 'Audio narrado',
@@ -166,13 +164,35 @@ class _Contenido extends StatelessWidget {
               : ReproductorAudio(medio: detalle.audio!),
         ),
 
-        const SizedBox(height: 30),
-        FilledButton.icon(
-          onPressed: alVerEn360,
-          icon: const Icon(Icons.threesixty_rounded),
-          label: const Text('Ver en 360'),
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+        const SizedBox(height: 26),
+        _Seccion(
+          titulo: 'Video',
+          child: detalle.video == null
+              ? const _Ausente(
+                  icono: Icons.videocam_off_outlined,
+                  mensaje: 'Este lugar aún no tiene video.',
+                )
+              : ReproductorVideo(medio: detalle.video!),
         ),
+
+        const SizedBox(height: 30),
+        // Un POI sin escena no tiene nada que abrir: la ruta se quedaba sin
+        // el parametro de escena y el visor caia a la escena principal del
+        // lugar, es decir a otro sitio distinto del que se habia tocado.
+        if (poi.escenaPrincipalId != null)
+          FilledButton.icon(
+            onPressed: alVerEn360,
+            icon: const Icon(Icons.threesixty_rounded),
+            label: const Text('Ver en 360'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
+          )
+        else
+          const _Ausente(
+            icono: Icons.threesixty_outlined,
+            mensaje: 'Este lugar todavía no tiene recorrido en 360.',
+          ),
       ],
     );
   }

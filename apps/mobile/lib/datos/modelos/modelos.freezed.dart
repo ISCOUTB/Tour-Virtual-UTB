@@ -590,7 +590,10 @@ as bool,
 /// @nodoc
 mixin _$Escena {
 
- int get id;@JsonKey(name: 'lugar_id') int get lugarId;@JsonKey(name: 'poi_id') int? get poiId; String? get nombre;@JsonKey(name: 'imagen_url') String get imagenUrl;@JsonKey(name: 'imagen_url_baja') String? get imagenUrlBaja;@JsonKey(name: 'es_escena_principal') bool get esEscenaPrincipal; int get orden;
+ int get id;@JsonKey(name: 'lugar_id') int get lugarId;@JsonKey(name: 'poi_id') int? get poiId; String? get nombre;@JsonKey(name: 'imagen_url') String get imagenUrl;@JsonKey(name: 'imagen_url_baja') String? get imagenUrlBaja;@JsonKey(name: 'es_escena_principal') bool get esEscenaPrincipal; int get orden;/// Grados hacia donde abre la escena, mismo convenio que [Hotspot.yaw].
+/// Nulo abre al centro del archivo, que no apunta a nada en concreto.
+@JsonKey(name: 'vista_inicial_yaw') double? get vistaInicialYaw;/// Grados sobre el horizonte al abrir. Nulo abre al horizonte.
+@JsonKey(name: 'vista_inicial_pitch') double? get vistaInicialPitch;
 /// Create a copy of Escena
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -603,16 +606,16 @@ $EscenaCopyWith<Escena> get copyWith => _$EscenaCopyWithImpl<Escena>(this as Esc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Escena&&(identical(other.id, id) || other.id == id)&&(identical(other.lugarId, lugarId) || other.lugarId == lugarId)&&(identical(other.poiId, poiId) || other.poiId == poiId)&&(identical(other.nombre, nombre) || other.nombre == nombre)&&(identical(other.imagenUrl, imagenUrl) || other.imagenUrl == imagenUrl)&&(identical(other.imagenUrlBaja, imagenUrlBaja) || other.imagenUrlBaja == imagenUrlBaja)&&(identical(other.esEscenaPrincipal, esEscenaPrincipal) || other.esEscenaPrincipal == esEscenaPrincipal)&&(identical(other.orden, orden) || other.orden == orden));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Escena&&(identical(other.id, id) || other.id == id)&&(identical(other.lugarId, lugarId) || other.lugarId == lugarId)&&(identical(other.poiId, poiId) || other.poiId == poiId)&&(identical(other.nombre, nombre) || other.nombre == nombre)&&(identical(other.imagenUrl, imagenUrl) || other.imagenUrl == imagenUrl)&&(identical(other.imagenUrlBaja, imagenUrlBaja) || other.imagenUrlBaja == imagenUrlBaja)&&(identical(other.esEscenaPrincipal, esEscenaPrincipal) || other.esEscenaPrincipal == esEscenaPrincipal)&&(identical(other.orden, orden) || other.orden == orden)&&(identical(other.vistaInicialYaw, vistaInicialYaw) || other.vistaInicialYaw == vistaInicialYaw)&&(identical(other.vistaInicialPitch, vistaInicialPitch) || other.vistaInicialPitch == vistaInicialPitch));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,lugarId,poiId,nombre,imagenUrl,imagenUrlBaja,esEscenaPrincipal,orden);
+int get hashCode => Object.hash(runtimeType,id,lugarId,poiId,nombre,imagenUrl,imagenUrlBaja,esEscenaPrincipal,orden,vistaInicialYaw,vistaInicialPitch);
 
 @override
 String toString() {
-  return 'Escena(id: $id, lugarId: $lugarId, poiId: $poiId, nombre: $nombre, imagenUrl: $imagenUrl, imagenUrlBaja: $imagenUrlBaja, esEscenaPrincipal: $esEscenaPrincipal, orden: $orden)';
+  return 'Escena(id: $id, lugarId: $lugarId, poiId: $poiId, nombre: $nombre, imagenUrl: $imagenUrl, imagenUrlBaja: $imagenUrlBaja, esEscenaPrincipal: $esEscenaPrincipal, orden: $orden, vistaInicialYaw: $vistaInicialYaw, vistaInicialPitch: $vistaInicialPitch)';
 }
 
 
@@ -623,7 +626,7 @@ abstract mixin class $EscenaCopyWith<$Res>  {
   factory $EscenaCopyWith(Escena value, $Res Function(Escena) _then) = _$EscenaCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'lugar_id') int lugarId,@JsonKey(name: 'poi_id') int? poiId, String? nombre,@JsonKey(name: 'imagen_url') String imagenUrl,@JsonKey(name: 'imagen_url_baja') String? imagenUrlBaja,@JsonKey(name: 'es_escena_principal') bool esEscenaPrincipal, int orden
+ int id,@JsonKey(name: 'lugar_id') int lugarId,@JsonKey(name: 'poi_id') int? poiId, String? nombre,@JsonKey(name: 'imagen_url') String imagenUrl,@JsonKey(name: 'imagen_url_baja') String? imagenUrlBaja,@JsonKey(name: 'es_escena_principal') bool esEscenaPrincipal, int orden,@JsonKey(name: 'vista_inicial_yaw') double? vistaInicialYaw,@JsonKey(name: 'vista_inicial_pitch') double? vistaInicialPitch
 });
 
 
@@ -640,7 +643,7 @@ class _$EscenaCopyWithImpl<$Res>
 
 /// Create a copy of Escena
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? lugarId = null,Object? poiId = freezed,Object? nombre = freezed,Object? imagenUrl = null,Object? imagenUrlBaja = freezed,Object? esEscenaPrincipal = null,Object? orden = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? lugarId = null,Object? poiId = freezed,Object? nombre = freezed,Object? imagenUrl = null,Object? imagenUrlBaja = freezed,Object? esEscenaPrincipal = null,Object? orden = null,Object? vistaInicialYaw = freezed,Object? vistaInicialPitch = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,lugarId: null == lugarId ? _self.lugarId : lugarId // ignore: cast_nullable_to_non_nullable
@@ -650,7 +653,9 @@ as String?,imagenUrl: null == imagenUrl ? _self.imagenUrl : imagenUrl // ignore:
 as String,imagenUrlBaja: freezed == imagenUrlBaja ? _self.imagenUrlBaja : imagenUrlBaja // ignore: cast_nullable_to_non_nullable
 as String?,esEscenaPrincipal: null == esEscenaPrincipal ? _self.esEscenaPrincipal : esEscenaPrincipal // ignore: cast_nullable_to_non_nullable
 as bool,orden: null == orden ? _self.orden : orden // ignore: cast_nullable_to_non_nullable
-as int,
+as int,vistaInicialYaw: freezed == vistaInicialYaw ? _self.vistaInicialYaw : vistaInicialYaw // ignore: cast_nullable_to_non_nullable
+as double?,vistaInicialPitch: freezed == vistaInicialPitch ? _self.vistaInicialPitch : vistaInicialPitch // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
@@ -735,10 +740,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'lugar_id')  int lugarId, @JsonKey(name: 'poi_id')  int? poiId,  String? nombre, @JsonKey(name: 'imagen_url')  String imagenUrl, @JsonKey(name: 'imagen_url_baja')  String? imagenUrlBaja, @JsonKey(name: 'es_escena_principal')  bool esEscenaPrincipal,  int orden)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'lugar_id')  int lugarId, @JsonKey(name: 'poi_id')  int? poiId,  String? nombre, @JsonKey(name: 'imagen_url')  String imagenUrl, @JsonKey(name: 'imagen_url_baja')  String? imagenUrlBaja, @JsonKey(name: 'es_escena_principal')  bool esEscenaPrincipal,  int orden, @JsonKey(name: 'vista_inicial_yaw')  double? vistaInicialYaw, @JsonKey(name: 'vista_inicial_pitch')  double? vistaInicialPitch)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Escena() when $default != null:
-return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,_that.imagenUrlBaja,_that.esEscenaPrincipal,_that.orden);case _:
+return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,_that.imagenUrlBaja,_that.esEscenaPrincipal,_that.orden,_that.vistaInicialYaw,_that.vistaInicialPitch);case _:
   return orElse();
 
 }
@@ -756,10 +761,10 @@ return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'lugar_id')  int lugarId, @JsonKey(name: 'poi_id')  int? poiId,  String? nombre, @JsonKey(name: 'imagen_url')  String imagenUrl, @JsonKey(name: 'imagen_url_baja')  String? imagenUrlBaja, @JsonKey(name: 'es_escena_principal')  bool esEscenaPrincipal,  int orden)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'lugar_id')  int lugarId, @JsonKey(name: 'poi_id')  int? poiId,  String? nombre, @JsonKey(name: 'imagen_url')  String imagenUrl, @JsonKey(name: 'imagen_url_baja')  String? imagenUrlBaja, @JsonKey(name: 'es_escena_principal')  bool esEscenaPrincipal,  int orden, @JsonKey(name: 'vista_inicial_yaw')  double? vistaInicialYaw, @JsonKey(name: 'vista_inicial_pitch')  double? vistaInicialPitch)  $default,) {final _that = this;
 switch (_that) {
 case _Escena():
-return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,_that.imagenUrlBaja,_that.esEscenaPrincipal,_that.orden);case _:
+return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,_that.imagenUrlBaja,_that.esEscenaPrincipal,_that.orden,_that.vistaInicialYaw,_that.vistaInicialPitch);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -776,10 +781,10 @@ return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'lugar_id')  int lugarId, @JsonKey(name: 'poi_id')  int? poiId,  String? nombre, @JsonKey(name: 'imagen_url')  String imagenUrl, @JsonKey(name: 'imagen_url_baja')  String? imagenUrlBaja, @JsonKey(name: 'es_escena_principal')  bool esEscenaPrincipal,  int orden)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'lugar_id')  int lugarId, @JsonKey(name: 'poi_id')  int? poiId,  String? nombre, @JsonKey(name: 'imagen_url')  String imagenUrl, @JsonKey(name: 'imagen_url_baja')  String? imagenUrlBaja, @JsonKey(name: 'es_escena_principal')  bool esEscenaPrincipal,  int orden, @JsonKey(name: 'vista_inicial_yaw')  double? vistaInicialYaw, @JsonKey(name: 'vista_inicial_pitch')  double? vistaInicialPitch)?  $default,) {final _that = this;
 switch (_that) {
 case _Escena() when $default != null:
-return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,_that.imagenUrlBaja,_that.esEscenaPrincipal,_that.orden);case _:
+return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,_that.imagenUrlBaja,_that.esEscenaPrincipal,_that.orden,_that.vistaInicialYaw,_that.vistaInicialPitch);case _:
   return null;
 
 }
@@ -791,7 +796,7 @@ return $default(_that.id,_that.lugarId,_that.poiId,_that.nombre,_that.imagenUrl,
 @JsonSerializable()
 
 class _Escena implements Escena {
-  const _Escena({required this.id, @JsonKey(name: 'lugar_id') required this.lugarId, @JsonKey(name: 'poi_id') this.poiId, this.nombre, @JsonKey(name: 'imagen_url') required this.imagenUrl, @JsonKey(name: 'imagen_url_baja') this.imagenUrlBaja, @JsonKey(name: 'es_escena_principal') this.esEscenaPrincipal = false, this.orden = 0});
+  const _Escena({required this.id, @JsonKey(name: 'lugar_id') required this.lugarId, @JsonKey(name: 'poi_id') this.poiId, this.nombre, @JsonKey(name: 'imagen_url') required this.imagenUrl, @JsonKey(name: 'imagen_url_baja') this.imagenUrlBaja, @JsonKey(name: 'es_escena_principal') this.esEscenaPrincipal = false, this.orden = 0, @JsonKey(name: 'vista_inicial_yaw') this.vistaInicialYaw, @JsonKey(name: 'vista_inicial_pitch') this.vistaInicialPitch});
   factory _Escena.fromJson(Map<String, dynamic> json) => _$EscenaFromJson(json);
 
 @override final  int id;
@@ -802,6 +807,11 @@ class _Escena implements Escena {
 @override@JsonKey(name: 'imagen_url_baja') final  String? imagenUrlBaja;
 @override@JsonKey(name: 'es_escena_principal') final  bool esEscenaPrincipal;
 @override@JsonKey() final  int orden;
+/// Grados hacia donde abre la escena, mismo convenio que [Hotspot.yaw].
+/// Nulo abre al centro del archivo, que no apunta a nada en concreto.
+@override@JsonKey(name: 'vista_inicial_yaw') final  double? vistaInicialYaw;
+/// Grados sobre el horizonte al abrir. Nulo abre al horizonte.
+@override@JsonKey(name: 'vista_inicial_pitch') final  double? vistaInicialPitch;
 
 /// Create a copy of Escena
 /// with the given fields replaced by the non-null parameter values.
@@ -816,16 +826,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Escena&&(identical(other.id, id) || other.id == id)&&(identical(other.lugarId, lugarId) || other.lugarId == lugarId)&&(identical(other.poiId, poiId) || other.poiId == poiId)&&(identical(other.nombre, nombre) || other.nombre == nombre)&&(identical(other.imagenUrl, imagenUrl) || other.imagenUrl == imagenUrl)&&(identical(other.imagenUrlBaja, imagenUrlBaja) || other.imagenUrlBaja == imagenUrlBaja)&&(identical(other.esEscenaPrincipal, esEscenaPrincipal) || other.esEscenaPrincipal == esEscenaPrincipal)&&(identical(other.orden, orden) || other.orden == orden));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Escena&&(identical(other.id, id) || other.id == id)&&(identical(other.lugarId, lugarId) || other.lugarId == lugarId)&&(identical(other.poiId, poiId) || other.poiId == poiId)&&(identical(other.nombre, nombre) || other.nombre == nombre)&&(identical(other.imagenUrl, imagenUrl) || other.imagenUrl == imagenUrl)&&(identical(other.imagenUrlBaja, imagenUrlBaja) || other.imagenUrlBaja == imagenUrlBaja)&&(identical(other.esEscenaPrincipal, esEscenaPrincipal) || other.esEscenaPrincipal == esEscenaPrincipal)&&(identical(other.orden, orden) || other.orden == orden)&&(identical(other.vistaInicialYaw, vistaInicialYaw) || other.vistaInicialYaw == vistaInicialYaw)&&(identical(other.vistaInicialPitch, vistaInicialPitch) || other.vistaInicialPitch == vistaInicialPitch));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,lugarId,poiId,nombre,imagenUrl,imagenUrlBaja,esEscenaPrincipal,orden);
+int get hashCode => Object.hash(runtimeType,id,lugarId,poiId,nombre,imagenUrl,imagenUrlBaja,esEscenaPrincipal,orden,vistaInicialYaw,vistaInicialPitch);
 
 @override
 String toString() {
-  return 'Escena(id: $id, lugarId: $lugarId, poiId: $poiId, nombre: $nombre, imagenUrl: $imagenUrl, imagenUrlBaja: $imagenUrlBaja, esEscenaPrincipal: $esEscenaPrincipal, orden: $orden)';
+  return 'Escena(id: $id, lugarId: $lugarId, poiId: $poiId, nombre: $nombre, imagenUrl: $imagenUrl, imagenUrlBaja: $imagenUrlBaja, esEscenaPrincipal: $esEscenaPrincipal, orden: $orden, vistaInicialYaw: $vistaInicialYaw, vistaInicialPitch: $vistaInicialPitch)';
 }
 
 
@@ -836,7 +846,7 @@ abstract mixin class _$EscenaCopyWith<$Res> implements $EscenaCopyWith<$Res> {
   factory _$EscenaCopyWith(_Escena value, $Res Function(_Escena) _then) = __$EscenaCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'lugar_id') int lugarId,@JsonKey(name: 'poi_id') int? poiId, String? nombre,@JsonKey(name: 'imagen_url') String imagenUrl,@JsonKey(name: 'imagen_url_baja') String? imagenUrlBaja,@JsonKey(name: 'es_escena_principal') bool esEscenaPrincipal, int orden
+ int id,@JsonKey(name: 'lugar_id') int lugarId,@JsonKey(name: 'poi_id') int? poiId, String? nombre,@JsonKey(name: 'imagen_url') String imagenUrl,@JsonKey(name: 'imagen_url_baja') String? imagenUrlBaja,@JsonKey(name: 'es_escena_principal') bool esEscenaPrincipal, int orden,@JsonKey(name: 'vista_inicial_yaw') double? vistaInicialYaw,@JsonKey(name: 'vista_inicial_pitch') double? vistaInicialPitch
 });
 
 
@@ -853,7 +863,7 @@ class __$EscenaCopyWithImpl<$Res>
 
 /// Create a copy of Escena
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? lugarId = null,Object? poiId = freezed,Object? nombre = freezed,Object? imagenUrl = null,Object? imagenUrlBaja = freezed,Object? esEscenaPrincipal = null,Object? orden = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? lugarId = null,Object? poiId = freezed,Object? nombre = freezed,Object? imagenUrl = null,Object? imagenUrlBaja = freezed,Object? esEscenaPrincipal = null,Object? orden = null,Object? vistaInicialYaw = freezed,Object? vistaInicialPitch = freezed,}) {
   return _then(_Escena(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,lugarId: null == lugarId ? _self.lugarId : lugarId // ignore: cast_nullable_to_non_nullable
@@ -863,7 +873,9 @@ as String?,imagenUrl: null == imagenUrl ? _self.imagenUrl : imagenUrl // ignore:
 as String,imagenUrlBaja: freezed == imagenUrlBaja ? _self.imagenUrlBaja : imagenUrlBaja // ignore: cast_nullable_to_non_nullable
 as String?,esEscenaPrincipal: null == esEscenaPrincipal ? _self.esEscenaPrincipal : esEscenaPrincipal // ignore: cast_nullable_to_non_nullable
 as bool,orden: null == orden ? _self.orden : orden // ignore: cast_nullable_to_non_nullable
-as int,
+as int,vistaInicialYaw: freezed == vistaInicialYaw ? _self.vistaInicialYaw : vistaInicialYaw // ignore: cast_nullable_to_non_nullable
+as double?,vistaInicialPitch: freezed == vistaInicialPitch ? _self.vistaInicialPitch : vistaInicialPitch // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 

@@ -100,6 +100,13 @@ abstract class Escena with _$Escena {
     @Default(false)
     bool esEscenaPrincipal,
     @Default(0) int orden,
+
+    /// Grados hacia donde abre la escena, mismo convenio que [Hotspot.yaw].
+    /// Nulo abre al centro del archivo, que no apunta a nada en concreto.
+    @JsonKey(name: 'vista_inicial_yaw') double? vistaInicialYaw,
+
+    /// Grados sobre el horizonte al abrir. Nulo abre al horizonte.
+    @JsonKey(name: 'vista_inicial_pitch') double? vistaInicialPitch,
   }) = _Escena;
 
   factory Escena.fromJson(Map<String, dynamic> json) => _$EscenaFromJson(json);

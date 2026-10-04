@@ -66,12 +66,33 @@ void main() {
         'imagen_url_baja': null,
         'es_escena_principal': true,
         'orden': 0,
+        // Enteros, igual que en hotspots: la columna es double precision pero
+        // PostgREST devuelve -155 sin parte decimal.
+        'vista_inicial_yaw': -155,
+        'vista_inicial_pitch': -5,
         'creado_en': '2026-08-04T10:00:00+00:00',
         'actualizado_en': '2026-08-04T10:00:00+00:00',
       });
 
       expect(escena.imagenUrl, endsWith('entrada.jpg'));
       expect(escena.esEscenaPrincipal, isTrue);
+      expect(escena.vistaInicialYaw, -155);
+      expect(escena.vistaInicialPitch, -5);
+    });
+
+    test('una escena sin encuadrar deja la vista inicial nula', () {
+      // Las columnas son anulables para no bloquear la carga de contenido. El
+      // visor cae entonces al centro del archivo, como antes de calibrar.
+      final escena = Escena.fromJson(const {
+        'id': 2,
+        'lugar_id': 1,
+        'imagen_url': 'https://placeholder.invalid/360/otra.jpg',
+        'vista_inicial_yaw': null,
+        'vista_inicial_pitch': null,
+      });
+
+      expect(escena.vistaInicialYaw, isNull);
+      expect(escena.vistaInicialPitch, isNull);
     });
   });
 

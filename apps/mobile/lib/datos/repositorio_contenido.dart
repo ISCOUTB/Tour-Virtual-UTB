@@ -21,6 +21,37 @@ class RepositorioContenido {
   // escenas salian en orden inverso, lo que ademas cambia cual cae en
   // `escenas.first` cuando ninguna esta marcada como principal.
 
+  /// Convierte una ruta de objeto de Storage en URL publica.
+  ///
+  /// La base guarda "bucket/archivo" y no una URL absoluta, para que la misma
+  /// fila funcione en escritorio y en emulador, donde el anfitrion es
+  /// 10.0.2.2. Una URL absoluta se devuelve tal cual, que es como quedaran los
+  /// medios al moverlos a Cloudflare R2.
+  String _resolverMedio(String valor) {
+    if (valor.startsWith('http://') || valor.startsWith('https://')) {
+      return valor;
+    }
+    final corte = valor.indexOf('/');
+    if (corte <= 0) return valor;
+    return _cliente.storage
+        .from(valor.substring(0, corte))
+        .getPublicUrl(valor.substring(corte + 1));
+  }
+
+  Map<String, dynamic> _conMediosResueltos(
+    Map<String, dynamic> fila,
+    List<String> campos,
+  ) {
+    final copia = Map<String, dynamic>.from(fila);
+    for (final campo in campos) {
+      final valor = copia[campo];
+      if (valor is String && valor.isNotEmpty) {
+        copia[campo] = _resolverMedio(valor);
+      }
+    }
+    return copia;
+  }
+
   /// POIs visibles para el usuario actual.
   ///
   /// La lista puede ser mas corta que el total en base: RLS descarta los que no
@@ -53,7 +84,13 @@ class RepositorioContenido {
           .order('orden', ascending: true)
           .timeout(_tiempoLimite);
 
-      final escenas = filasEscenas.map(Escena.fromJson).toList();
+      final escenas = filasEscenas
+          .map(
+            (f) => Escena.fromJson(
+              _conMediosResueltos(f, const ['imagen_url', 'imagen_url_baja']),
+            ),
+          )
+          .toList();
       if (escenas.isEmpty) {
         throw const FalloSinContenido(
           'Este lugar todavia no tiene un recorrido publicado.',
@@ -66,9 +103,16 @@ class RepositorioContenido {
           .inFilter('escena_id', escenas.map((e) => e.id).toList())
           .timeout(_tiempoLimite);
 
-      final hotspots = filasHotspots.map(Hotspot.fromJson).toList();
+      final visibles = escenas.map((e) => e.id).toSet();
       final porEscena = <int, List<Hotspot>>{};
-      for (final hotspot in hotspots) {
+      for (final hotspot in filasHotspots.map(Hotspot.fromJson)) {
+        // Si RLS oculto la escena de destino, no se dibuja la puerta que lleva
+        // a ella: seria un control visible que al tocarlo no hace nada.
+        final destino = hotspot.escenaDestinoId;
+        if (hotspot.tipo == TipoHotspot.navegacion &&
+            (destino == null || !visibles.contains(destino))) {
+          continue;
+        }
         porEscena.putIfAbsent(hotspot.escenaId, () => []).add(hotspot);
       }
 
@@ -99,7 +143,9 @@ class RepositorioContenido {
 
       return PoiDetalle(
         poi: Poi.fromJson(fila),
-        medios: filasMedios.map(Medio.fromJson).toList(),
+        medios: filasMedios
+            .map((f) => Medio.fromJson(_conMediosResueltos(f, const ['url'])))
+            .toList(),
       );
     });
   }

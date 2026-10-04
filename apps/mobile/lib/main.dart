@@ -334,7 +334,6 @@ class _MapaCampusState extends State<_MapaCampus> {
   /// miniatura. Es un mapa apaisado dentro de una pantalla vertical.
   static const double _amplitud = 1.9;
 
-  static const double _escalaMinimaAbsoluta = 0.15;
   static const double _escalaMaxima = 2.6;
 
   final _controlador = TransformationController();
@@ -344,6 +343,23 @@ class _MapaCampusState extends State<_MapaCampus> {
   void dispose() {
     _controlador.dispose();
     super.dispose();
+  }
+
+  /// Escala por debajo de la cual el lienzo deja de cubrir el visor.
+  ///
+  /// Por debajo de ella aparecen bandas vacias: no son margen de la
+  /// ilustracion sino lienzo que se queda corto, y es lo que se veia arriba y
+  /// abajo del campus en una pantalla vertical.
+  ///
+  /// Un lienzo degenerado daria NaN, y `minScale` en NaN tumba el visor. En
+  /// ese caso se cae a 1.0, que no escala nada.
+  static double _escalaDeCobertura(Size ventana, Size lienzo) {
+    if (lienzo.width <= 0 || lienzo.height <= 0) return 1;
+    final cobertura = max(
+      ventana.width / lienzo.width,
+      ventana.height / lienzo.height,
+    );
+    return cobertura.isFinite && cobertura > 0 ? cobertura : 1;
   }
 
   /// Encuadra la vista sobre los POI la primera vez que se conoce el tamano.
@@ -375,23 +391,36 @@ class _MapaCampusState extends State<_MapaCampus> {
 
     final anchoCaja = max(der - izq, 1.0);
     final altoCaja = max(aba - arr, 1.0);
+
+    // Ajustar a la caja de los POI puede pedir menos zoom del que hace falta
+    // para tapar el visor, y entonces el encuadre arranca con una banda vacia.
+    // La cobertura manda sobre el ajuste.
     final escala = min(
       ventana.width / anchoCaja,
       ventana.height / altoCaja,
-    ).clamp(_escalaMinimaAbsoluta, _escalaMaxima);
+    ).clamp(_escalaDeCobertura(ventana, lienzo), _escalaMaxima);
 
     final centroX = (izq + der) / 2;
     final centroY = (arr + aba) / 2;
 
+    // Centrar en la caja puede sacar la camara del lienzo cuando los POI
+    // quedan contra un borde. Se empuja de vuelta adentro: InteractiveViewer
+    // no corrige la matriz que se le asigna, solo los gestos posteriores.
+    final anchoVisible = lienzo.width * escala;
+    final altoVisible = lienzo.height * escala;
+    final dx = (ventana.width / 2 - centroX * escala).clamp(
+      ventana.width - anchoVisible,
+      0.0,
+    );
+    final dy = (ventana.height / 2 - centroY * escala).clamp(
+      ventana.height - altoVisible,
+      0.0,
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _controlador.value = Matrix4.identity()
-        ..translateByDouble(
-          ventana.width / 2 - centroX * escala,
-          ventana.height / 2 - centroY * escala,
-          0,
-          1,
-        )
+        ..translateByDouble(dx, dy, 0, 1)
         ..scaleByDouble(escala, escala, 1, 1);
     });
   }
@@ -411,22 +440,18 @@ class _MapaCampusState extends State<_MapaCampus> {
         final lienzo = Size(ancho, ancho / _relacion);
         _encuadrar(restricciones.biggest, lienzo);
 
-        // Alejar siempre tiene que poder mostrar el campus entero, por mucho
-        // que haya crecido el lienzo para cubrir el alto.
-        final escalaMinima = (restricciones.maxWidth / lienzo.width).clamp(
-          _escalaMinimaAbsoluta,
-          0.6,
-        );
-
         return InteractiveViewer(
           transformationController: _controlador,
           constrained: false,
-          minScale: escalaMinima,
+          // El tope de alejamiento es la cobertura: mas atras solo hay vacio.
+          // El campus es apaisado y la pantalla vertical, asi que verlo entero
+          // de una vez obligaria a dejar entrar ese vacio; se recorre
+          // arrastrando.
+          minScale: _escalaDeCobertura(restricciones.biggest, lienzo),
           maxScale: _escalaMaxima,
-          boundaryMargin: EdgeInsets.symmetric(
-            horizontal: restricciones.maxWidth,
-            vertical: restricciones.maxHeight,
-          ),
+          // Sin margen el visor no puede salirse del lienzo, que es lo que
+          // mantiene el margen de la ilustracion fuera de cuadro.
+          boundaryMargin: EdgeInsets.zero,
           child: SizedBox(
             width: lienzo.width,
             height: lienzo.height,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 
@@ -176,8 +177,15 @@ class _ReproductorAudioState extends State<ReproductorAudio> {
   @override
   Widget build(BuildContext context) {
     if (_fallo != null) {
+      // `just_audio` se reparte en paquetes por plataforma y no todas tienen
+      // implementacion: sin la suya el canal nativo no existe y la llamada
+      // revienta con MissingPluginException. Decir «no pudimos cargar el
+      // audio» ahi manda a buscar un fallo de red que no existe.
+      final sinSoporte = _fallo is MissingPluginException;
       return _FalloMedio(
-        mensaje: 'No pudimos cargar el audio.',
+        mensaje: sinSoporte
+            ? 'El audio no se puede reproducir en esta plataforma.'
+            : 'No pudimos cargar el audio.',
         alReintentar: _preparar,
       );
     }

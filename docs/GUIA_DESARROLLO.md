@@ -6,9 +6,9 @@ ni material institucional sin autorización.
 
 ## 1. Estado actual
 
-El repositorio contiene la aplicación móvil Flutter y la base de datos local de
-Supabase. La API administrativa .NET y el panel web todavía no forman parte de
-este repositorio.
+El repositorio contiene la aplicación móvil Flutter, la base de datos local de
+Supabase y una API ASP.NET Core inicial importada bajo `services/api/`. La API
+todavía no está conectada al móvil y el panel web aún no existe.
 
 Ya está implementado:
 
@@ -21,6 +21,8 @@ Ya está implementado:
 - Rutas profundas para abrir un lugar y, opcionalmente, una escena concreta.
 - Migraciones SQL, pruebas de modelos y pruebas de widget.
 - CI para formato, análisis, pruebas, generación de código y APK de debug.
+- API inicial para lugares, escenas y hotspots, importada desde la rama
+  `backend`.
 
 ### Decisión importante de arquitectura
 
@@ -245,6 +247,10 @@ cambio relevante.
 
 ## 9. Coordinación con backend
 
+La API importada está documentada en
+[services/api/README.md](../services/api/README.md). Tiene un modelo de datos
+anterior al móvil actual y no debe conectarse todavía a las pantallas.
+
 Mientras el backend continúe en Supabase:
 
 - Las lecturas móviles pasan por PostgREST y las filtra RLS.
@@ -264,6 +270,19 @@ Cuando se inicie la migración a Firestore, el equipo debe acordar antes:
 
 No se debe eliminar RLS ni cambiar el repositorio móvil hasta tener una
 implementación verificable de esas garantías.
+
+### Secuencia de integración acordada
+
+1. Mantener `frontend-development` como base estable de la aplicación.
+2. Trabajar la API importada en una rama independiente bajo `services/api/`.
+3. Corregir proveedor de base de datos, versión de EF Core, secretos, CORS y
+   pruebas de arranque.
+4. Alinear DTOs y contrato con los modelos reales de Flutter y las migraciones.
+5. Probar lecturas anónimas, perfiles institucionales, medios y hotspots.
+6. Abrir un pull request de integración; no mezclar directamente ramas con
+   historias Git sin ancestro común.
+7. Cambiar el repositorio móvil solo después de verificar contrato y migración
+   de datos.
 
 ## 10. Flujo de trabajo Git
 

@@ -1,0 +1,33 @@
+name: API backend
+
+on:
+  push:
+    branches: [master, frontend-development, integration/backend-unification]
+    paths:
+      - 'services/api/**'
+      - '.github/workflows/api.yml'
+  pull_request:
+    paths:
+      - 'services/api/**'
+      - '.github/workflows/api.yml'
+
+defaults:
+  run:
+    working-directory: services/api
+
+jobs:
+  verificar:
+    name: Restaurar y compilar API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restaurar dependencias
+        run: dotnet restore
+
+      - name: Compilar
+        run: dotnet build --no-restore --configuration Release

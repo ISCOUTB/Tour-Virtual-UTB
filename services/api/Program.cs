@@ -5,7 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configurar la Base de Datos
 builder.Services.AddDbContext<TourDbContext>(options =>
-    options.UseNpgsql(
+    options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 
@@ -17,11 +17,29 @@ builder.Services.AddSwaggerGen();
 // 3. Configurar CORS (Permitir peticiones desde Flutter)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("Frontend", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        var origins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? [];
+
+        if (origins.Length == 0)
+        {
+            if (!builder.Environment.IsDevelopment())
+            {
+                throw new InvalidOperationException(
+                    "Configure Cors:AllowedOrigins fuera de Development.");
+            }
+
+            policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+            return;
+        }
+
+        policy.WithOrigins(origins)
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 
@@ -45,7 +63,7 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
-app.UseCors("AllowAll");
+app.UseCors("Frontend");
 
 app.UseAuthorization();
 

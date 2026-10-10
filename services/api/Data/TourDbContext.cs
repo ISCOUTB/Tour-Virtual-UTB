@@ -18,6 +18,12 @@ namespace TourVirtualUTB.Api.Data
                 .WithMany(e => e.HotspotsOrigen)
                 .HasForeignKey(h => h.EscenaOrigenId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Hotspot>()
+                .HasOne(h => h.EscenaDestino)
+                .WithMany()
+                .HasForeignKey(h => h.EscenaDestinoId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

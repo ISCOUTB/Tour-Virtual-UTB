@@ -12,6 +12,6 @@ namespace TourVirtualUTB.Api.DTOs
         public bool EsEscenaPrincipal { get; set; } = false;
 
         [Required]
-        public IFormFile ArchivoImagen { get; set; } // permite recibir archivos
+        public IFormFile? ArchivoImagen { get; set; }
     }
 }

@@ -10,6 +10,10 @@ namespace TourVirtualUTB.Api.Controllers
     [ApiController]
     public class EscenasController : ControllerBase
     {
+        private const long MaxImageBytes = 100 * 1024 * 1024;
+        private static readonly HashSet<string> AllowedExtensions =
+            new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".webp" };
+
         private readonly TourDbContext _context;
         private readonly IWebHostEnvironment _env;
 
@@ -29,18 +33,25 @@ namespace TourVirtualUTB.Api.Controllers
 
         // POST: api/Escenas -> Sube la imagen y la guarda
         [HttpPost]
+        [RequestSizeLimit(MaxImageBytes)]
         public async Task<ActionResult<Escena>> PostEscena([FromForm] EscenaCreateDto dto)
         {
             // 1. Validar que enviaron un archivo
             if (dto.ArchivoImagen == null || dto.ArchivoImagen.Length == 0)
                 return BadRequest("No se proporcionó ninguna imagen.");
 
+            if (dto.ArchivoImagen.Length > MaxImageBytes)
+                return BadRequest("La imagen supera el límite de 100 MB.");
+
+            var extension = Path.GetExtension(dto.ArchivoImagen.FileName);
+            if (!AllowedExtensions.Contains(extension))
+                return BadRequest("El formato debe ser JPG, PNG o WEBP.");
+
             // 2. Validar que el lugar (ej: Biblioteca) exista
             var lugarExiste = await _context.Lugares.AnyAsync(l => l.Id == dto.LugarId);
             if (!lugarExiste) return NotFound("El Lugar especificado no existe.");
 
             // 3. Crear el nombre del archivo (usamos Guid para que no se repitan nombres)
-            var extension = Path.GetExtension(dto.ArchivoImagen.FileName);
             var nombreArchivo = Guid.NewGuid().ToString() + extension;
 
             // FIX: Si WebRootPath viene nulo, calculamos la ruta manualmente desde la raíz del proyecto

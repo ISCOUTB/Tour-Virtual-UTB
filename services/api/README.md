@@ -15,20 +15,24 @@ La API importada usa otro modelo (`Lugar`, `Escena`, `Hotspot`) y otra
 configuración de persistencia. No se debe conectar el móvil a estos endpoints
 hasta completar el contrato y la migración de datos.
 
+La configuración actual usa SQL Server porque las migraciones y el paquete
+instalado están generados para SQL Server. La llamada anterior a `UseNpgsql`
+era inconsistente y ya fue corregida. Esto no decide la migración futura del
+móvil a Firestore.
+
 ## Bloqueadores técnicos detectados
 
-- `Program.cs` llama a `UseNpgsql`, pero el proyecto importado no declaraba el
-  paquete `Npgsql.EntityFrameworkCore.PostgreSQL`.
-- El proyecto declara .NET 9 con paquetes Entity Framework Core 8.
-- `appsettings.json` contiene una cadena de conexión de LocalDB/SQL Server,
-  incompatible con `UseNpgsql`.
+- El proyecto declara .NET 9 con paquetes Entity Framework Core 8; el equipo
+  backend debe alinear ambas versiones antes de producción.
+- La configuración local usa LocalDB/SQL Server; cada desarrollador debe
+  sustituirla por su entorno mediante user-secrets o variables de entorno.
 - Las migraciones fueron generadas para el modelo anterior y no corresponden al
   esquema Supabase actual.
 - La rama original incluía artefactos `.vs/`, `bin/`, `obj/` e imágenes de
   prueba. Los artefactos no se importaron y las imágenes quedan excluidas por
   `.gitignore`.
 
-Estos puntos se deben resolver en una rama de trabajo del backend, no
+Los puntos pendientes se deben resolver en una rama de trabajo del backend, no
 silenciosamente durante un cambio del frontend.
 
 ## Ejecución local provisional
@@ -59,8 +63,11 @@ Swagger queda habilitado en desarrollo. El puerto configurado actualmente es
 | POST | `/api/Hotspots` | Crear una conexión entre escenas |
 
 Estos endpoints son provisionales. Antes de exponerlos a usuarios finales
-deben añadirse autenticación, autorización, validación de archivos, límites de
-tamaño, auditoría, manejo de errores y una política CORS restringida.
+deben añadirse autenticación, autorización, auditoría y manejo de errores. La
+subida ya tiene una validación inicial de formato y tamaño, y CORS se configura
+con `Cors:AllowedOrigins`; una lista vacía conserva el comportamiento abierto
+solo para desarrollo local y hace fallar el arranque fuera de Development si no
+se configura explícitamente.
 
 ## Plan para conectarla con el móvil
 

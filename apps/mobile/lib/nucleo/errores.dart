@@ -46,7 +46,7 @@ final class FalloDeSesion extends FalloApp {
   bool get esReintentable => false;
 }
 
-/// El contenido no existe, o RLS decidio que este usuario no debe verlo.
+/// El contenido no existe, o el servidor decidio que este usuario no debe verlo.
 ///
 /// Ambos casos se presentan igual a proposito: distinguirlos revelaria la
 /// existencia de contenido curado para otro perfil.

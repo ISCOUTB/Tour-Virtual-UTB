@@ -11,23 +11,17 @@ La API expone el contenido que consume la aplicación móvil mediante
 implementación anterior sobre `pois`, `escenas`, `hotspots`, `medios` y
 `rutas`.
 
-La API importada usa otro modelo (`Lugar`, `Escena`, `Hotspot`) y otra
-configuración de persistencia. No se debe conectar el móvil a estos endpoints
-hasta completar el contrato y la migración de datos.
-
-La configuración actual usa SQL Server porque las migraciones y el paquete
-instalado están generados para SQL Server. La llamada anterior a `UseNpgsql`
-era inconsistente y ya fue corregida. Esto no decide la migración futura del
-móvil a Firestore.
+La configuración actual usa SQL Server porque ese es el stack de la rama
+`backend`. La llamada anterior a `UseNpgsql` era inconsistente y ya fue
+corregida. Esto no decide la migración futura a Firestore.
 
 ## Bloqueadores técnicos detectados
 
-- El proyecto declara .NET 9 con paquetes Entity Framework Core 8; el equipo
-  backend debe alinear ambas versiones antes de producción.
+- El proyecto usa .NET 9 y Entity Framework Core 9.
 - La configuración local usa LocalDB/SQL Server; cada desarrollador debe
   sustituirla por su entorno mediante user-secrets o variables de entorno.
-- Las migraciones fueron generadas para el modelo anterior y no corresponden al
-  esquema Supabase actual.
+- El seed de Development reproduce los datos de contenido de Supabase; una
+  migración EF versionada de producción todavía debe generarse.
 - La rama original incluía artefactos `.vs/`, `bin/`, `obj/` e imágenes de
   prueba. Los artefactos no se importaron y las imágenes quedan excluidas por
   `.gitignore`.
@@ -62,12 +56,10 @@ autorizado del equipo.
 
 | Método | Ruta | Propósito |
 |---|---|---|
-| GET | `/api/Lugares` | Listar lugares |
-| POST | `/api/Lugares` | Crear un lugar |
-| GET | `/api/Escenas/lugar/{lugarId}` | Listar escenas de un lugar |
-| POST | `/api/Escenas` | Crear una escena y subir una imagen |
-| GET | `/api/Hotspots/escena/{escenaId}` | Listar hotspots de una escena |
-| POST | `/api/Hotspots` | Crear una conexión entre escenas |
+| GET | `/api/lugares/{lugarId}/pois` | POI visibles para la audiencia |
+| GET | `/api/lugares/{lugarId}/recorrido` | Escenas y hotspots visibles |
+| GET | `/api/pois/{poiId}` | Ficha y medios de un POI |
+| GET | `/api/lugares/{lugarId}/ruta` | Ruta activa de la audiencia |
 
 Estos endpoints son provisionales. Antes de exponerlos a usuarios finales
 deben añadirse autenticación, autorización, auditoría y manejo de errores. La
@@ -78,14 +70,13 @@ se configura explícitamente.
 
 ## Plan para conectarla con el móvil
 
-1. Acordar si SQL Server será la persistencia del backend o si posteriormente se
-   ejecutará la migración a Firestore definida por el SRS.
+1. Mantener SQL Server como persistencia de esta integración; posteriormente se
+   podrá ejecutar la migración a Firestore definida por el SRS.
 2. Mantener el contrato HTTP actual, compatible con los modelos de Flutter.
 3. Mantener el mapeo `Lugar/Escena/Hotspot` a `Poi/Escena/Hotspot/Medio/Ruta`, sin perder
    audiencia, orden, escena principal ni coordenadas calibradas.
-4. Reemplazar la carga directa o implementar un adaptador de repositorio; no
-   duplicar consultas en las pantallas.
-5. Reproducir las garantías de RLS: audiencia, sesión anónima, auditoría y
+4. No duplicar consultas en las pantallas: las lecturas pasan por el repositorio.
+5. Reproducir las garantías de RLS: audiencia, identidad, auditoría y
    retención de eventos.
 6. Añadir pruebas de contrato, integración y una migración de datos antes de
    cambiar el proveedor móvil.

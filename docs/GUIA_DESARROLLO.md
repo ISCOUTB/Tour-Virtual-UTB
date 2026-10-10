@@ -20,6 +20,7 @@ Ya está implementado:
 - Escenas, hotspots, galerías y reproducción de audio.
 - Rutas profundas para abrir un lugar y, opcionalmente, una escena concreta.
 - Migraciones SQL, pruebas de modelos y pruebas de widget.
+- Pruebas del repositorio HTTP con respuestas JSON simuladas.
 - CI para formato, análisis, pruebas, generación de código y APK de debug.
 - API compatible con el contrato de contenido que usa el móvil.
 
@@ -29,9 +30,8 @@ La implementación integrada usa **ASP.NET Core + SQL Server**, que es lo que
 estaba construyendo la rama `backend`. El SRS v3.1 propone migrar a
 Node.js/Firebase/Firestore y cambiar el mapa por
 Google Maps, Mapbox u OSM. Esa migración está acordada, pero todavía no está
-implementada. No se debe cambiar el móvil a medias: mientras no exista una
-decisión de migración ejecutada, Supabase y sus políticas RLS son la fuente
-operativa actual.
+implementada. La API SQL Server es la fuente operativa de esta rama y las
+migraciones de Supabase quedan como referencia del modelo anterior.
 
 ## 2. Qué se publica y qué se mantiene fuera
 

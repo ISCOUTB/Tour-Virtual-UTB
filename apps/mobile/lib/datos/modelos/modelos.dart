@@ -5,8 +5,8 @@ part 'modelos.g.dart';
 
 /// Publico al que se dirige una pieza de contenido.
 ///
-/// El filtrado real lo hace RLS en Postgres mediante `audiencia_actual()`. Este
-/// enum solo sirve para leer lo que la base ya decidio devolver: nunca debe
+/// El filtrado real lo hace el backend mediante la audiencia autenticada. Este
+/// enum solo sirve para leer lo que el servidor decidio devolver: nunca debe
 /// usarse para filtrar en el cliente.
 enum Audiencia {
   @JsonValue('externo')

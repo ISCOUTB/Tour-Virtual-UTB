@@ -17,7 +17,7 @@ panel web de administración.
 ```
 apps/mobile/          Flutter — aplicación de usuarios
 apps/admin/           Next.js — panel de administración (Fase 3)
-services/api/         .NET 9 Minimal API (fuera del repositorio por ahora)
+services/api/         API ASP.NET Core inicial, pendiente de alineación con el móvil
 packages/contracts/   Contrato OpenAPI, fuente de verdad de la interfaz
 supabase/migrations/  Esquema y políticas RLS
 docs/

@@ -19,3 +19,11 @@ apps/mobile/android/app/src/assets/mapa_campus.webp
 /docs/*.docx
 /docs/*.xlsx
 /docs/contenido-estaciones.md
+
+# API .NET: artefactos locales de Visual Studio y compilacion.
+/services/api/.vs/
+/services/api/bin/
+/services/api/obj/
+/services/api/wwwroot/images/
+*.user
+*.suo

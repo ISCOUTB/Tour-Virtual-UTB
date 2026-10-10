@@ -125,7 +125,7 @@ git checkout backend
 
 Ajusta la ruta del directorio según la estructura real del repositorio.
 
-### 2. Configurar la conexión a SQL Server
+### 2. Configurar la conexión a base de datos
 
 Abre el archivo `appsettings.json` y configura la cadena de conexión:
 

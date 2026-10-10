@@ -51,7 +51,7 @@ public class ContenidoController(TourDbContext db) : ControllerBase
             .ToListAsync();
         var visibles = ids.ToHashSet();
         return Ok(new RecorridoDto(
-            escenas.Select(Dto.Escena),
+            escenas.Select(Dto.Escena).ToList(),
             hotspots.Where(h => h.Tipo != TipoHotspot.navegacion ||
                                 h.EscenaDestinoId.HasValue && visibles.Contains(h.EscenaDestinoId.Value))
                 .Select(Dto.Hotspot).ToList()));

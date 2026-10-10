@@ -8,6 +8,7 @@ panel web de administración.
 
 | Documento | Contenido |
 |---|---|
+| [docs/GUIA_DESARROLLO.md](docs/GUIA_DESARROLLO.md) | Instalación, ejecución, pruebas, arquitectura, publicación y coordinación del equipo |
 | [docs/utb-tour-inmersivo-mvp.md](docs/utb-tour-inmersivo-mvp.md) | Alcance del producto, POIs, KPIs y flujo de usuario |
 | [docs/arquitectura.md](docs/arquitectura.md) | Decisiones técnicas, modelo de datos, autenticación, seguridad y plan por fases |
 
@@ -66,3 +67,8 @@ la configuración de red de debug, en
 
 Desde el emulador de Android, `localhost` es el propio emulador. El equipo
 anfitrión es `10.0.2.2`.
+
+Los medios institucionales y los documentos fuente no se publican con el
+código. Consulta la [guía de desarrollo](docs/GUIA_DESARROLLO.md) para preparar
+los insumos locales, ejecutar Supabase, probar la app y revisar qué archivos se
+pueden subir.

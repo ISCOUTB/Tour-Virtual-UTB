@@ -1,6 +1,11 @@
-# UTB Virtual Placeholder (Flutter)
+# UTB Tour Virtual (Flutter)
 
-Proyecto placeholder para el nuevo módulo de recorrido inmersivo de UTB Virtual.
+Aplicación móvil del recorrido virtual inmersivo de la Universidad Tecnológica
+de Bolívar.
+
+La guía principal está en
+[docs/GUIA_DESARROLLO.md](../../docs/GUIA_DESARROLLO.md). Este archivo conserva
+los comandos rápidos para trabajar desde `apps/mobile`.
 
 ## Qué incluye
 
@@ -68,8 +73,8 @@ adb install -r build/app/outputs/flutter-apk/app-debug.apk
 
 ## Notas
 
-- Este proyecto es base funcional para demo interna.
-- El siguiente paso es reemplazar mocks por:
-	- mapa real (`flutter_map` o Mapbox),
-	- escenas 360 reales,
-	- backend de contenido (Firebase/Supabase).
+- Supabase/Postgres es el backend operativo actual; la migración a
+  Firebase/Firestore está acordada, pero aún no comenzó.
+- Los medios institucionales no están versionados. Deben solicitarse por el
+  canal autorizado y colocarse en las rutas indicadas en la guía.
+- No uses `service_role` en la aplicación móvil.

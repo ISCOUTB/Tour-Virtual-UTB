@@ -11,3 +11,11 @@
 # -----------------------------------------------------------------------------
 /assets/
 apps/mobile/android/app/src/assets/mapa_campus.webp
+
+# Material institucional de trabajo y documentos fuente no publicables.
+# La guía pública explica cómo obtener los insumos necesarios sin incluirlos
+# en el repositorio.
+/docs/*.pdf
+/docs/*.docx
+/docs/*.xlsx
+/docs/contenido-estaciones.md

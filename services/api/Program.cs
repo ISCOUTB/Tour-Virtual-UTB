@@ -21,7 +21,10 @@ builder.Services.AddCors(options =>
     {
         var origins = builder.Configuration
             .GetSection("Cors:AllowedOrigins")
-            .Get<string[]>() ?? [];
+            .GetChildren()
+            .Select(section => section.Value)
+            .OfType<string>()
+            .ToArray();
 
         if (origins.Length == 0)
         {

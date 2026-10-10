@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 /// Fallo con un mensaje que se puede mostrar al usuario.
 ///
 /// Existe porque la version anterior de la app silenciaba los errores de red en
@@ -75,13 +73,6 @@ FalloApp traducirFallo(Object error) {
     FalloApp fallo => fallo,
     SocketException _ => FalloDeConexion(detalle: error),
     TimeoutException _ => FalloDeTiempo(detalle: error),
-    AuthException _ => FalloDeSesion(detalle: error),
-    PostgrestException e when e.code == 'PGRST116' => FalloSinContenido(
-      null,
-      error,
-    ),
-    PostgrestException e when e.code == '42501' => const FalloDeSesion(),
-    PostgrestException _ => FalloInesperado(detalle: error),
     _ => FalloInesperado(detalle: error),
   };
 }

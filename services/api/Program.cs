@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using TourVirtualUTB.Api.Data;
 
@@ -10,7 +11,8 @@ builder.Services.AddDbContext<TourDbContext>(options =>
     ));
 
 // 2. Agregar Controladores
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -48,6 +50,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await ContenidoInicial.InicializarAsync(
+        scope.ServiceProvider.GetRequiredService<TourDbContext>());
+}
+
 // 4. Configurar el entorno HTTP
 if (app.Environment.IsDevelopment())
 {
@@ -55,16 +64,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// 5. Habilitar archivos estáticos CON CONFIGURACIÓN CORS (Para Flutter Web)
-app.UseStaticFiles(new StaticFileOptions
-{
-    OnPrepareResponse = ctx =>
-    {
-        // Esta línea es la magia: dice permitir a cualquier origen leer el archivo
-        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
-        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    }
-});
+app.UseStaticFiles();
 
 app.UseCors("Frontend");
 

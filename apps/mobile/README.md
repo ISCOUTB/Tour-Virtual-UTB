@@ -73,8 +73,8 @@ adb install -r build/app/outputs/flutter-apk/app-debug.apk
 
 ## Notas
 
-- Supabase/Postgres es el backend operativo actual; la migración a
-  Firebase/Firestore está acordada, pero aún no comenzó.
+- El backend operativo de esta rama es ASP.NET Core con SQL Server. La migración
+  futura a Firebase/Firestore está acordada, pero aún no comenzó.
 - Los medios institucionales no están versionados. Deben solicitarse por el
   canal autorizado y colocarse en las rutas indicadas en la guía.
 - No uses `service_role` en la aplicación móvil.

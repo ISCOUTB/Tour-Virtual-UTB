@@ -15,7 +15,7 @@ import 'ui/vista_async.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await inicializarSupabase();
+  await inicializarBackend();
   runApp(const ProviderScope(child: UtbVirtualApp()));
 }
 

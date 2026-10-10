@@ -6,10 +6,10 @@ mantenga una raíz única junto a `apps/mobile`, `packages` y `supabase`.
 
 ## Estado de integración
 
-La API es una primera implementación de `Lugares`, `Escenas` y `Hotspots`.
-Todavía no es el backend que consume la aplicación móvil actual: el móvil
-consulta Supabase directamente mediante `RepositorioContenido`, con modelos
-tipados y políticas RLS sobre `pois`, `escenas`, `hotspots`, `medios` y `rutas`.
+La API expone el contenido que consume la aplicación móvil mediante
+`RepositorioContenido`, con los mismos modelos tipados y campos que usaba la
+implementación anterior sobre `pois`, `escenas`, `hotspots`, `medios` y
+`rutas`.
 
 La API importada usa otro modelo (`Lugar`, `Escena`, `Hotspot`) y otra
 configuración de persistencia. No se debe conectar el móvil a estos endpoints
@@ -51,6 +51,13 @@ dotnet run --launch-profile http
 Swagger queda habilitado en desarrollo. El puerto configurado actualmente es
 `http://localhost:5209`.
 
+En Development, al arrancar se crea el esquema SQL Server vacío y se cargan
+los cinco POI, cinco escenas, seis hotspots, cinco audios y tres rutas que
+existían en `supabase/seed.sql`. Esto permite probar el flujo completo sin
+copiar credenciales de Supabase ni medios institucionales al repositorio.
+Las rutas de medios son relativas y deben existir en el almacenamiento local
+autorizado del equipo.
+
 ## Endpoints existentes
 
 | Método | Ruta | Propósito |
@@ -71,10 +78,10 @@ se configura explícitamente.
 
 ## Plan para conectarla con el móvil
 
-1. Acordar si la fuente operativa seguirá siendo Supabase/Postgres o si se
+1. Acordar si SQL Server será la persistencia del backend o si posteriormente se
    ejecutará la migración a Firestore definida por el SRS.
-2. Diseñar un contrato único compatible con los modelos actuales de Flutter.
-3. Mapear `Lugar/Escena/Hotspot` a `Poi/Escena/Hotspot/Medio/Ruta`, sin perder
+2. Mantener el contrato HTTP actual, compatible con los modelos de Flutter.
+3. Mantener el mapeo `Lugar/Escena/Hotspot` a `Poi/Escena/Hotspot/Medio/Ruta`, sin perder
    audiencia, orden, escena principal ni coordenadas calibradas.
 4. Reemplazar la carga directa o implementar un adaptador de repositorio; no
    duplicar consultas en las pantallas.

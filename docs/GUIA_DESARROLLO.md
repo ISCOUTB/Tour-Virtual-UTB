@@ -1,226 +1,362 @@
-# Guía de desarrollo y entrega
+# UTB Tour Virtual — guía de uso y continuidad
 
-Esta guía describe el estado publicable de **UTB Tour Virtual**, cómo ejecutar
-la aplicación, cómo probarla y cómo continuar el trabajo sin subir credenciales
-ni material institucional sin autorización.
+Manual operativo único del repositorio. Describe lo que está implementado en
+la rama de integración, cómo ejecutarlo, cómo probarlo, cómo modificarlo y qué
+debe hacer el equipo para continuar el backend sin romper la aplicación móvil.
 
-## 1. Estado actual
+## 1. Estado y decisiones actuales
 
-El repositorio contiene la aplicación móvil Flutter, las migraciones históricas
-de Supabase y una API ASP.NET Core bajo `services/api/`. La rama de integración
-conecta el móvil a la API SQL Server mediante HTTP; el panel web aún no existe.
+La rama de integración es:
 
-Ya está implementado:
+```text
+integration/backend-unification
+```
 
-- Mapa ilustrado del campus con POI posicionados mediante `map_x` y `map_y`.
-- Navegación por las pantallas de inicio, mapa, recorrido 360 y ficha de POI.
-- Modelos tipados con Freezed y JSON Serializable.
-- Proveedores Riverpod y un único repositorio para las lecturas de contenido.
-- Lectura HTTP de contenido y filtrado provisional de audiencia en el servidor.
-- Escenas, hotspots, galerías y reproducción de audio.
-- Rutas profundas para abrir un lugar y, opcionalmente, una escena concreta.
-- Migraciones SQL, pruebas de modelos y pruebas de widget.
-- Pruebas del repositorio HTTP con respuestas JSON simuladas.
-- CI para formato, análisis, pruebas, generación de código y APK de debug.
-- API compatible con el contrato de contenido que usa el móvil.
+El trabajo se revisa en el [PR #8](https://github.com/ISCOUTB/Tour-Virtual-UTB/pull/8).
+La base actual es:
 
-### Decisión importante de arquitectura
+| Parte | Tecnología | Estado |
+|---|---|---|
+| Aplicación | Flutter/Dart, Riverpod, go_router | Funcional |
+| API | ASP.NET Core sobre .NET 9 | Funcional en desarrollo |
+| Persistencia | SQL Server + Entity Framework Core 9 | Modelo y seed de desarrollo |
+| Contrato móvil | JSON HTTP con DTOs `snake_case` | Implementado |
+| CI | GitHub Actions | API, análisis, pruebas y APK debug |
+| Panel administrativo | Next.js | No iniciado |
+| Autenticación y autorización | Claims/identidad de producción | Pendiente |
+| Migración SQL Server productiva | Migración EF versionada | Pendiente |
 
-La implementación integrada usa **ASP.NET Core + SQL Server**, que es lo que
-estaba construyendo la rama `backend`. El SRS v3.1 propone migrar a
-Node.js/Firebase/Firestore y cambiar el mapa por
-Google Maps, Mapbox u OSM. Esa migración está acordada, pero todavía no está
-implementada. La API SQL Server es la fuente operativa de esta rama y las
-migraciones de Supabase quedan como referencia del modelo anterior.
+La integración conserva el stack que existía en la rama `backend`: **.NET 9 +
+EF Core 9 + SQL Server**. El móvil ya no consulta Supabase directamente; lee
+contenido mediante `RepositorioContenido` contra la API.
 
-## 2. Qué se publica y qué se mantiene fuera
+La migración futura a Firebase/Firestore y la incorporación de AR pertenecen al
+roadmap del SRS, pero todavía no están implementadas. No deben iniciarse
+eliminando el contrato actual sin una migración verificable.
 
-### Sí se publica
+### Documentos que siguen siendo autoridad
 
-- Código Dart, pruebas y archivos generados (`*.g.dart`, `*.freezed.dart`).
-- Migraciones SQL y configuración no secreta.
-- Contrato OpenAPI.
-- Workflows de GitHub Actions.
-- Documentación técnica redactada para el equipo.
-- Iconos y assets genéricos que ya estén versionados.
+- Esta guía: operación y continuidad del código actual.
+- [`docs/arquitectura.md`](./arquitectura.md): seguridad, cumplimiento y
+  decisiones arquitectónicas no cubiertas por el SRS. Sus decisiones de
+  backend anteriores deben leerse junto con este estado de integración.
+- [`docs/utb-tour-inmersivo-mvp.md`](./utb-tour-inmersivo-mvp.md): alcance del
+  producto y flujo del MVP.
+- `docs/SRSIEEE830TourVirtualUTBv3.1.pdf`: requisitos funcionales definitivos.
+- [`PRODUCT.md`](../PRODUCT.md): usuarios, principios de producto y contenido
+  todavía ausente.
 
-### No se publica
+## 2. Qué hay en el repositorio
 
-- `assets/` y el mapa institucional local.
-- Panoramas, audios, videos y otros medios reales.
-- PDFs, DOCX y XLSX institucionales de trabajo.
-- `docs/contenido-estaciones.md`, mientras no se confirme que su contenido
-  puede hacerse público.
-- `CLAUDE.md`, archivos `.env`, claves privadas, keystores y configuraciones
-  locales.
-- `.dart_tool/`, `build/`, `.gradle/`, `local.properties` y demás artefactos
-  generados.
+```text
+apps/mobile/          Aplicación Flutter para visitantes, estudiantes y docentes
+services/api/         API ASP.NET Core y modelo EF Core
+packages/contracts/   Contrato OpenAPI administrativo
+supabase/             Esquema y datos históricos de la implementación anterior
+docs/                 Requisitos, arquitectura y esta guía
+.github/workflows/    Validaciones automáticas
+```
 
-Las exclusiones están reforzadas en los `.gitignore`. Antes de cada commit se
-debe revisar `git status --short` y comprobar que no aparece ningún medio o
-credencial.
+La API y el móvil comparten conceptualmente estas entidades:
 
-## 3. Requisitos de desarrollo
+```text
+Lugar
+├── Poi
+│   ├── Escena
+│   └── Medio
+├── Ruta ── RutaPoi ── Poi
+└── Escena ── Hotspot ── Escena destino
+```
 
-- Flutter estable con Dart 3.11 o superior.
-- Visual Studio Build Tools en Windows, con **Desktop development with C++**.
-- Windows SDK.
-- VS Code con las extensiones Dart y Flutter.
-- Docker Desktop y Supabase CLI si se quiere ejecutar la base local.
+El seed contiene un campus, cinco POI, cinco escenas, seis hotspots, cinco
+medios de audio y tres rutas. El visitante externo ve cuatro POI; el puente
+A3-A5 se reserva para estudiantes y docentes.
+
+## 3. Requisitos de instalación
+
+### Móvil
+
+- Flutter estable con Dart compatible con el `pubspec.yaml`.
+- En Windows: Visual Studio Build Tools con **Desktop development with C++** y
+  Windows SDK.
+- Android SDK y `adb` solo si se prueba en emulador o dispositivo.
+- VS Code con extensiones Dart y Flutter.
+
+### Backend
+
+- .NET SDK 9.
+- SQL Server o LocalDB.
+- Visual Studio, VS Code o Rider con soporte C# opcional.
+
+### Herramientas auxiliares
+
+- Git.
 - Node.js 22 o superior para validar OpenAPI.
-- `adb` solo es necesario para instalar en un emulador Android.
+- Docker Desktop y Supabase CLI solo para estudiar o mantener la base histórica
+  de `supabase/`; no son necesarios para ejecutar la API integrada.
 
-Comprobar Flutter:
+Verificar el entorno móvil:
 
-```bash
+```powershell
 flutter doctor -v
 ```
 
-Los comandos de la aplicación se ejecutan desde `apps/mobile`, salvo que se
-indique lo contrario.
+Verificar el backend:
+
+```powershell
+dotnet --info
+```
 
 ## 4. Preparar una copia nueva
 
-```bash
+Desde PowerShell:
+
+```powershell
 git clone https://github.com/ISCOUTB/Tour-Virtual-UTB.git
-cd Tour-Virtual-UTB/apps/mobile
+cd Tour-Virtual-UTB
+git fetch origin
+git switch --track origin/integration/backend-unification
+```
+
+Preparar Flutter:
+
+```powershell
+cd apps/mobile
 flutter pub get
 ```
 
-Los medios institucionales no vienen en Git. El equipo debe entregar los
-archivos por el canal autorizado y colocarlos únicamente en sus rutas locales.
-El mapa usado por la aplicación debe quedar en:
+Preparar la API:
+
+```powershell
+cd ..\..\services\api
+dotnet restore
+dotnet build
+```
+
+No se deben copiar al repositorio credenciales, archivos `.env`, certificados,
+keystores, cadenas de conexión privadas ni medios institucionales sin
+autorización.
+
+## 5. Ejecutar el backend
+
+La configuración de desarrollo usa LocalDB:
 
 ```text
-apps/mobile/android/app/src/assets/mapa_campus.webp
+Server=(localdb)\mssqllocaldb
+Database=TourVirtualDb
 ```
 
-La carpeta de assets se declara en `pubspec.yaml`; no se debe crear una ruta
-paralela para cada plataforma.
+Si el equipo utiliza otra instancia, no se modifica el archivo versionado con
+secretos. Se configura mediante user-secrets o variables de entorno.
 
-## 5. Ejecutar la aplicación
+Ejemplo con user-secrets:
 
-### Con Supabase local
-
-Desde la raíz del repositorio:
-
-```bash
-supabase start
-supabase db reset
+```powershell
+cd services/api
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=TourVirtualDb;Trusted_Connection=True;TrustServerCertificate=True"
+dotnet run --launch-profile http
 ```
 
-Después de un `db reset`, el índice de Storage local también se vacía. Si se
-dispone de los medios autorizados, hay que reconstruir los buckets con el
-proceso interno `scripts/subir_medios.py`. Ese script no contiene credenciales
-para producción y no debe recibir `service_role` en un commit.
+La API queda disponible en:
 
-En Windows:
+```text
+http://localhost:5209
+```
 
-```bash
+En `Development`, `ContenidoInicial` ejecuta `EnsureCreated` y carga el seed
+si la base está vacía. Esto es exclusivamente para desarrollo: no reemplaza
+una migración EF Core versionada ni una carga de datos de producción.
+
+Swagger está disponible en:
+
+```text
+http://localhost:5209/swagger
+```
+
+Probar manualmente:
+
+```powershell
+Invoke-RestMethod http://localhost:5209/api/lugares/1/pois
+Invoke-RestMethod http://localhost:5209/api/lugares/1/recorrido
+Invoke-RestMethod http://localhost:5209/api/pois/1
+Invoke-RestMethod http://localhost:5209/api/lugares/1/ruta
+```
+
+Para probar contenido restringido en desarrollo se puede enviar el header
+`X-UTB-Audiencia`:
+
+```powershell
+$headers = @{ "X-UTB-Audiencia" = "estudiante" }
+Invoke-RestMethod http://localhost:5209/api/lugares/1/pois -Headers $headers
+```
+
+Este header es una facilidad de desarrollo, **no es autenticación** y no debe
+considerarse una frontera de seguridad en producción.
+
+## 6. Ejecutar el móvil
+
+Con la API ejecutándose:
+
+```powershell
 cd apps/mobile
 flutter run -d windows
 ```
 
-En Android, el emulador ve al equipo anfitrión como `10.0.2.2`, no como
-`localhost`:
-
-```bash
-flutter emulators --launch UTB_Pixel_API_35
-flutter run -d emulator-5554
-```
-
-La configuración local de la aplicación usa por defecto la API en el puerto
-5209. Para apuntar a otro entorno se pasa la URL en tiempo de compilación:
-
-```bash
-flutter run -d windows `
-  --dart-define=API_BASE_URL=https://api.example.com
-```
-
-El visitante se identifica como audiencia `externo` por defecto. La
-autenticación y la selección segura de audiencia para estudiantes y docentes
-son trabajo pendiente del backend; el encabezado de desarrollo no es una
-frontera de seguridad.
-
-### Abrir una pantalla concreta
-
-Para revisar el visor sin navegar manualmente:
-
-```bash
-flutter run -d windows --dart-define=RUTA_INICIAL=/recorrido/1
-```
-
-También se puede abrir una escena concreta:
+La aplicación usa por defecto:
 
 ```text
+http://127.0.0.1:5209
+```
+
+Para otra API:
+
+```powershell
+flutter run -d windows --dart-define=API_BASE_URL=https://api.example.com
+```
+
+En el emulador Android, el host de Windows se alcanza como `10.0.2.2`:
+
+```powershell
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:5209
+```
+
+El parámetro `LUGAR_ID` permite cambiar el campus cuando exista más de uno:
+
+```powershell
+flutter run -d windows --dart-define=LUGAR_ID=1
+```
+
+Las rutas profundas útiles son:
+
+```text
+/recorrido/1
 /recorrido/1?escena=12
 ```
 
-## 6. Cómo está organizado el código
+El móvil resuelve las rutas relativas de medios (`panoramas/...`, `audios/...`)
+contra `API_BASE_URL`. Los archivos reales no están versionados; si la API no
+los sirve, el resto de la aplicación continúa mostrando el estado de error.
 
-| Ruta | Responsabilidad |
+## 7. Contrato entre API y Flutter
+
+El único punto de red del móvil es
+[`RepositorioContenido`](../apps/mobile/lib/datos/repositorio_contenido.dart).
+Las pantallas no deben llamar HTTP ni acceder directamente a la base.
+
+Endpoints actuales:
+
+| Método | Endpoint | Respuesta |
+|---|---|---|
+| GET | `/api/lugares/{lugarId}/pois` | Lista de `Poi` visibles |
+| GET | `/api/lugares/{lugarId}/recorrido` | `escenas` y `hotspots` |
+| GET | `/api/pois/{poiId}` | `poi` y `medios` |
+| GET | `/api/lugares/{lugarId}/ruta` | Ruta activa o `null` |
+
+Los DTOs están en
+[`ContenidoDtos.cs`](../services/api/DTOs/ContenidoDtos.cs). Los modelos Dart
+están en [`modelos.dart`](../apps/mobile/lib/datos/modelos/modelos.dart).
+
+No se deben cambiar nombres como `lugar_id`, `map_x`, `imagen_url`,
+`escena_destino_id` o `duracion_seg` sin actualizar ambos lados y sus pruebas.
+Los enums se transmiten como texto:
+
+```text
+externo, estudiante, docente
+navegacion, info
+imagen, video, audio
+```
+
+El filtro de audiencia pertenece al servidor. Nunca se debe ocultar contenido
+solo con una condición en Dart.
+
+## 8. Trabajar en el móvil
+
+Archivos principales:
+
+| Archivo | Responsabilidad |
 |---|---|
-| `apps/mobile/lib/main.dart` | Arranque, tema, mapa y composición principal |
-| `apps/mobile/lib/recorrido_screen.dart` | Visor 360 y navegación entre escenas |
-| `apps/mobile/lib/datos/modelos/` | Modelos Freezed/JSON y contrato de datos |
-| `apps/mobile/lib/datos/proveedores.dart` | Providers Riverpod y arranque del backend |
-| `apps/mobile/lib/datos/repositorio_contenido.dart` | Único punto de lectura de red |
-| `apps/mobile/lib/datos/progreso.dart` | Progreso local del recorrido |
-| `apps/mobile/lib/ui/` | Fichas, audio, estados async y componentes de recorrido |
-| `apps/mobile/lib/nucleo/rutas.dart` | Rutas y enlaces profundos |
-| `apps/mobile/lib/nucleo/configuracion.dart` | Variables `--dart-define` y defaults locales |
-| `apps/mobile/lib/nucleo/errores.dart` | Errores de dominio presentables en UI |
-| `supabase/migrations/` | Esquema histórico, auth, RLS, auditoría y analítica |
-| `packages/contracts/openapi.yaml` | Contrato de la API administrativa |
+| [`main.dart`](../apps/mobile/lib/main.dart) | Arranque, tema, mapa y composición |
+| [`repositorio_contenido.dart`](../apps/mobile/lib/datos/repositorio_contenido.dart) | Lecturas HTTP |
+| [`proveedores.dart`](../apps/mobile/lib/datos/proveedores.dart) | Providers Riverpod |
+| [`modelos.dart`](../apps/mobile/lib/datos/modelos/modelos.dart) | Modelos Freezed/JSON |
+| [`configuracion.dart`](../apps/mobile/lib/nucleo/configuracion.dart) | `--dart-define` y defaults |
+| [`rutas.dart`](../apps/mobile/lib/nucleo/rutas.dart) | Navegación |
+| [`errores.dart`](../apps/mobile/lib/nucleo/errores.dart) | Errores mostrables |
 
-El repositorio se diseñó para que la futura migración de backend quede
-concentrada: las pantallas consumen providers y el proveedor usa
-`RepositorioContenido`; las vistas no deben hacer consultas directas al backend.
+Al cambiar un modelo:
 
-## 7. Modificar o agregar funcionalidad
+```powershell
+cd apps/mobile
+dart run build_runner build
+```
 
-### Cambiar un modelo o una columna
+No se deben editar manualmente los archivos `*.freezed.dart` ni `*.g.dart`.
+Después se actualizan repositorio, providers, UI y pruebas relacionadas.
 
-1. Crear una nueva migración SQL numerada; no editar una migración ya aplicada.
-2. Actualizar el modelo en `lib/datos/modelos/modelos.dart`.
-3. Regenerar archivos:
+Para agregar una pantalla:
 
-   ```bash
-   cd apps/mobile
-   dart run build_runner build
-   ```
-
-4. Actualizar el repositorio, providers, UI y pruebas afectadas.
-5. Revisar que el filtro de audiencia siga estando en el servidor, no en Dart.
-
-### Agregar una consulta de contenido
-
-La consulta debe vivir en `RepositorioContenido` y su endpoint en
-`services/api/Controllers/ContenidoController.cs`. Debe:
-
-- aplicar timeout y traducir el error a `FalloApp`;
-- conservar los nombres y tipos JSON esperados por los modelos Dart;
-- aplicar la audiencia en el servidor, nunca como control de seguridad en Dart.
-
-### Agregar una pantalla o ruta
-
-1. Crear la pantalla en `lib/` o `lib/ui/` siguiendo los patrones existentes.
+1. Crear la pantalla siguiendo los patrones de `lib/ui/`.
 2. Declarar la ruta en `lib/nucleo/rutas.dart`.
-3. Usar providers para datos y `VistaAsync` para loading/error/retry.
-4. Añadir una prueba de widget para la navegación y los estados visibles.
+3. Consumir providers y `VistaAsync`.
+4. Añadir estados de carga, error, reintento y datos.
+5. Crear o actualizar la prueba de widget.
 
-### Agregar assets
+## 9. Trabajar en la API
 
-Los assets institucionales deben pasar primero por el proceso de autorización,
-limpieza de EXIF/GPS y revisión de privacidad. En particular, las panorámicas
-con personas deben difuminar rostros antes de publicarse en Storage. No se
-deben añadir al repositorio como una solución rápida.
+La API usa:
 
-## 8. Probar y validar
+- `Models/Contenido.cs`: entidades y enums.
+- `Data/TourDbContext.cs`: relaciones y restricciones EF.
+- `Data/ContenidoInicial.cs`: seed local temporal.
+- `Controllers/ContenidoController.cs`: endpoints de lectura.
+- `DTOs/ContenidoDtos.cs`: contrato JSON.
+- `Program.cs`: SQL Server, CORS, Swagger y arranque.
 
-Desde `apps/mobile`:
+Al cambiar una entidad:
 
-```bash
+1. Actualizar el modelo y `TourDbContext`.
+2. Crear una migración EF Core, nunca editar una ya aplicada.
+3. Revisar los DTOs y la respuesta JSON.
+4. Actualizar el repositorio Dart.
+5. Añadir pruebas de contrato e integración.
+6. Verificar audiencia, orden, relaciones y URLs de medios.
+
+La migración EF Core productiva todavía debe generarse cuando el equipo tenga
+el SDK y una instancia SQL Server disponible:
+
+```powershell
+cd services/api
+dotnet ef migrations add InicializacionContenido
+dotnet ef database update
+```
+
+Antes de ejecutar esos comandos se debe decidir si se conserva el seed actual,
+cómo se preservan los IDs y cómo se importan los datos existentes. No se debe
+usar `EnsureCreated` en producción.
+
+## 10. Contenido y archivos sensibles
+
+No se publican panoramas, audios, videos, PDFs institucionales ni capturas de
+trabajo sin autorización. Los medios deben:
+
+1. proceder de un canal autorizado;
+2. pasar revisión institucional;
+3. difuminar rostros cuando corresponda;
+4. eliminar EXIF/GPS;
+5. tener texto alternativo y subtítulos/transcripción cuando aplique;
+6. almacenarse fuera de Git y servirse mediante el almacenamiento acordado.
+
+El mapa y los assets actualmente versionados se encuentran bajo
+`apps/mobile/android/app/src/assets/`. No se debe crear otra ruta de assets sin
+actualizar `pubspec.yaml` y todas las plataformas afectadas.
+
+## 11. Pruebas y validación
+
+Móvil:
+
+```powershell
+cd apps/mobile
 dart format .
 dart run build_runner build
 flutter analyze --fatal-infos
@@ -228,100 +364,115 @@ flutter test
 flutter build apk --debug
 ```
 
-La validación del contrato se ejecuta desde la raíz:
+Pruebas enfocadas:
 
-```bash
+```powershell
+flutter test test/modelos_test.dart
+flutter test test/repositorio_contenido_test.dart
+flutter test test/widget_test.dart
+```
+
+API:
+
+```powershell
+cd services/api
+dotnet restore
+dotnet build --configuration Release
+```
+
+Contrato administrativo:
+
+```powershell
+cd ..\..
 npx --yes @redocly/cli@latest lint packages/contracts/openapi.yaml
 ```
 
-Las pruebas no necesitan red: sustituyen
-`repositorioContenidoProvider` por un fake. En pruebas de widget no usar
-`pumpAndSettle` indiscriminadamente porque la pantalla de carga y el mapa tienen
-animaciones repetitivas. Avanzar el reloj con `pump(Duration(...))` y drenar los
-timers pendientes.
+Las pruebas del móvil no necesitan red: sobrescriben
+`repositorioContenidoProvider` con un fake. Las pruebas de widget no deben
+usar `pumpAndSettle` cuando haya animaciones repetitivas; deben avanzar el reloj
+con `pump(Duration(...))`.
 
-El workflow de la app ejecuta automáticamente generación, formato, análisis,
-pruebas y compilación de APK. El workflow del contrato valida OpenAPI en cada
-cambio relevante.
+Los workflows de GitHub Actions ejecutan análisis, pruebas, generación de
+código y APK debug para la rama de integración. La API tiene un workflow
+separado de restore y build.
 
-## 9. Coordinación con backend
-
-La API importada está documentada en
-[services/api/README.md](../services/api/README.md). Tiene un modelo de datos
-compatible con el móvil actual y el proveedor HTTP ya está conectado en la rama
-de integración. El contrato es provisional mientras el backend incorpora
-autenticación y administración.
-
-La rama de integración usa SQL Server y ASP.NET Core como el backend que estaba
-construyendo el equipo. Mientras se completan las garantías de producción:
-
-- Las lecturas móviles pasan por HTTP y el servidor filtra la audiencia.
-- El visitante anónimo se comporta como `externo`.
-- Las rutas HTTP devuelven los mismos campos y orden que usaba el móvil con
-  Supabase.
-- Las garantías de autenticación, auditoría y administración todavía son
-  trabajo del backend.
-
-Cuando se inicie la migración a Firestore, el equipo debe acordar antes:
-
-1. estructura equivalente de documentos y referencias;
-2. reglas de seguridad equivalentes a la audiencia actual;
-3. autenticación y propagación de identidad;
-4. auditoría, retención de eventos y publicación de contenido;
-5. estrategia de compatibilidad y datos de transición.
-
-No se debe eliminar RLS ni cambiar el repositorio móvil hasta tener una
-implementación verificable de esas garantías.
-
-### Secuencia de integración acordada
-
-1. Mantener `frontend-development` como base estable de la aplicación.
-2. Trabajar la API importada en una rama independiente bajo `services/api/`.
-3. Corregir proveedor de base de datos, versión de EF Core, secretos, CORS y
-   pruebas de arranque.
-4. Alinear DTOs y contrato con los modelos reales de Flutter y las migraciones.
-5. Probar lecturas anónimas, perfiles institucionales, medios y hotspots.
-6. Abrir un pull request de integración; no mezclar directamente ramas con
-   historias Git sin ancestro común.
-7. Cambiar el repositorio móvil solo después de verificar contrato y migración
-   de datos.
-
-## 10. Flujo de trabajo Git
+## 12. Flujo Git del equipo
 
 Antes de publicar:
 
-```bash
+```powershell
 git status --short
 git diff --check
 git diff --stat
 ```
 
-Agregar únicamente los archivos esperados:
+Crear ramas desde la rama actualizada:
 
-```bash
-git add .gitignore README.md docs/GUIA_DESARROLLO.md
-git add apps/mobile packages supabase .github PRODUCT.md
-git diff --cached --name-status
+```powershell
+git fetch origin
+git switch integration/backend-unification
+git pull --ff-only
+git switch -c feature/nombre-corto
 ```
 
-Después de revisar el área staged:
+Reglas:
 
-```bash
-git commit -m "Documentar estado y flujo de desarrollo"
-git push origin frontend-development
-```
+- cambios de API, modelo o contrato se revisan mediante pull request;
+- no se suben secretos ni medios institucionales;
+- no se hace merge directo de las ramas históricas sin ancestro común;
+- el backend y Flutter se validan juntos cuando cambia el contrato;
+- no se fuerza un cambio de base de datos sin plan de migración y rollback.
 
-El equipo de backend puede trabajar sobre su rama sin mezclar cambios del
-frontend. Los cambios que afecten tablas, RLS o el contrato deben coordinarse
-mediante pull request y revisarse conjuntamente.
+## 13. Roadmap de continuidad
 
-## 11. Limitaciones conocidas
+### Bloque inmediato — estabilizar la integración
 
-- El panel administrativo aún no existe.
-- La migración a Firebase/Firestore y la incorporación de AR están pendientes.
-- El contenido institucional real no se distribuye con el código.
-- La disponibilidad de panorámicas, audio y subtítulos depende del pipeline de
-  contenido autorizado.
-- El objetivo visual principal de validación es Windows con una ventana
-  estrecha; la geometría táctil real debe validarse también en pruebas de
-  widget o dispositivo.
+1. Mantener el PR de integración y resolver cualquier cambio de la rama
+   `backend` mediante revisión conjunta.
+2. Generar y revisar la migración EF Core 9 para SQL Server.
+3. Cargar los datos existentes con preservación de IDs, relaciones y conteos.
+4. Añadir pruebas de integración contra SQL Server.
+5. Decidir el almacenamiento de panoramas y audios para desarrollo y staging.
+
+### Bloque de seguridad y producción
+
+1. Implementar autenticación.
+2. Derivar la audiencia desde claims verificados, no desde headers enviados por
+   el cliente.
+3. Separar permisos de lectura pública, lectura institucional y administración.
+4. Añadir auditoría, retención y trazabilidad.
+5. Validar MIME real, tamaño, escaneo y autorización de archivos.
+6. Configurar CORS, HTTPS, secretos y observabilidad por entorno.
+
+### Bloque de producto
+
+1. Completar textos, panoramas, audios, subtítulos y textos alternativos.
+2. Implementar el panel administrativo.
+3. Alinear el contrato OpenAPI con los endpoints reales.
+4. Validar accesibilidad y dispositivos de gama baja.
+5. Medir apertura, escenas vistas, hotspots usados y recorridos completos.
+
+### Bloque futuro condicionado por el SRS
+
+La migración a Firestore, el mapa basado en Google Maps/Mapbox/OSM y AR solo
+deben comenzar con:
+
+- decisión técnica aprobada;
+- equivalencia de reglas de seguridad;
+- estrategia de migración y coexistencia;
+- pruebas de regresión del contrato móvil;
+- plan de retorno.
+
+## 14. Lista de salida antes de producción
+
+- [ ] Migraciones EF Core versionadas y aplicadas en un entorno de staging.
+- [ ] Datos migrados y conteos verificados.
+- [ ] API y móvil consumen el mismo contrato probado.
+- [ ] Autenticación y autorización basadas en identidad.
+- [ ] CORS y HTTPS configurados por entorno.
+- [ ] Auditoría y retención implementadas.
+- [ ] Medios revisados, anonimizados y almacenados fuera de Git.
+- [ ] Texto alternativo, subtítulos y transcripciones disponibles.
+- [ ] Pruebas de integración y regresión verdes.
+- [ ] Build móvil firmado fuera del repositorio.
+- [ ] Rollback documentado.

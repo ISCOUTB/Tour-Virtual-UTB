@@ -1,5 +1,5 @@
 import 'dart:math';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -315,25 +315,20 @@ class _NavItem {
 /// El render entregado por la universidad mide 4096x2304. El lienzo tiene que
 /// respetar esa proporcion: mientras fue cuadrado, toda coordenada normalizada
 /// caia desplazada en vertical.
-class _MapaCampus extends StatefulWidget {
+class _MapaCampus extends ConsumerStatefulWidget {
   const _MapaCampus({required this.pois, required this.alTocarPoi});
 
   final List<Poi> pois;
   final void Function(Poi) alTocarPoi;
 
   @override
-  State<_MapaCampus> createState() => _MapaCampusState();
+  ConsumerState<_MapaCampus> createState() => _MapaCampusState();
 }
 
-class _MapaCampusState extends State<_MapaCampus> {
-  static const _rutaMapa = 'android/app/src/assets/mapa_campus.webp';
+class _MapaCampusState extends ConsumerState<_MapaCampus> {
+  // Eliminamos _rutaMapa porque ahora es dinámica
   static const double _relacion = 4096 / 2304;
-
-  /// El lienzo se dibuja mas ancho que la ventana para que el zoom inicial
-  /// muestre los edificios a un tamano legible, en vez del campus entero en
-  /// miniatura. Es un mapa apaisado dentro de una pantalla vertical.
   static const double _amplitud = 1.9;
-
   static const double _escalaMaxima = 2.6;
 
   final _controlador = TransformationController();
@@ -345,14 +340,6 @@ class _MapaCampusState extends State<_MapaCampus> {
     super.dispose();
   }
 
-  /// Escala por debajo de la cual el lienzo deja de cubrir el visor.
-  ///
-  /// Por debajo de ella aparecen bandas vacias: no son margen de la
-  /// ilustracion sino lienzo que se queda corto, y es lo que se veia arriba y
-  /// abajo del campus en una pantalla vertical.
-  ///
-  /// Un lienzo degenerado daria NaN, y `minScale` en NaN tumba el visor. En
-  /// ese caso se cae a 1.0, que no escala nada.
   static double _escalaDeCobertura(Size ventana, Size lienzo) {
     if (lienzo.width <= 0 || lienzo.height <= 0) return 1;
     final cobertura = max(
@@ -362,21 +349,12 @@ class _MapaCampusState extends State<_MapaCampus> {
     return cobertura.isFinite && cobertura > 0 ? cobertura : 1;
   }
 
-  /// Encuadra la vista sobre los POI la primera vez que se conoce el tamano.
-  ///
-  /// El encuadre se calcula a partir de los puntos y no de la imagen. La
-  /// ilustracion trae su propio margen claro alrededor del campus, asi que
-  /// centrarla dejaba bandas vacias que se comian mas de un cuarto de una
-  /// pantalla vertical. Ajustando a la caja de los POI el margen queda fuera
-  /// solo, sea cual sea el asset que entregue la universidad.
   void _encuadrar(Size ventana, Size lienzo) {
     if (_encuadrado || ventana.isEmpty) return;
     _encuadrado = true;
 
     final ubicables = widget.pois.where((p) => p.tienePosicionEnMapa).toList();
 
-    // Caja de los POI en coordenadas del lienzo, con holgura para que ninguno
-    // quede pegado al borde ni bajo la barra inferior.
     var izq = 0.0, arr = 0.0;
     var der = lienzo.width, aba = lienzo.height;
     if (ubicables.isNotEmpty) {
@@ -392,9 +370,6 @@ class _MapaCampusState extends State<_MapaCampus> {
     final anchoCaja = max(der - izq, 1.0);
     final altoCaja = max(aba - arr, 1.0);
 
-    // Ajustar a la caja de los POI puede pedir menos zoom del que hace falta
-    // para tapar el visor, y entonces el encuadre arranca con una banda vacia.
-    // La cobertura manda sobre el ajuste.
     final escala = min(
       ventana.width / anchoCaja,
       ventana.height / altoCaja,
@@ -403,9 +378,6 @@ class _MapaCampusState extends State<_MapaCampus> {
     final centroX = (izq + der) / 2;
     final centroY = (arr + aba) / 2;
 
-    // Centrar en la caja puede sacar la camara del lienzo cuando los POI
-    // quedan contra un borde. Se empuja de vuelta adentro: InteractiveViewer
-    // no corrige la matriz que se le asigna, solo los gestos posteriores.
     final anchoVisible = lienzo.width * escala;
     final altoVisible = lienzo.height * escala;
     final dx = (ventana.width / 2 - centroX * escala).clamp(
@@ -427,12 +399,11 @@ class _MapaCampusState extends State<_MapaCampus> {
 
   @override
   Widget build(BuildContext context) {
+    // Escuchamos la URL del mapa desde el provider
+    final mapaUrlAsync = ref.watch(mapaUrlProvider(Configuracion.lugarPorDefecto));
+
     return LayoutBuilder(
       builder: (context, restricciones) {
-        // El lienzo tiene que cubrir la ventana por los dos lados. Calculado
-        // solo desde el ancho, un mapa apaisado dentro de una pantalla vertical
-        // queda mas bajo que el area disponible y flota entre dos bandas
-        // vacias que ocupaban mas de un cuarto de la pantalla.
         final ancho = max(
           restricciones.maxWidth * _amplitud,
           restricciones.maxHeight * _relacion,
@@ -443,14 +414,8 @@ class _MapaCampusState extends State<_MapaCampus> {
         return InteractiveViewer(
           transformationController: _controlador,
           constrained: false,
-          // El tope de alejamiento es la cobertura: mas atras solo hay vacio.
-          // El campus es apaisado y la pantalla vertical, asi que verlo entero
-          // de una vez obligaria a dejar entrar ese vacio; se recorre
-          // arrastrando.
           minScale: _escalaDeCobertura(restricciones.biggest, lienzo),
           maxScale: _escalaMaxima,
-          // Sin margen el visor no puede salirse del lienzo, que es lo que
-          // mantiene el margen de la ilustracion fuera de cuadro.
           boundaryMargin: EdgeInsets.zero,
           child: SizedBox(
             width: lienzo.width,
@@ -459,14 +424,29 @@ class _MapaCampusState extends State<_MapaCampus> {
               clipBehavior: Clip.none,
               children: [
                 Positioned.fill(
-                  child: Image.asset(
-                    _rutaMapa,
-                    fit: BoxFit.fill,
-                    filterQuality: FilterQuality.medium,
-                    // Decodificar los 4096 px completos costaria unos 38 MB de
-                    // memoria. A 2560 sigue nitido hasta el zoom maximo y baja
-                    // a unos 15 MB, que es lo que tolera la gama baja.
-                    cacheWidth: 2560,
+                  child: mapaUrlAsync.when(
+                    data: (url) {
+                      if (url == null) {
+                        return const Center(child: Text('Este lugar no tiene mapa configurado.'));
+                      }
+                      return CachedNetworkImage(
+                        imageUrl: url,
+                        fit: BoxFit.fill,
+                        filterQuality: FilterQuality.medium,
+                        // Usamos memCacheWidth para optimizar memoria igual que cacheWidth en Image.asset
+                        memCacheWidth: 2560,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                        errorWidget: (context, url, error) => const Center(
+                          child: Icon(Icons.broken_image_outlined, size: 50, color: Colors.grey),
+                        ),
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, _) => const Center(
+                      child: Icon(Icons.error_outline_rounded, size: 50, color: Colors.red),
+                    ),
                   ),
                 ),
                 ..._marcadores(lienzo),
@@ -484,16 +464,12 @@ class _MapaCampusState extends State<_MapaCampus> {
     return [
       for (final (indice, poi) in ubicables.indexed)
         Positioned(
-          // El pin ancla por su punta inferior, no por su centro.
           left: poi.mapX! * lienzo.width - _PoiMarker.ancho / 2,
           top: poi.mapY! * lienzo.height - _PoiMarker.alto + 8,
           child: Semantics(
             button: true,
             label: poi.nombre,
             child: GestureDetector(
-              // Sin `opaque` el toque solo lo absorbe el glifo pintado y el
-              // resto de la caja queda muerto: eran 36 dp reales frente a los
-              // 48 que exige Material.
               behavior: HitTestBehavior.opaque,
               onTap: () => widget.alTocarPoi(poi),
               child: _PoiMarker(index: indice),

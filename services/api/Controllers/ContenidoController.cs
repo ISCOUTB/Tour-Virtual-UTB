@@ -1,14 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TourVirtualUTB.Api.Data;
 using TourVirtualUTB.Api.DTOs;
 using TourVirtualUTB.Api.Models;
+using TourVirtualUTB.Api.Services;
 
 namespace TourVirtualUTB.Api.Controllers;
 
 [ApiController]
 [Route("api")]
-public class ContenidoController(TourDbContext db) : ControllerBase
+public class ContenidoController(
+    IContenidoService contenidoService, 
+    IAlmacenamientoService almacenamientoService) : ControllerBase // <-- ¡Eliminamos TourDbContext!
 {
     private Audiencia AudienciaActual =>
         Request.Headers.TryGetValue("X-UTB-Audiencia", out var value) &&
@@ -16,67 +17,75 @@ public class ContenidoController(TourDbContext db) : ControllerBase
             ? audiencia
             : Audiencia.externo;
 
+    // --- Endpoints de Contenido ---
+
     [HttpGet("lugares/{lugarId:int}/pois")]
     public async Task<ActionResult<IReadOnlyList<PoiDto>>> ObtenerPois(int lugarId)
     {
-        var audiencia = AudienciaActual.ToString();
-        var pois = await db.Pois
-            .AsNoTracking()
-            .Where(p => p.LugarId == lugarId && p.Activo &&
-                        ("," + p.Audiencias + ",").Contains("," + audiencia + ","))
-            .OrderBy(p => p.Id)
-            .ToListAsync();
-        return Ok(pois.Select(Dto.Poi).ToList());
+        var pois = await contenidoService.ObtenerPoisAsync(lugarId, AudienciaActual);
+        return Ok(pois);
     }
 
     [HttpGet("lugares/{lugarId:int}/recorrido")]
     public async Task<ActionResult<RecorridoDto>> ObtenerRecorrido(int lugarId)
     {
-        var audiencia = AudienciaActual.ToString();
-        var escenas = await db.Escenas
-            .AsNoTracking()
-            .Include(e => e.Poi)
-            .Where(e => e.LugarId == lugarId &&
-                        (e.PoiId == null || (e.Poi!.Activo &&
-                            ("," + e.Poi.Audiencias + ",").Contains("," + audiencia + ","))))
-            .OrderBy(e => e.Orden)
-            .ToListAsync();
-        if (escenas.Count == 0)
-            return NotFound();
-
-        var ids = escenas.Select(e => e.Id).ToList();
-        var hotspots = await db.Hotspots.AsNoTracking()
-            .Where(h => ids.Contains(h.EscenaId))
-            .OrderBy(h => h.Id)
-            .ToListAsync();
-        var visibles = ids.ToHashSet();
-        return Ok(new RecorridoDto(
-            escenas.Select(Dto.Escena).ToList(),
-            hotspots.Where(h => h.Tipo != TipoHotspot.navegacion ||
-                                h.EscenaDestinoId.HasValue && visibles.Contains(h.EscenaDestinoId.Value))
-                .Select(Dto.Hotspot).ToList()));
+        var recorrido = await contenidoService.ObtenerRecorridoAsync(lugarId, AudienciaActual);
+        if (recorrido is null) return NotFound();
+        return Ok(recorrido);
     }
 
     [HttpGet("pois/{poiId:int}")]
     public async Task<ActionResult<PoiDetalleDto>> ObtenerPoi(int poiId)
     {
-        var audiencia = AudienciaActual.ToString();
-        var poi = await db.Pois.AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == poiId && p.Activo &&
-                ("," + p.Audiencias + ",").Contains("," + audiencia + ","));
-        if (poi is null) return NotFound();
-        var medios = await db.Medios.AsNoTracking()
-            .Where(m => m.PoiId == poiId).OrderBy(m => m.Orden)
-            .ToListAsync();
-        return Ok(new PoiDetalleDto(Dto.Poi(poi), medios.Select(Dto.Medio).ToList()));
+        var detalle = await contenidoService.ObtenerPoiPorIdAsync(poiId, AudienciaActual);
+        if (detalle is null) return NotFound();
+        return Ok(detalle);
     }
 
     [HttpGet("lugares/{lugarId:int}/ruta")]
     public async Task<ActionResult<RutaDto?>> ObtenerRuta(int lugarId)
     {
-        var ruta = await db.Rutas.AsNoTracking()
-            .FirstOrDefaultAsync(r => r.LugarId == lugarId &&
-                r.Activa && r.Audiencia == AudienciaActual);
-        return Ok(ruta is null ? null : Dto.Ruta(ruta));
+        var ruta = await contenidoService.ObtenerRutaActivaAsync(lugarId, AudienciaActual);
+        return Ok(ruta);
+    }
+
+    // --- Endpoints de Gestión de Multimedia del Mapa ---
+
+    [HttpPost("lugares/{lugarId:int}/mapa")]
+    public async Task<IActionResult> SubirOActualizarMapa(int lugarId, [FromForm] SubirMultimediaRequest request)
+    {
+        if (request.Archivo == null || request.Archivo.Length == 0)
+            return BadRequest("No se proporcionó ningún archivo.");
+
+        // 1. Subimos el archivo a Supabase S3
+        var rutaS3 = await almacenamientoService.SubirArchivoAsync(request.Archivo, request.Carpeta ?? "mapas");
+
+        // 2. Guardamos la ruta en la base de datos a través del servicio
+        var actualizado = await contenidoService.ActualizarMapaLugarAsync(lugarId, rutaS3);
+        
+        if (!actualizado)
+            return NotFound("El lugar especificado no existe en la base de datos.");
+
+        return Ok(new 
+        { 
+            mensaje = "Mapa actualizado y guardado en la base de datos correctamente", 
+            rutaS3,
+            lugarId 
+        });
+    }
+
+    [HttpGet("lugares/{lugarId:int}/mapa")]
+    public async Task<IActionResult> ObtenerUrlMapa(int lugarId)
+    {
+        // 1. Buscamos la ruta del mapa en la BD a través del servicio
+        var mapaUrl = await contenidoService.ObtenerRutaMapaLugarAsync(lugarId);
+        
+        if (string.IsNullOrEmpty(mapaUrl))
+            return NotFound("Este lugar no existe o aún no tiene un mapa asociado.");
+
+        // 2. Generamos la URL firmada temporal con S3
+        var urlFirmada = await almacenamientoService.ObtenerUrlFirmadaAsync(mapaUrl, TimeSpan.FromHours(1));
+
+        return Ok(new { urlMapa = urlFirmada });
     }
 }

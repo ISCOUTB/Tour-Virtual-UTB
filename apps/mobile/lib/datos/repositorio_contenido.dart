@@ -51,6 +51,17 @@ class RepositorioContenido {
         .toList();
   }
 
+  Future<String?> obtenerUrlMapa(int lugarId) async {
+    try {
+      final json = await _get('/api/lugares/$lugarId/mapa') as Map<String, dynamic>;
+      return json['urlMapa'] as String?;
+    } catch (error) {
+      // Si el backend devuelve 404 (el lugar no tiene mapa aún), retornamos nulo
+      if (error is FalloSinContenido) return null;
+      rethrow;
+    }
+  }
+
   Future<Recorrido> obtenerRecorrido(int lugarId) async {
     final json =
         await _get('/api/lugares/$lugarId/recorrido') as Map<String, dynamic>;

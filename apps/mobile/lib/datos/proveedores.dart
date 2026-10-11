@@ -20,4 +20,8 @@ final poiDetalleProvider = FutureProvider.family<PoiDetalle, int>((ref, poiId) {
   return ref.watch(repositorioContenidoProvider).obtenerPoiDetalle(poiId);
 });
 
+final mapaUrlProvider = FutureProvider.family<String?, int>((ref, lugarId) {
+  return ref.watch(repositorioContenidoProvider).obtenerUrlMapa(lugarId);
+});
+
 Future<void> inicializarBackend() async {}

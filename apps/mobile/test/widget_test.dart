@@ -107,6 +107,13 @@ class RepositorioFalso implements RepositorioContenido {
     if (fallo != null) throw fallo!;
     return null;
   }
+
+  @override
+  Future<String?> obtenerUrlMapa(int lugarId) async {
+    // Para las pruebas, puedes devolver null o una URL simulada
+    return null; 
+  }
+
 }
 
 const poisDePrueba = [

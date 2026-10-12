@@ -1,103 +1,130 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'datos/proveedores.dart';
+import 'l10n/textos.dart';
+import 'nucleo/configuracion.dart';
+import 'nucleo/idiomas.dart';
+import 'nucleo/movimiento.dart';
 import 'nucleo/rutas.dart';
+import 'nucleo/tema.dart';
+import 'ui/comunes/fondos.dart';
 
-class LoadingScreen extends StatefulWidget {
+/// Pantalla de arranque, la misma de la app UTB: marino profundo, luces
+/// desenfocadas y el logo institucional.
+///
+/// Antes esperaba 4 s fijos sin cargar nada. Ahora pide los lugares en cuanto
+/// aparece y sale cuando llegan, con un mínimo para que la revelación se lea
+/// y un tope para no retener a nadie si la red no responde. Un toque la salta.
+class LoadingScreen extends ConsumerStatefulWidget {
   const LoadingScreen({super.key});
 
   @override
-  State<LoadingScreen> createState() => _LoadingScreenState();
+  ConsumerState<LoadingScreen> createState() => _LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+class _LoadingScreenState extends ConsumerState<LoadingScreen> {
+  static const _minimo = Duration(milliseconds: 1500);
+  static const _tope = Duration(milliseconds: 3200);
+
+  final _reloj = Stopwatch()..start();
+  final _temporizadores = <Timer>[];
+  var _salio = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-
-    Future.delayed(const Duration(seconds: 4), () {
-      if (!mounted) return;
-      context.go(Rutas.inicio);
-    });
+    _temporizadores.add(Timer(_tope, _salir));
+    ref.listenManual(poisProvider(Configuracion.lugarPorDefecto), (_, valor) {
+      if (valor.isLoading) return;
+      final resta = _minimo - _reloj.elapsed;
+      if (resta <= Duration.zero) {
+        _salir();
+      } else {
+        _temporizadores.add(Timer(resta, _salir));
+      }
+    }, fireImmediately: true);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    for (final t in _temporizadores) {
+      t.cancel();
+    }
     super.dispose();
   }
 
+  void _salir() {
+    if (_salio || !mounted) return;
+    _salio = true;
+    context.go(Rutas.inicio);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1D4AA7),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'android/app/src/assets/logo.png',
-              height: 40,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Universidad Tecnológica de Bolívar',
-              style: GoogleFonts.familjenGrotesk(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            const SizedBox(height: 32),
-            _LoadingDots(controller: _controller),
-          ],
-        ),
+    final animar = !sinMovimiento(context);
+    final ancho = MediaQuery.sizeOf(context).width;
+
+    Widget logo = Image.asset(
+      'android/app/src/assets/logo_utb.png',
+      width: (ancho * 0.66).clamp(200.0, 320.0),
+      semanticLabel: 'Universidad Tecnológica de Bolívar',
+      // El logo es material institucional y puede no estar en una copia
+      // recién clonada; sin él, el nombre escrito ocupa su lugar.
+      errorBuilder: (context, error, pila) => Text(
+        'Universidad Tecnológica de Bolívar',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.headlineSmall,
       ),
     );
-  }
-}
+    Widget nombre = Text(
+      mayusculasDe(context, Textos.of(context).tourVirtual),
+      style: estiloSobretitulo(
+        color: Colors.white.withValues(alpha: 0.72),
+      ).copyWith(fontSize: 13, letterSpacing: 4),
+    );
 
-class _LoadingDots extends StatelessWidget {
-  final AnimationController controller;
+    if (animar) {
+      logo = logo
+          .animate()
+          .fadeIn(duration: 700.ms, curve: Movimiento.salida)
+          .scale(
+            begin: const Offset(0.94, 0.94),
+            end: const Offset(1, 1),
+            duration: 900.ms,
+            curve: Movimiento.salidaFuerte,
+          );
+      nombre = nombre
+          .animate(delay: 450.ms)
+          .fadeIn(duration: 600.ms)
+          .slideY(begin: 0.4, end: 0, curve: Movimiento.salida);
+    }
 
-  const _LoadingDots({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (index) {
-            final delay = index * 0.2;
-            final value = (controller.value + delay) % 1.0;
-            final scale = 0.5 + (value * 0.5);
-
-            return Transform.scale(
-              scale: scale,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 5),
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: ColoresUtb.arranqueBorde,
+      ),
+      child: Scaffold(
+        backgroundColor: ColoresUtb.arranqueBorde,
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _salir,
+          child: FondoArranque(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [logo, const SizedBox(height: 26), nombre],
               ),
-            );
-          }),
-        );
-      },
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

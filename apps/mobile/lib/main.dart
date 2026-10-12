@@ -1,566 +1,139 @@
-import 'dart:math';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'datos/modelos/modelos.dart';
+import 'datos/preferencias.dart';
 import 'datos/proveedores.dart';
-import 'nucleo/configuracion.dart';
+import 'l10n/textos.dart';
 import 'nucleo/rutas.dart';
-import 'ui/ficha_poi.dart';
-import 'ui/pestana_recorrido.dart';
-import 'ui/vista_async.dart';
+import 'nucleo/tema.dart';
+
+export 'ui/inicio/pantalla_tour.dart' show HomeScreen;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // De borde a borde, como la app UTB: la cabecera azul pasa por debajo de la
+  // barra de estado.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await inicializarBackend();
-  runApp(const ProviderScope(child: UtbVirtualApp()));
+  final preferencias = await cargarPreferencias();
+  runApp(
+    ProviderScope(
+      overrides: [
+        preferenciasInicialesProvider.overrideWithValue(preferencias),
+      ],
+      child: const UtbVirtualApp(),
+    ),
+  );
 }
 
-class UtbVirtualApp extends StatefulWidget {
+class UtbVirtualApp extends ConsumerStatefulWidget {
   const UtbVirtualApp({super.key, this.enrutador});
 
   /// Permite inyectar un router propio en las pruebas.
   final GoRouter? enrutador;
 
   @override
-  State<UtbVirtualApp> createState() => _UtbVirtualAppState();
+  ConsumerState<UtbVirtualApp> createState() => _UtbVirtualAppState();
 }
 
-class _UtbVirtualAppState extends State<UtbVirtualApp> {
+class _UtbVirtualAppState extends ConsumerState<UtbVirtualApp>
+    with WidgetsBindingObserver {
   late final GoRouter _enrutador = widget.enrutador ?? crearEnrutador();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Quien cambia el idioma del teléfono con el módulo abierto lo ve cambiar
+  /// sin reiniciar, salvo que haya elegido otro dentro del módulo.
+  @override
+  void didChangeLocales(List<Locale>? locales) =>
+      ref.invalidate(idiomasDelTelefonoProvider);
+
+  @override
   Widget build(BuildContext context) {
+    final preferencias = ref.watch(preferenciasProvider);
+    // Un solo tema oscuro: es el de la app anfitriona, y el módulo no tiene
+    // modo claro que ofrecer sin inventarlo. El alto contraste llega por dos
+    // caminos: el ajuste del módulo elige `theme`, y «aumentar contraste» del
+    // sistema hace que MaterialApp use `highContrastDarkTheme`.
+    final tema = temaUtb(altoContraste: preferencias.altoContraste);
+    final contraste = temaUtb(altoContraste: true);
+
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'UTB Tour Virtual',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFD8D9DB),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1F2B55)),
+      onGenerateTitle: (context) => Textos.of(context).tituloApp,
+      locale: ref.watch(idiomaProvider),
+      supportedLocales: Textos.supportedLocales,
+      localizationsDelegates: Textos.localizationsDelegates,
+      theme: tema,
+      darkTheme: tema,
+      highContrastTheme: contraste,
+      highContrastDarkTheme: contraste,
+      themeMode: ThemeMode.dark,
+      builder: (context, hijo) => MediaQuery(
+        data: ajustarMediaQuery(MediaQuery.of(context), preferencias),
+        child: hijo ?? const SizedBox.shrink(),
       ),
       routerConfig: _enrutador,
     );
   }
 }
 
-class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedIndex = 0;
-
-  void _onPoiTap(Poi poi, int totalPois) {
-    abrirPoi(context, ref, poi: poi, totalPois: totalPois);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const _TopBar()
-                .animate()
-                .fadeIn(duration: 360.ms)
-                .slideY(begin: -0.5, end: 0, duration: 420.ms),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: 320.ms,
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: (child, animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0.0, 0.03),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
-                    ),
-                  );
-                },
-                child: _buildBody(),
-              ),
-            ),
-            _buildBottomNavigation(context)
-                .animate()
-                .fadeIn(duration: 420.ms)
-                .slideY(begin: 0.3, end: 0, duration: 420.ms),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    switch (_selectedIndex) {
-      case 0:
-        final pois = ref.watch(poisProvider(Configuracion.lugarPorDefecto));
-
-        return Container(
-          key: const ValueKey('explorar'),
-          // El render trae su propio fondo claro que llega hasta los bordes,
-          // asi que el gris del resto de la app dibujaria una costura alrededor
-          // del mapa. Aqui la superficie es la ilustracion misma.
-          color: Colors.white,
-          child: VistaAsync<List<Poi>>(
-            valor: pois,
-            alReintentar: () =>
-                ref.invalidate(poisProvider(Configuracion.lugarPorDefecto)),
-            enDatos: (lista) => _MapaCampus(
-              pois: lista,
-              alTocarPoi: (poi) => _onPoiTap(poi, lista.length),
-            ).animate().fadeIn(duration: 420.ms),
-          ),
-        );
-      case 1:
-        return const PestanaRecorrido(key: ValueKey('recorrido'));
-      default:
-        return const _PagePlaceholder(
-          key: ValueKey('perfil'),
-          assetPath: 'android/app/src/assets/perfil.png',
-          title: 'Perfil y progreso',
-          message: 'Aqui mostraremos avance del tour y POI visitados.',
-        );
-    }
-  }
-
-  Widget _buildBottomNavigation(BuildContext context) {
-    const selectedNavColor = Color(0xFF093AD8);
-    const navItems = [
-      _NavItem(
-        label: 'Explorar',
-        assetPath: 'android/app/src/assets/explorar.png',
-      ),
-      _NavItem(
-        label: 'Recorrido',
-        assetPath: 'android/app/src/assets/recorrido.png',
-      ),
-      _NavItem(label: 'Perfil', assetPath: 'android/app/src/assets/perfil.png'),
-    ];
-
-    final safeBottom = MediaQuery.paddingOf(context).bottom;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0x22000000))),
-      ),
-      padding: EdgeInsets.only(bottom: max(8, safeBottom)),
-      child: Row(
-        children: List.generate(navItems.length, (index) {
-          final item = navItems[index];
-          final isSelected = index == _selectedIndex;
-
-          return Expanded(
-            child: InkWell(
-              onTap: () => setState(() => _selectedIndex = index),
-              child: SizedBox(
-                height: 78,
-                child: Column(
-                  children: [
-                    AnimatedContainer(
-                      duration: 260.ms,
-                      curve: Curves.easeOut,
-                      width: isSelected ? 52 : 0,
-                      height: 3,
-                      margin: const EdgeInsets.only(top: 2, bottom: 8),
-                      decoration: BoxDecoration(
-                        color: selectedNavColor,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                    Semantics(
-                      label: item.label,
-                      child: Opacity(
-                        opacity: isSelected ? 1 : 0.95,
-                        child: TweenAnimationBuilder<Color?>(
-                          tween: ColorTween(
-                            begin: const Color(0xFF1F2B55),
-                            end: isSelected
-                                ? selectedNavColor
-                                : const Color(0xFF1F2B55),
-                          ),
-                          duration: 220.ms,
-                          builder: (context, tintColor, child) {
-                            return ColorFiltered(
-                              colorFilter: ColorFilter.mode(
-                                tintColor ?? const Color(0xFF1F2B55),
-                                BlendMode.srcIn,
-                              ),
-                              child: child,
-                            );
-                          },
-                          child: Image.asset(
-                            item.assetPath,
-                            height: 48,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
-class _TopBar extends StatelessWidget {
-  const _TopBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 78,
-      color: const Color(0xFF1F2B55),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () {},
-            icon: Image.asset(
-              'android/app/src/assets/back.png',
-              width: 26,
-              height: 26,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Align(
-              alignment: Alignment.center,
-              child: Image.asset(
-                'android/app/src/assets/logo.png',
-                height: 38,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PagePlaceholder extends StatelessWidget {
-  final String assetPath;
-  final String title;
-  final String message;
-
-  const _PagePlaceholder({
-    super.key,
-    required this.assetPath,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFD8D9DB),
-      width: double.infinity,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child:
-              Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Image.asset(assetPath, width: 118, fit: BoxFit.contain),
-                      const SizedBox(height: 16),
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        message,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ],
-                  )
-                  .animate()
-                  .fadeIn(duration: 280.ms)
-                  .slideY(begin: 0.04, end: 0, duration: 280.ms),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem {
-  final String label;
-  final String assetPath;
-
-  const _NavItem({required this.label, required this.assetPath});
-}
-
-/// Mapa isometrico del campus con los marcadores de puntos de interes.
+/// Suma los ajustes del módulo a los del sistema.
 ///
-/// El render entregado por la universidad mide 4096x2304. El lienzo tiene que
-/// respetar esa proporcion: mientras fue cuadrado, toda coordenada normalizada
-/// caia desplazada en vertical.
-class _MapaCampus extends ConsumerStatefulWidget {
-  const _MapaCampus({required this.pois, required this.alTocarPoi});
+/// «Reducir movimiento» se vuelve `disableAnimations`, que es lo que consulta
+/// `sinMovimiento()` en cada efecto: así un solo interruptor apaga todos. El
+/// tamaño del texto se multiplica con el del sistema.
+MediaQueryData ajustarMediaQuery(MediaQueryData base, Preferencias p) =>
+    base.copyWith(
+      textScaler: p.tamanoTexto == TamanoTexto.normal
+          ? base.textScaler
+          : EscalaConAumento(base.textScaler, p.tamanoTexto.factor),
+      disableAnimations: base.disableAnimations || p.reducirMovimiento,
+      highContrast: base.highContrast || p.altoContraste,
+    );
 
-  final List<Poi> pois;
-  final void Function(Poi) alTocarPoi;
+/// Escala del sistema multiplicada por el aumento del módulo.
+///
+/// El total no pasa del 200 %, la escala que el módulo garantiza sin cortar
+/// contenido. Si el sistema ya pide más, se respeta lo del sistema: el
+/// aumento del módulo nunca reduce.
+@immutable
+class EscalaConAumento extends TextScaler {
+  const EscalaConAumento(this.sistema, this.factor);
+
+  final TextScaler sistema;
+  final double factor;
 
   @override
-  ConsumerState<_MapaCampus> createState() => _MapaCampusState();
-}
-
-class _MapaCampusState extends ConsumerState<_MapaCampus> {
-  // Eliminamos _rutaMapa porque ahora es dinámica
-  static const double _relacion = 4096 / 2304;
-  static const double _amplitud = 1.9;
-  static const double _escalaMaxima = 2.6;
-
-  final _controlador = TransformationController();
-  bool _encuadrado = false;
-
-  @override
-  void dispose() {
-    _controlador.dispose();
-    super.dispose();
-  }
-
-  static double _escalaDeCobertura(Size ventana, Size lienzo) {
-    if (lienzo.width <= 0 || lienzo.height <= 0) return 1;
-    final cobertura = max(
-      ventana.width / lienzo.width,
-      ventana.height / lienzo.height,
-    );
-    return cobertura.isFinite && cobertura > 0 ? cobertura : 1;
-  }
-
-  void _encuadrar(Size ventana, Size lienzo) {
-    if (_encuadrado || ventana.isEmpty) return;
-    _encuadrado = true;
-
-    final ubicables = widget.pois.where((p) => p.tienePosicionEnMapa).toList();
-
-    var izq = 0.0, arr = 0.0;
-    var der = lienzo.width, aba = lienzo.height;
-    if (ubicables.isNotEmpty) {
-      final xs = ubicables.map((p) => p.mapX! * lienzo.width);
-      final ys = ubicables.map((p) => p.mapY! * lienzo.height);
-      const holgura = 90.0;
-      izq = xs.reduce(min) - holgura;
-      der = xs.reduce(max) + holgura;
-      arr = ys.reduce(min) - holgura;
-      aba = ys.reduce(max) + holgura;
-    }
-
-    final anchoCaja = max(der - izq, 1.0);
-    final altoCaja = max(aba - arr, 1.0);
-
-    final escala = min(
-      ventana.width / anchoCaja,
-      ventana.height / altoCaja,
-    ).clamp(_escalaDeCobertura(ventana, lienzo), _escalaMaxima);
-
-    final centroX = (izq + der) / 2;
-    final centroY = (arr + aba) / 2;
-
-    final anchoVisible = lienzo.width * escala;
-    final altoVisible = lienzo.height * escala;
-    final dx = (ventana.width / 2 - centroX * escala).clamp(
-      ventana.width - anchoVisible,
-      0.0,
-    );
-    final dy = (ventana.height / 2 - centroY * escala).clamp(
-      ventana.height - altoVisible,
-      0.0,
-    );
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _controlador.value = Matrix4.identity()
-        ..translateByDouble(dx, dy, 0, 1)
-        ..scaleByDouble(escala, escala, 1, 1);
-    });
+  double scale(double fontSize) {
+    final delSistema = sistema.scale(fontSize);
+    return math.max(delSistema, math.min(delSistema * factor, fontSize * 2));
   }
 
   @override
-  Widget build(BuildContext context) {
-    // Escuchamos la URL del mapa desde el provider
-    final mapaUrlAsync = ref.watch(mapaUrlProvider(Configuracion.lugarPorDefecto));
-
-    return LayoutBuilder(
-      builder: (context, restricciones) {
-        final ancho = max(
-          restricciones.maxWidth * _amplitud,
-          restricciones.maxHeight * _relacion,
-        );
-        final lienzo = Size(ancho, ancho / _relacion);
-        _encuadrar(restricciones.biggest, lienzo);
-
-        return InteractiveViewer(
-          transformationController: _controlador,
-          constrained: false,
-          minScale: _escalaDeCobertura(restricciones.biggest, lienzo),
-          maxScale: _escalaMaxima,
-          boundaryMargin: EdgeInsets.zero,
-          child: SizedBox(
-            width: lienzo.width,
-            height: lienzo.height,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned.fill(
-                  child: mapaUrlAsync.when(
-                    data: (url) {
-                      if (url == null) {
-                        return const Center(child: Text('Este lugar no tiene mapa configurado.'));
-                      }
-                      return CachedNetworkImage(
-                        imageUrl: url,
-                        fit: BoxFit.fill,
-                        filterQuality: FilterQuality.medium,
-                        // Usamos memCacheWidth para optimizar memoria igual que cacheWidth en Image.asset
-                        memCacheWidth: 2560,
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                        errorWidget: (context, url, error) => const Center(
-                          child: Icon(Icons.broken_image_outlined, size: 50, color: Colors.grey),
-                        ),
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, _) => const Center(
-                      child: Icon(Icons.error_outline_rounded, size: 50, color: Colors.red),
-                    ),
-                  ),
-                ),
-                ..._marcadores(lienzo),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  List<Widget> _marcadores(Size lienzo) {
-    final ubicables = widget.pois.where((p) => p.tienePosicionEnMapa).toList();
-
-    return [
-      for (final (indice, poi) in ubicables.indexed)
-        Positioned(
-          left: poi.mapX! * lienzo.width - _PoiMarker.ancho / 2,
-          top: poi.mapY! * lienzo.height - _PoiMarker.alto + 8,
-          child: Semantics(
-            button: true,
-            label: poi.nombre,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => widget.alTocarPoi(poi),
-              child: _PoiMarker(index: indice),
-            ),
-          ),
-        ),
-    ];
-  }
-}
-
-class _PoiMarker extends StatelessWidget {
-  /// Caja tactil. Material exige 48 dp como minimo en ambos ejes.
-  static const double ancho = 56;
-  static const double alto = 64;
-
-  /// El verde anterior daba 1,11:1 sobre el cesped del render: invisible justo
-  /// encima de las zonas verdes del campus. Este teja mide 3,73:1 en el peor de
-  /// los fondos del mapa, cumple el minimo de 3:1 para elementos graficos y
-  /// pertenece a la paleta de la propia ilustracion.
-  static const Color relleno = Color(0xFF8C2F12);
-
-  final int index;
-
-  const _PoiMarker({required this.index});
+  @Deprecated('Usar scale().')
+  double get textScaleFactor => scale(14) / 14;
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: ancho,
-      height: alto,
-      child:
-          Stack(
-                alignment: Alignment.topCenter,
-                clipBehavior: Clip.none,
-                children: [
-                  IgnorePointer(
-                    child:
-                        Container(
-                              width: 34,
-                              height: 34,
-                              margin: const EdgeInsets.only(top: 9),
-                              decoration: const BoxDecoration(
-                                color: Color(0x448C2F12),
-                                shape: BoxShape.circle,
-                              ),
-                            )
-                            .animate(
-                              onPlay: (controller) => controller.repeat(),
-                            )
-                            .scale(
-                              begin: const Offset(0.55, 0.55),
-                              end: const Offset(1.6, 1.6),
-                              duration: 1300.ms,
-                              curve: Curves.easeOut,
-                            )
-                            .fadeOut(begin: 0.78, duration: 1300.ms),
-                  ),
-                  // El reborde blanco separa el pin del fondo sea cual sea:
-                  // techos claros, cesped o asfalto.
-                  Icon(
-                    Icons.location_on_rounded,
-                    size: 42,
-                    color: Colors.white,
-                  ),
-                  Icon(
-                    Icons.location_on_rounded,
-                    size: 36,
-                    color: relleno,
-                    shadows: const [
-                      Shadow(color: Color(0x55000000), blurRadius: 6),
-                    ],
-                  ),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(top: 13),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              )
-              .animate(delay: (index * 120).ms)
-              .fadeIn(duration: 280.ms)
-              .scale(
-                begin: const Offset(0.2, 0.2),
-                end: const Offset(1, 1),
-                curve: Curves.elasticOut,
-                duration: 520.ms,
-              ),
-    );
-  }
+  bool operator ==(Object other) =>
+      other is EscalaConAumento &&
+      other.sistema == sistema &&
+      other.factor == factor;
+
+  @override
+  int get hashCode => Object.hash(sistema, factor);
 }

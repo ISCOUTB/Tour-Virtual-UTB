@@ -30,8 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   flutter_animate: ^4.5.2
-  google_fonts: ^8.2.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -73,8 +75,26 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Textos de la interfaz en lib/l10n/*.arb; ver l10n.yaml.
+  generate: true
+
   assets:
     - android/app/src/assets/
+
+  # Roboto es la letra de la app UTB anfitriona. Va empaquetada para que iOS y
+  # el escritorio de desarrollo rindan igual que Android. Subconjuntos latino y
+  # latino extendido de Fontsource (roboto@5.2.5) fusionados en un archivo: el
+  # extendido trae las letras turcas (ğ, ş, İ). Chino, japonés y coreano usan
+  # la letra del sistema. Licencia SIL OFL 1.1.
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: android/app/src/assets/fuentes/Roboto-400.ttf
+          weight: 400
+        - asset: android/app/src/assets/fuentes/Roboto-500.ttf
+          weight: 500
+        - asset: android/app/src/assets/fuentes/Roboto-700.ttf
+          weight: 700
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

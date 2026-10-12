@@ -184,7 +184,7 @@ void main() {
 
       expect(detalle.imagenes, hasLength(2));
       expect(detalle.video?.url, 'clip.mp4');
-      expect(detalle.audio?.url, 'historia.mp3');
+      expect(detalle.audioPara('es')?.url, 'historia.mp3');
     });
 
     test('un POI sin multimedia no rompe la ficha', () {
@@ -194,7 +194,77 @@ void main() {
 
       expect(detalle.imagenes, isEmpty);
       expect(detalle.video, isNull);
-      expect(detalle.audio, isNull);
+      expect(detalle.videoSenas, isNull);
+      expect(detalle.audioPara('es'), isNull);
+    });
+
+    test('elige la narración del idioma de quien escucha', () {
+      const detalle = PoiDetalle(
+        poi: Poi(id: 1, lugarId: 1, nombre: 'Biblioteca'),
+        medios: [
+          // Sin idioma: la original, en español.
+          Medio(id: 1, poiId: 1, tipo: TipoMedio.audio, url: 'es.mp3'),
+          Medio(
+            id: 2,
+            poiId: 1,
+            tipo: TipoMedio.audio,
+            url: 'en.mp3',
+            idioma: 'en',
+          ),
+          Medio(
+            id: 3,
+            poiId: 1,
+            tipo: TipoMedio.audio,
+            url: 'pt-br.mp3',
+            idioma: 'pt-BR',
+          ),
+        ],
+      );
+
+      expect(detalle.audioPara('en-US')?.url, 'en.mp3');
+      expect(detalle.audioPara('pt-BR')?.url, 'pt-br.mp3');
+      // Portugal no tiene la suya: la de Brasil sirve más que la española.
+      expect(detalle.audioPara('pt-PT')?.url, 'pt-br.mp3');
+      // Sin narración en coreano, la original.
+      expect(detalle.audioPara('ko')?.url, 'es.mp3');
+      expect(detalle.audios, hasLength(3));
+    });
+
+    test('el video en lengua de señas va aparte del video hablado', () {
+      const detalle = PoiDetalle(
+        poi: Poi(id: 1, lugarId: 1, nombre: 'Biblioteca'),
+        medios: [
+          Medio(id: 1, poiId: 1, tipo: TipoMedio.video, url: 'clip.mp4'),
+          Medio(
+            id: 2,
+            poiId: 1,
+            tipo: TipoMedio.video,
+            url: 'lsc.mp4',
+            idioma: 'csn',
+          ),
+        ],
+      );
+
+      expect(detalle.video?.url, 'clip.mp4');
+      expect(detalle.videoSenas?.url, 'lsc.mp4');
+    });
+
+    test('un tipo de medio nuevo se ignora en vez de romper la ficha', () {
+      final medio = Medio.fromJson(const {
+        'id': 9,
+        'poi_id': 1,
+        'tipo': 'modelo_3d',
+        'url': 'escena.glb',
+      });
+      final detalle = PoiDetalle(
+        poi: const Poi(id: 1, lugarId: 1, nombre: 'Biblioteca'),
+        medios: [medio],
+      );
+
+      expect(medio.tipo, TipoMedio.desconocido);
+      expect(detalle.imagenes, isEmpty);
+      expect(detalle.video, isNull);
+      expect(detalle.audios, isEmpty);
     });
   });
 }

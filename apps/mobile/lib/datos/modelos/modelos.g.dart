@@ -69,6 +69,7 @@ _Escena _$EscenaFromJson(Map<String, dynamic> json) => _Escena(
   orden: (json['orden'] as num?)?.toInt() ?? 0,
   vistaInicialYaw: (json['vista_inicial_yaw'] as num?)?.toDouble(),
   vistaInicialPitch: (json['vista_inicial_pitch'] as num?)?.toDouble(),
+  textoAlt: json['texto_alt'] as String?,
 );
 
 Map<String, dynamic> _$EscenaToJson(_Escena instance) => <String, dynamic>{
@@ -82,12 +83,17 @@ Map<String, dynamic> _$EscenaToJson(_Escena instance) => <String, dynamic>{
   'orden': instance.orden,
   'vista_inicial_yaw': instance.vistaInicialYaw,
   'vista_inicial_pitch': instance.vistaInicialPitch,
+  'texto_alt': instance.textoAlt,
 };
 
 _Hotspot _$HotspotFromJson(Map<String, dynamic> json) => _Hotspot(
   id: (json['id'] as num).toInt(),
   escenaId: (json['escena_id'] as num).toInt(),
-  tipo: $enumDecode(_$TipoHotspotEnumMap, json['tipo']),
+  tipo: $enumDecode(
+    _$TipoHotspotEnumMap,
+    json['tipo'],
+    unknownValue: TipoHotspot.desconocido,
+  ),
   pitch: (json['pitch'] as num).toDouble(),
   yaw: (json['yaw'] as num).toDouble(),
   escenaDestinoId: (json['escena_destino_id'] as num?)?.toInt(),
@@ -109,17 +115,23 @@ Map<String, dynamic> _$HotspotToJson(_Hotspot instance) => <String, dynamic>{
 const _$TipoHotspotEnumMap = {
   TipoHotspot.navegacion: 'navegacion',
   TipoHotspot.info: 'info',
+  TipoHotspot.desconocido: 'desconocido',
 };
 
 _Medio _$MedioFromJson(Map<String, dynamic> json) => _Medio(
   id: (json['id'] as num).toInt(),
   poiId: (json['poi_id'] as num).toInt(),
-  tipo: $enumDecode(_$TipoMedioEnumMap, json['tipo']),
+  tipo: $enumDecode(
+    _$TipoMedioEnumMap,
+    json['tipo'],
+    unknownValue: TipoMedio.desconocido,
+  ),
   url: json['url'] as String,
   orden: (json['orden'] as num?)?.toInt() ?? 0,
   duracionSeg: (json['duracion_seg'] as num?)?.toInt(),
   textoAlt: json['texto_alt'] as String?,
   subtitulosUrl: json['subtitulos_url'] as String?,
+  idioma: json['idioma'] as String?,
 );
 
 Map<String, dynamic> _$MedioToJson(_Medio instance) => <String, dynamic>{
@@ -131,12 +143,14 @@ Map<String, dynamic> _$MedioToJson(_Medio instance) => <String, dynamic>{
   'duracion_seg': instance.duracionSeg,
   'texto_alt': instance.textoAlt,
   'subtitulos_url': instance.subtitulosUrl,
+  'idioma': instance.idioma,
 };
 
 const _$TipoMedioEnumMap = {
   TipoMedio.imagen: 'imagen',
   TipoMedio.video: 'video',
   TipoMedio.audio: 'audio',
+  TipoMedio.desconocido: 'desconocido',
 };
 
 _Ruta _$RutaFromJson(Map<String, dynamic> json) => _Ruta(

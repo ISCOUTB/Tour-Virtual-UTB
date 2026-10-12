@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:utb_tour/datos/repositorio_contenido.dart';
+import 'package:utb_tour/datos/repositorio_demo.dart';
+import 'package:utb_tour/datos/subtitulos.dart';
 import 'package:utb_tour/nucleo/errores.dart';
 
 void main() {
@@ -57,7 +59,7 @@ void main() {
 
       expect((await repositorio.obtenerPois(1)).single.nombre, 'Biblioteca');
       expect(
-        (await repositorio.obtenerPoiDetalle(1)).audio!.url,
+        (await repositorio.obtenerPoiDetalle(1)).audios.single.url,
         'http://127.0.0.1:5209/audios/biblioteca.mp3',
       );
     },
@@ -70,5 +72,144 @@ void main() {
     );
 
     expect(() => repositorio.obtenerPois(1), throwsA(isA<FalloSinContenido>()));
+  });
+
+  test('el modo demo replica el seed tal como lo ve un visitante', () async {
+    const demo = RepositorioDemo();
+    final pois = await demo.obtenerPois(1);
+
+    // El puente A3-A5 es solo para estudiantes y docentes: la API no se lo
+    // devuelve a un visitante externo, y el demo tampoco.
+    expect(pois.map((p) => p.nombre), isNot(contains('Puente A3 - A5')));
+    expect(pois, hasLength(4));
+    expect(pois.every((p) => p.tienePosicionEnMapa), isTrue);
+
+    // Las panorámicas viven en S3: el demo lo dice en vez de fingirlas.
+    expect(() => demo.obtenerRecorrido(1), throwsA(isA<FalloSinContenido>()));
+    expect(await demo.obtenerUrlMapa(1), isNull);
+  });
+
+  test(
+    'el demo encuentra las narraciones por idioma de la carpeta local',
+    () async {
+      // Lo que hay en la carpeta: el original, una narración en inglés con sus
+      // subtítulos y los del original. Nada más.
+      const hay = {
+        '/audios/biblioteca.en.mp3',
+        '/subtitulos/biblioteca.vtt',
+        '/subtitulos/biblioteca.en.vtt',
+      };
+      final demo = RepositorioDemo(
+        medios: 'http://127.0.0.1:8765',
+        cliente: MockClient(
+          (peticion) async => http.Response(
+            'WEBVTT\n\n00:00.000 --> 00:02.000\nHola',
+            hay.contains(peticion.url.path) ? 200 : 404,
+          ),
+        ),
+      );
+
+      final detalle = await demo.obtenerPoiDetalle(1);
+      final original = detalle.audioPara('es')!;
+      final ingles = detalle.audioPara('en')!;
+
+      expect(detalle.audios, hasLength(2));
+      expect(
+        original.subtitulosUrl,
+        'http://127.0.0.1:8765/subtitulos/biblioteca.vtt',
+      );
+      expect(ingles.url, 'http://127.0.0.1:8765/audios/biblioteca.en.mp3');
+      expect(ingles.idioma, 'en');
+      expect(
+        (await demo.obtenerSubtitulos(ingles.subtitulosUrl!)).texto,
+        'Hola',
+      );
+    },
+  );
+
+  group('Subtitulos', () {
+    const vtt =
+        'WEBVTT\n'
+        '\n'
+        'NOTE generado por el equipo de contenido\n'
+        '\n'
+        '1\n'
+        '00:00:00.000 --> 00:00:04.000\n'
+        'Más que una <i>biblioteca</i>:\n'
+        '\n'
+        '2\n'
+        '00:00:04.500 --> 00:00:09.500 align:start\n'
+        'concentración y disciplina.\n';
+
+    test('un WebVTT da la transcripción en texto plano', () {
+      final subtitulos = Subtitulos.leer(vtt);
+      expect(
+        subtitulos.texto,
+        'Más que una biblioteca: concentración y disciplina.',
+      );
+      expect(subtitulos.sincronizados, isTrue);
+    });
+
+    test('cada momento muestra su frase, y los silencios ninguna', () {
+      final subtitulos = Subtitulos.leer(vtt);
+      expect(
+        subtitulos.en(const Duration(seconds: 1))?.texto,
+        'Más que una biblioteca:',
+      );
+      expect(subtitulos.en(const Duration(milliseconds: 4200)), isNull);
+      expect(
+        subtitulos.en(const Duration(seconds: 6))?.texto,
+        'concentración y disciplina.',
+      );
+      expect(subtitulos.en(const Duration(seconds: 12)), isNull);
+    });
+
+    test('un SRT también se lee, con la coma de los milisegundos', () {
+      final srt = Subtitulos.leer(
+        '1\r\n00:00:01,000 --> 00:00:03,250\r\nHola &amp; bienvenida\r\n',
+      );
+      expect(srt.lineas.single.inicio, const Duration(seconds: 1));
+      expect(srt.lineas.single.fin, const Duration(milliseconds: 3250));
+      expect(srt.texto, 'Hola & bienvenida');
+    });
+
+    test('un texto plano es transcripción sin subtítulos en vivo', () {
+      final plano = Subtitulos.leer('Texto plano.\n\nSegundo párrafo.');
+      expect(plano.texto, 'Texto plano. Segundo párrafo.');
+      expect(plano.sincronizados, isFalse);
+      expect(plano.en(const Duration(seconds: 1)), isNull);
+    });
+  });
+
+  test('pide el contenido en el idioma de la interfaz', () async {
+    final cabeceras = <String, String>{};
+    final repositorio = RepositorioContenido(
+      baseUrl: 'http://127.0.0.1:5209',
+      idioma: 'pt-BR',
+      cliente: MockClient((peticion) async {
+        cabeceras.addAll(peticion.headers);
+        return http.Response('[]', 200);
+      }),
+    );
+
+    await repositorio.obtenerPois(1);
+    // Con el español como respaldo: el servidor aún no traduce, y así sabe
+    // que el original también sirve.
+    expect(cabeceras['Accept-Language'], 'pt-BR, es;q=0.5');
+    expect(repositorio.idiomaContenido, 'es');
+  });
+
+  test('toma el idioma del contenido de la respuesta', () async {
+    final repositorio = RepositorioContenido(
+      baseUrl: 'http://127.0.0.1:5209',
+      idioma: 'en',
+      cliente: MockClient(
+        (_) async =>
+            http.Response('[]', 200, headers: {'content-language': 'en'}),
+      ),
+    );
+
+    await repositorio.obtenerPois(1);
+    expect(repositorio.idiomaContenido, 'en');
   });
 }

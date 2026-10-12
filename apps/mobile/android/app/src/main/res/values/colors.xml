@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Marino del arranque de la app UTB. Sin esto Android pinta blanco
+         entre el toque del icono y el primer cuadro de Flutter. -->
+    <color name="arranque">#0B1E52</color>
+</resources>

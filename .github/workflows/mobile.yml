@@ -33,10 +33,11 @@ jobs:
       - name: Generar codigo
         run: dart run build_runner build
 
-      # Los archivos generados estan versionados. Si alguien cambia un modelo y
-      # no regenera, esto lo detecta aqui y no en tiempo de ejecucion.
+      # Los archivos generados estan versionados. Si alguien cambia un modelo o
+      # un texto de lib/l10n y no regenera, esto lo detecta aqui y no en tiempo
+      # de ejecucion. Los de idiomas los regenera `flutter pub get`.
       - name: Verificar que el codigo generado esta al dia
-        run: git diff --exit-code -- '*.g.dart' '*.freezed.dart'
+        run: git diff --exit-code -- '*.g.dart' '*.freezed.dart' 'lib/l10n/*.dart'
 
       - name: Verificar formato
         run: dart format --output=none --set-exit-if-changed .

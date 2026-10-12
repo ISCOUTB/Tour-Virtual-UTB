@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/textos.dart';
 import '../nucleo/errores.dart';
+import '../nucleo/tema.dart';
 
 /// Presenta un [AsyncValue] cubriendo los tres estados.
 ///
@@ -15,7 +17,6 @@ class VistaAsync<T> extends StatelessWidget {
     required this.enDatos,
     required this.alReintentar,
     this.enCarga,
-    this.sobreFondoOscuro = false,
   });
 
   final AsyncValue<T> valor;
@@ -23,84 +24,82 @@ class VistaAsync<T> extends StatelessWidget {
   final VoidCallback alReintentar;
   final Widget? enCarga;
 
-  /// Ajusta el contraste cuando se dibuja sobre el visor 360, que es negro.
-  final bool sobreFondoOscuro;
-
   @override
   Widget build(BuildContext context) {
     return valor.when(
       data: enDatos,
-      loading: () => enCarga ?? _Cargando(sobreFondoOscuro: sobreFondoOscuro),
-      error: (error, _) => _Error(
-        fallo: traducirFallo(error),
-        alReintentar: alReintentar,
-        sobreFondoOscuro: sobreFondoOscuro,
+      loading: () =>
+          enCarga ??
+          const Center(
+            child: CircularProgressIndicator(color: ColoresUtb.azulClaro),
+          ),
+      error: (error, _) => Center(
+        child: VistaError(
+          fallo: traducirFallo(error),
+          alReintentar: alReintentar,
+        ),
       ),
     );
   }
 }
 
-class _Cargando extends StatelessWidget {
-  const _Cargando({required this.sobreFondoOscuro});
-
-  final bool sobreFondoOscuro;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: sobreFondoOscuro ? Colors.white : null,
-      ),
-    );
-  }
-}
-
-class _Error extends StatelessWidget {
-  const _Error({
+/// Mensaje de fallo con salida.
+class VistaError extends StatelessWidget {
+  const VistaError({
+    super.key,
     required this.fallo,
     required this.alReintentar,
-    required this.sobreFondoOscuro,
   });
 
   final FalloApp fallo;
   final VoidCallback alReintentar;
-  final bool sobreFondoOscuro;
 
   @override
   Widget build(BuildContext context) {
-    final colorTexto = sobreFondoOscuro ? Colors.white : null;
+    final textos = Theme.of(context).textTheme;
+    final txt = Textos.of(context);
+    final sinContenido = fallo is FalloSinContenido;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              fallo is FalloSinContenido
-                  ? Icons.inbox_outlined
-                  : Icons.wifi_off_rounded,
-              size: 44,
-              color: colorTexto ?? Theme.of(context).colorScheme.outline,
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MedidasUtb.margen,
+        vertical: 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: ColoresUtb.fondoInfo,
+              shape: BoxShape.circle,
+              border: Border.all(color: ColoresUtb.borde),
             ),
-            const SizedBox(height: 14),
-            Text(
-              fallo.mensaje,
+            child: Icon(
+              sinContenido ? Icons.inbox_outlined : Icons.wifi_off_rounded,
+              size: 28,
+              color: ColoresUtb.azulInfo,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Text(
+              fallo.mensaje(txt),
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: colorTexto),
+              style: textos.bodyLarge,
             ),
-            if (fallo.esReintentable) ...[
-              const SizedBox(height: 18),
-              FilledButton.tonalIcon(
-                onPressed: alReintentar,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Reintentar'),
-              ),
-            ],
+          ),
+          if (fallo.esReintentable) ...[
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: alReintentar,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(txt.reintentar),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

@@ -1,0 +1,10 @@
+# Textos de la interfaz. La plantilla es el español: cualquier texto nuevo se
+# escribe primero en textos_es.arb y luego se traduce en los demás archivos.
+# Una clave que falte en un idioma cae al español, y la prueba de
+# test/textos_test.dart lo impide.
+arb-dir: lib/l10n
+template-arb-file: textos_es.arb
+output-localization-file: textos.dart
+output-class: Textos
+nullable-getter: false
+preferred-supported-locales: [es]

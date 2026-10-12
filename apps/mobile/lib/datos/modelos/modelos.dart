@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../nucleo/idiomas.dart';
+
 part 'modelos.freezed.dart';
 part 'modelos.g.dart';
 
@@ -36,6 +38,10 @@ enum TipoHotspot {
   /// Abre la ficha multimedia de un POI.
   @JsonValue('info')
   info,
+
+  /// Un tipo que esta versión de la app no conoce. Se ignora en lugar de
+  /// tumbar el recorrido entero.
+  desconocido,
 }
 
 enum TipoMedio {
@@ -45,6 +51,11 @@ enum TipoMedio {
   video,
   @JsonValue('audio')
   audio,
+
+  /// Un tipo que esta versión de la app no conoce. Se ignora en lugar de
+  /// dejar la ficha en error: el backend puede añadir tipos antes de que la
+  /// app instalada los sepa mostrar.
+  desconocido,
 }
 
 @freezed
@@ -107,6 +118,11 @@ abstract class Escena with _$Escena {
 
     /// Grados sobre el horizonte al abrir. Nulo abre al horizonte.
     @JsonKey(name: 'vista_inicial_pitch') double? vistaInicialPitch,
+
+    /// Descripción de lo que se ve, para quien no ve la panorámica. El
+    /// backend aún no la envía; mientras tanto el visor usa la descripción
+    /// del POI.
+    @JsonKey(name: 'texto_alt') String? textoAlt,
   }) = _Escena;
 
   factory Escena.fromJson(Map<String, dynamic> json) => _$EscenaFromJson(json);
@@ -117,6 +133,7 @@ abstract class Hotspot with _$Hotspot {
   const factory Hotspot({
     required int id,
     @JsonKey(name: 'escena_id') required int escenaId,
+    @JsonKey(unknownEnumValue: TipoHotspot.desconocido)
     required TipoHotspot tipo,
 
     /// Grados. El visor lo consume como `Hotspot.latitude`.
@@ -139,13 +156,26 @@ abstract class Medio with _$Medio {
   const factory Medio({
     required int id,
     @JsonKey(name: 'poi_id') required int poiId,
-    required TipoMedio tipo,
+    @JsonKey(unknownEnumValue: TipoMedio.desconocido) required TipoMedio tipo,
     required String url,
     @Default(0) int orden,
     @JsonKey(name: 'duracion_seg') int? duracionSeg,
     @JsonKey(name: 'texto_alt') String? textoAlt,
+
+    /// Subtítulos o transcripción, en WebVTT o texto plano, en el mismo
+    /// idioma que [idioma].
     @JsonKey(name: 'subtitulos_url') String? subtitulosUrl,
+
+    /// Etiqueta BCP 47 del idioma hablado o señado: `es`, `en`, `pt-BR`, o
+    /// `csn` para un video en Lengua de Señas Colombiana. Nulo se toma como
+    /// el idioma original del contenido, el español.
+    String? idioma,
   }) = _Medio;
+
+  const Medio._();
+
+  /// Idioma efectivo del medio.
+  String get idiomaEfectivo => idioma ?? idiomaOriginal.languageCode;
 
   factory Medio.fromJson(Map<String, dynamic> json) => _$MedioFromJson(json);
 }
@@ -191,11 +221,39 @@ abstract class PoiDetalle with _$PoiDetalle {
   List<Medio> get imagenes =>
       medios.where((m) => m.tipo == TipoMedio.imagen).toList();
 
-  Medio? get video =>
-      medios.where((m) => m.tipo == TipoMedio.video).firstOrNull;
+  /// Video hablado o sin voz. El de lengua de señas va aparte.
+  Medio? get video => medios
+      .where((m) => m.tipo == TipoMedio.video && !esLenguaDeSenas(m.idioma))
+      .firstOrNull;
 
-  Medio? get audio =>
-      medios.where((m) => m.tipo == TipoMedio.audio).firstOrNull;
+  /// Video en Lengua de Señas Colombiana.
+  Medio? get videoSenas => medios
+      .where((m) => m.tipo == TipoMedio.video && esLenguaDeSenas(m.idioma))
+      .firstOrNull;
+
+  /// Todas las narraciones del lugar, una por idioma.
+  List<Medio> get audios =>
+      medios.where((m) => m.tipo == TipoMedio.audio).toList();
+
+  /// La narración que mejor sirve a quien habla [idioma] (etiqueta BCP 47).
+  ///
+  /// Primero la de su idioma y país, luego la de su idioma, luego la
+  /// original en español y por último cualquiera: una narración en otro
+  /// idioma, con sus subtítulos, sirve más que ninguna.
+  Medio? audioPara(String idioma) {
+    final lista = audios;
+    final etiqueta = idioma.replaceAll('_', '-').toLowerCase();
+    return lista
+            .where((m) => m.idiomaEfectivo.toLowerCase() == etiqueta)
+            .firstOrNull ??
+        lista.where((m) => mismoIdioma(m.idiomaEfectivo, idioma)).firstOrNull ??
+        lista
+            .where(
+              (m) => mismoIdioma(m.idiomaEfectivo, idiomaOriginal.languageCode),
+            )
+            .firstOrNull ??
+        lista.firstOrNull;
+  }
 }
 
 /// El recorrido completo de un lugar, resuelto de una sola vez.

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/textos.dart';
 import '../loading_screen.dart';
-import '../main.dart';
 import '../recorrido_screen.dart';
+import '../ui/comunes/transiciones.dart';
+import '../ui/inicio/pantalla_tour.dart';
+import 'tema.dart';
 
 abstract final class Rutas {
   static const carga = '/';
@@ -43,23 +46,31 @@ GoRouter crearEnrutador({String? ubicacionInicial}) => GoRouter(
     ),
     GoRoute(
       path: Rutas.inicio,
-      builder: (context, state) => const HomeScreen(),
+      pageBuilder: (context, state) => CustomTransitionPage<void>(
+        key: state.pageKey,
+        transitionDuration: const Duration(milliseconds: 900),
+        transitionsBuilder: revelacionCircular,
+        child: const HomeScreen(),
+      ),
     ),
     GoRoute(
       path: '${Rutas.recorrido}/:lugarId',
-      builder: (context, state) {
-        // Un identificador ilegible en el enlace no debe tumbar la app: se cae
-        // al lugar por defecto.
+      pageBuilder: (context, state) {
+        // Un identificador ilegible en el enlace no debe tumbar la app.
         final lugarId = int.tryParse(state.pathParameters['lugarId'] ?? '');
         final escenaId = int.tryParse(
           state.uri.queryParameters['escena'] ?? '',
         );
 
-        if (lugarId == null) {
-          return const _RutaInvalida();
-        }
-
-        return RecorridoScreen(lugarId: lugarId, escenaInicialId: escenaId);
+        return CustomTransitionPage<void>(
+          key: state.pageKey,
+          transitionDuration: const Duration(milliseconds: 560),
+          reverseTransitionDuration: const Duration(milliseconds: 360),
+          transitionsBuilder: entradaInmersiva,
+          child: lugarId == null
+              ? const _RutaInvalida()
+              : RecorridoScreen(lugarId: lugarId, escenaInicialId: escenaId),
+        );
       },
     ),
   ],
@@ -71,11 +82,15 @@ class _RutaInvalida extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
-      body: const Center(
+      appBar: AppBar(backgroundColor: ColoresUtb.fondo),
+      body: Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32),
-          child: Text('Ese enlace no es valido.', textAlign: TextAlign.center),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            Textos.of(context).enlaceInvalido,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
         ),
       ),
     );

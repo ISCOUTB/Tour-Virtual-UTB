@@ -45,6 +45,9 @@ eliminando el contrato actual sin una migración verificable.
 - `docs/SRSIEEE830TourVirtualUTBv3.1.pdf`: requisitos funcionales definitivos.
 - [`PRODUCT.md`](../PRODUCT.md): usuarios, principios de producto y contenido
   todavía ausente.
+- [`docs/ACCESIBILIDAD.md`](./ACCESIBILIDAD.md): idiomas de la interfaz,
+  accesibilidad, formato de audios y subtítulos, y lo que falta del backend
+  para traducir el contenido.
 
 ## 2. Qué hay en el repositorio
 
@@ -238,6 +241,34 @@ El móvil resuelve las rutas relativas de medios (`panoramas/...`, `audios/...`)
 contra `API_BASE_URL`. Los archivos reales no están versionados; si la API no
 los sirve, el resto de la aplicación continúa mostrando el estado de error.
 
+### Sin backend: modo demo
+
+Para trabajar el frontend sin levantar la API (que hoy exige Postgres y
+credenciales de Supabase S3):
+
+```powershell
+flutter run -d windows --dart-define=DATOS=demo
+```
+
+Carga los lugares del seed (`services/api/Data/ContenidoInicial.cs`) tal como
+los ve un visitante externo, y el mapa empaquetado. Para ver además las
+panorámicas y el audio, se sirve una carpeta con las mismas claves del seed
+(`panoramas/<slug>.jpg`, `panoramas/<slug>-baja.jpg`, `audios/<slug>.mp3`):
+
+```powershell
+python -m http.server 8765 --bind 127.0.0.1   # dentro de esa carpeta
+flutter run -d windows --dart-define=DATOS=demo --dart-define=MEDIOS_DEMO=http://127.0.0.1:8765
+```
+
+El pie de la lista muestra «Datos de demostración» para que nadie confunda
+esa pantalla con contenido real.
+
+En esa carpeta el demo también encuentra, si existen, narraciones por idioma
+(`audios/<slug>.<idioma>.mp3`) y subtítulos (`subtitulos/<slug>.vtt`,
+`subtitulos/<slug>.<idioma>.vtt`). Sirve para revisar audios y subtítulos en
+la app antes de que el backend sepa guardarlos; el formato está en
+[`ACCESIBILIDAD.md`](./ACCESIBILIDAD.md).
+
 ## 7. Contrato entre API y Flutter
 
 El único punto de red del móvil es
@@ -276,7 +307,16 @@ Archivos principales:
 
 | Archivo | Responsabilidad |
 |---|---|
-| [`main.dart`](../apps/mobile/lib/main.dart) | Arranque, tema, mapa y composición |
+| [`main.dart`](../apps/mobile/lib/main.dart) | Arranque, tema, idioma y ajustes de accesibilidad |
+| [`tema.dart`](../apps/mobile/lib/nucleo/tema.dart) | Colores medidos de la app UTB, paleta de alto contraste, tipografía y tema M3 |
+| [`l10n/`](../apps/mobile/lib/l10n/) | Textos de la interfaz, uno por idioma (`textos_es.arb` es la plantilla) |
+| [`idiomas.dart`](../apps/mobile/lib/nucleo/idiomas.dart) | Idiomas disponibles y cómo se elige uno |
+| [`preferencias.dart`](../apps/mobile/lib/datos/preferencias.dart) | Idioma, tamaño de texto, contraste, movimiento y subtítulos elegidos en el módulo |
+| [`subtitulos.dart`](../apps/mobile/lib/datos/subtitulos.dart) | Lectura de WebVTT/SRT para subtítulos en vivo y transcripción |
+| [`movimiento.dart`](../apps/mobile/lib/nucleo/movimiento.dart) | Duraciones, curvas y «quitar animaciones» |
+| [`pantalla_tour.dart`](../apps/mobile/lib/ui/inicio/pantalla_tour.dart) | Pantalla del módulo: cabecera, selector Recorrido/Mapa |
+| [`vista_mapa.dart`](../apps/mobile/lib/ui/inicio/vista_mapa.dart) | Mapa del campus, marcadores y carrusel |
+| [`ui/comunes/`](../apps/mobile/lib/ui/comunes/) | Piezas compartidas: tarjetas, fondos con arcos, anillos, 3D |
 | [`repositorio_contenido.dart`](../apps/mobile/lib/datos/repositorio_contenido.dart) | Lecturas HTTP |
 | [`proveedores.dart`](../apps/mobile/lib/datos/proveedores.dart) | Providers Riverpod |
 | [`modelos.dart`](../apps/mobile/lib/datos/modelos/modelos.dart) | Modelos Freezed/JSON |
@@ -294,13 +334,29 @@ dart run build_runner build
 No se deben editar manualmente los archivos `*.freezed.dart` ni `*.g.dart`.
 Después se actualizan repositorio, providers, UI y pruebas relacionadas.
 
+El módulo vive dentro de la app UTB y copia su lenguaje visual: tema oscuro,
+cabeceras azules con arcos, tarjetas grafito y Roboto. La referencia son las
+capturas de `docs/capturas_utbapp/`, que no se versionan porque muestran datos
+personales y se piden al equipo. No se escriben colores sueltos en las
+pantallas: salen de `ColoresUtb` en `tema.dart` (o de `PaletaUtb.de(context)`
+para los que cambian con el alto contraste), y si la app anfitriona cambia se
+vuelven a medir allí. Todo efecto decorativo consulta `sinMovimiento()`.
+
+Ningún texto de interfaz se escribe en el código: va en
+`lib/l10n/textos_es.arb` y se traduce en los demás archivos de esa carpeta
+(ver [`ACCESIBILIDAD.md`](./ACCESIBILIDAD.md)). Un botón que envuelve su
+contenido en `Semantics(excludeSemantics: true)` necesita también `onTap` en
+ese `Semantics`; si no, el lector de pantalla lo anuncia y el doble toque no
+hace nada.
+
 Para agregar una pantalla:
 
-1. Crear la pantalla siguiendo los patrones de `lib/ui/`.
+1. Crear la pantalla con las piezas de `lib/ui/comunes/`.
 2. Declarar la ruta en `lib/nucleo/rutas.dart`.
 3. Consumir providers y `VistaAsync`.
 4. Añadir estados de carga, error, reintento y datos.
-5. Crear o actualizar la prueba de widget.
+5. Poner sus textos en `lib/l10n/` y comprobarla con el texto al 200 %.
+6. Crear o actualizar la prueba de widget.
 
 ## 9. Trabajar en la API
 
@@ -369,6 +425,7 @@ Pruebas enfocadas:
 ```powershell
 flutter test test/modelos_test.dart
 flutter test test/repositorio_contenido_test.dart
+flutter test test/textos_test.dart
 flutter test test/widget_test.dart
 ```
 

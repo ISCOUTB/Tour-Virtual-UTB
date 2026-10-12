@@ -10,7 +10,17 @@
 # en las rutas indicadas.
 # -----------------------------------------------------------------------------
 /assets/
+/assets.zip
 apps/mobile/android/app/src/assets/mapa_campus.webp
+
+# Capturas de la app UTB anfitriona: son la referencia visual del módulo, pero
+# muestran datos personales (foto, nombre, código estudiantil, notas). Se
+# comparten fuera del repositorio.
+/docs/capturas_utbapp/
+
+# Capturas de revisión de diseño: muestran el mapa y panorámicas que aún no han
+# pasado por el difuminado de rostros (Ley 1581).
+/.impeccable/review/
 
 # Material institucional de trabajo y documentos fuente no publicables.
 # La guía pública explica cómo obtener los insumos necesarios sin incluirlos

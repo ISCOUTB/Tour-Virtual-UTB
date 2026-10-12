@@ -23,6 +23,11 @@ android
 - **Administrador.** Personal institucional que gestiona contenido desde el
   panel web. Solo por invitación.
 
+En todos los perfiles hay personas de otros países (Brasil, Portugal, Italia,
+Estados Unidos, Francia, Turquía, Corea, China, Japón…) y personas con
+discapacidad visual, auditiva, motriz, del habla o cognitiva. El módulo tiene
+que servirles a todas; ver Accessibility & Inclusion.
+
 ## Product Purpose
 
 Permitir recorrer el campus de la Universidad Tecnológica de Bolívar sin estar
@@ -73,7 +78,9 @@ El contenido lo produce personal institucional, no el equipo de desarrollo.
 - Objetivo explícito de QA en dispositivos de gama media y baja.
 - Toda la infraestructura vive en niveles gratuitos, con techos de
   almacenamiento que el video agota primero.
-- Interfaz y documentación en español.
+- Interfaz en once variantes de idioma, con el español como original;
+  documentación en español. El contenido institucional llega en español
+  hasta que el backend lo traduzca.
 - Las panorámicas deben pasar por difuminado de rostros y limpieza de metadatos
   antes de subirse.
 - Cumplimiento de la Ley 1581 de 2012. La inscripción ante la SIC está
@@ -83,17 +90,27 @@ El contenido lo produce personal institucional, no el equipo de desarrollo.
 
 - Nombre del producto: **UTB Tour Virtual**.
 - El logo de la UTB y el azul institucional son vinculantes.
-- **No existe manual de marca formal.** No hay guía que obligue tipografía,
-  composición ni paleta extendida. La tipografía y los tonos concretos que hoy
-  usa la aplicación son decisiones del equipo, no compromisos institucionales, y
-  pueden reemplazarse.
-- Todo el texto de interfaz va en español.
+- **El tour es un módulo de la app UTB** oficial (Play Store y App Store) y
+  adopta su lenguaje visual tal cual, sin estilo propio: tema oscuro,
+  cabeceras azules con arcos que colapsan, tarjetas grafito, Roboto,
+  sobretítulos en versalitas, el selector segmentado de Agenda y los anillos de
+  avance. La referencia son las capturas de `docs/capturas_utbapp/`; los tonos
+  se miden ahí, no se inventan. El módulo no tiene barra inferior propia porque
+  la pone la app anfitriona, y tampoco replica su asistente (el robot), que es
+  global de la anfitriona. Decidido el 2026-10-11.
+- **No existe manual de marca formal.** Fuera de lo que la app anfitriona ya
+  fija, no hay guía que obligue composición ni paleta extendida.
+- El texto de interfaz se escribe primero en español y se traduce; el nombre
+  de la universidad no se traduce.
 
 ## Evidence on Hand
 
 - `assets/Mapa_UTB.pdf` — mapa isométrico oficial del campus, con dieciséis
   edificios nombrados y sus posiciones. Es material institucional real.
-- `apps/mobile/android/app/src/assets/` — logo e iconografía de navegación.
+- `docs/capturas_utbapp/` — capturas de la app UTB anfitriona: la autoridad
+  visual del módulo. No se versionan: muestran datos personales.
+- `apps/mobile/android/app/src/assets/` — logo institucional (extraído del
+  vector de `assets/Mapa_UTB.pdf`) y la tipografía Roboto.
 - `docs/utb-tour-inmersivo-mvp.md` y `docs/arquitectura.md` — alcance y
   decisiones técnicas.
 
@@ -119,12 +136,18 @@ Ausencias que no se deben rellenar inventando:
 
 ## Accessibility & Inclusion
 
-Objetivo WCAG 2.2 nivel AA:
+Objetivo WCAG 2.2 nivel AA. El detalle, con el reparto del trabajo y lo que
+falta, está en `docs/ACCESIBILIDAD.md`.
 
-- Subtítulos en video y transcripción del audio narrado.
-- Etiquetas semánticas en marcadores del mapa y hotspots de escena.
-- Soporte de texto escalado y de la preferencia de reducción de movimiento.
-- Contraste verificado sobre la paleta institucional.
+- Interfaz en español, inglés, portugués (Brasil y Portugal), francés,
+  italiano, alemán, turco, coreano, japonés y chino; sigue el idioma del
+  teléfono y cae al inglés.
+- Subtítulos en vivo y transcripción de audio y video; narración por idioma;
+  video en Lengua de Señas Colombiana cuando exista.
+- Lector de pantalla en todo el módulo, incluido el visor 360, que se recorre
+  con botones sin arrastrar.
+- Texto hasta 200 %, alto contraste AAA, reducción de movimiento y giroscopio
+  desactivable, sumados a los ajustes del sistema.
 
 El audio narrado por POI, previsto como recurso editorial, cumple además una
 función de accesibilidad.

@@ -1,0 +1,707 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-11T19:29:07.626298+00:00",
+  "title": "Design System: UTB Tour Virtual",
+  "extensions": {
+    "colorMeta": {
+      "fondo": {
+        "role": "neutral",
+        "displayName": "Negro anfitrión",
+        "canonical": "oklch(10.1% 0.013 228)",
+        "tonalRamp": [
+          "#060C10",
+          "#1E262A",
+          "#3B4448",
+          "#5A6367",
+          "#7A8489",
+          "#9DA7AC",
+          "#C1CBD0",
+          "#E6F0F6"
+        ]
+      },
+      "superficie": {
+        "role": "neutral",
+        "displayName": "Grafito",
+        "canonical": "oklch(22.6% 0.004 264)",
+        "tonalRamp": [
+          "#0A0B0D",
+          "#242527",
+          "#414244",
+          "#606164",
+          "#818285",
+          "#A4A5A8",
+          "#C8C9CC",
+          "#EDEEF1"
+        ]
+      },
+      "superficie-sobre-azul": {
+        "role": "neutral",
+        "displayName": "Grafito sobre azul",
+        "canonical": "oklch(23.6% 0.022 269)",
+        "tonalRamp": [
+          "#080B15",
+          "#212530",
+          "#3D424E",
+          "#5C616E",
+          "#7D8290",
+          "#9FA5B3",
+          "#C3C9D8",
+          "#E8EEFE"
+        ]
+      },
+      "superficie-elevada": {
+        "role": "neutral",
+        "displayName": "Superficie elevada",
+        "canonical": "oklch(29.5% 0.034 268)",
+        "tonalRamp": [
+          "#060A1A",
+          "#1E2436",
+          "#3A4255",
+          "#596175",
+          "#798298",
+          "#9CA5BB",
+          "#BFC9E0",
+          "#E4EEFF"
+        ]
+      },
+      "hoja": {
+        "role": "neutral",
+        "displayName": "Hoja",
+        "canonical": "oklch(18.7% 0.008 274)",
+        "tonalRamp": [
+          "#0A0B0F",
+          "#242529",
+          "#404246",
+          "#606166",
+          "#818287",
+          "#A3A5AA",
+          "#C7C9CF",
+          "#EDEEF4"
+        ]
+      },
+      "indicador": {
+        "role": "neutral",
+        "displayName": "Indicador",
+        "canonical": "oklch(36.2% 0.061 264)",
+        "tonalRamp": [
+          "#010824",
+          "#152443",
+          "#314163",
+          "#4F6184",
+          "#7082A8",
+          "#92A5CC",
+          "#B5CAF2",
+          "#DAEFFF"
+        ]
+      },
+      "fondo-info": {
+        "role": "neutral",
+        "displayName": "Fondo informativo",
+        "canonical": "oklch(30.2% 0.037 248)",
+        "tonalRamp": [
+          "#010C1A",
+          "#162736",
+          "#324455",
+          "#516375",
+          "#718598",
+          "#93A8BB",
+          "#B7CCE1",
+          "#DCF1FF"
+        ]
+      },
+      "contorno-segmentos": {
+        "role": "neutral",
+        "displayName": "Contorno de segmentos",
+        "canonical": "oklch(65.7% 0.012 269)",
+        "tonalRamp": [
+          "#090B10",
+          "#23252B",
+          "#3F4249",
+          "#5E6168",
+          "#7F828A",
+          "#A2A5AD",
+          "#C6C9D1",
+          "#EBEEF7"
+        ]
+      },
+      "azul": {
+        "role": "primary",
+        "displayName": "Azul de acción UTB",
+        "canonical": "oklch(46.6% 0.211 266)",
+        "tonalRamp": [
+          "#02003C",
+          "#090089",
+          "#0E27AF",
+          "#2650D6",
+          "#4475FE",
+          "#659BFF",
+          "#87C1FF",
+          "#C8EDFF"
+        ]
+      },
+      "azul-claro": {
+        "role": "primary",
+        "displayName": "Azul legible",
+        "canonical": "oklch(69.6% 0.145 262)",
+        "tonalRamp": [
+          "#00003C",
+          "#00176A",
+          "#123A8E",
+          "#315CB3",
+          "#517FD9",
+          "#72A3FF",
+          "#95C8FF",
+          "#C3EFFF"
+        ]
+      },
+      "azul-info": {
+        "role": "primary",
+        "displayName": "Azul informativo",
+        "canonical": "oklch(72.7% 0.117 263)",
+        "tonalRamp": [
+          "#00003B",
+          "#031E5C",
+          "#1E3E7F",
+          "#3C5FA3",
+          "#5C81C8",
+          "#7DA4EE",
+          "#A0C9FF",
+          "#C5EFFF"
+        ]
+      },
+      "texto": {
+        "role": "neutral",
+        "displayName": "Texto",
+        "canonical": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "texto-secundario": {
+        "role": "neutral",
+        "displayName": "Texto secundario",
+        "canonical": "oklch(71.2% 0.009 271)",
+        "tonalRamp": [
+          "#0A0B0F",
+          "#23252A",
+          "#404247",
+          "#5F6166",
+          "#808288",
+          "#A3A5AB",
+          "#C7C9CF",
+          "#ECEEF5"
+        ]
+      },
+      "texto-tenue": {
+        "role": "neutral",
+        "displayName": "Texto tenue (AA)",
+        "canonical": "oklch(65.4% 0.009 271)",
+        "tonalRamp": [
+          "#0A0B0F",
+          "#23252A",
+          "#404247",
+          "#5F6167",
+          "#808288",
+          "#A3A5AB",
+          "#C7C9CF",
+          "#ECEEF5"
+        ]
+      },
+      "texto-terciario": {
+        "role": "neutral",
+        "displayName": "Texto terciario (solo iconos)",
+        "canonical": "oklch(54.5% 0.010 271)",
+        "tonalRamp": [
+          "#0A0B0F",
+          "#23252A",
+          "#404247",
+          "#5F6167",
+          "#808288",
+          "#A3A5AB",
+          "#C7C9D0",
+          "#ECEEF5"
+        ]
+      },
+      "texto-sobre-azul": {
+        "role": "neutral",
+        "displayName": "Texto sobre azul",
+        "canonical": "oklch(87.5% 0.049 270)",
+        "tonalRamp": [
+          "#05091F",
+          "#1C233D",
+          "#38415C",
+          "#56607E",
+          "#7781A0",
+          "#99A4C5",
+          "#BDC8EA",
+          "#E1EEFF"
+        ]
+      },
+      "verde": {
+        "role": "tertiary",
+        "displayName": "Punto bienestar / visitado",
+        "canonical": "oklch(73.3% 0.164 148)",
+        "tonalRamp": [
+          "#001500",
+          "#003600",
+          "#005600",
+          "#00781F",
+          "#1F9C44",
+          "#4EC066",
+          "#75E68A",
+          "#B6FFC1"
+        ]
+      },
+      "amarillo": {
+        "role": "tertiary",
+        "displayName": "Punto académico",
+        "canonical": "oklch(87.4% 0.153 97)",
+        "tonalRamp": [
+          "#1A0500",
+          "#3B1E00",
+          "#5A3D00",
+          "#7A5E00",
+          "#9D8000",
+          "#C0A400",
+          "#E5C93F",
+          "#FFEF8E"
+        ]
+      },
+      "naranja": {
+        "role": "tertiary",
+        "displayName": "Punto servicios",
+        "canonical": "oklch(72.6% 0.128 63)",
+        "tonalRamp": [
+          "#280000",
+          "#4C0700",
+          "#6F2B00",
+          "#934D00",
+          "#B76E1D",
+          "#DD9147",
+          "#FFB66D",
+          "#FFDD98"
+        ]
+      },
+      "morado": {
+        "role": "tertiary",
+        "displayName": "Punto deporte",
+        "canonical": "oklch(62.4% 0.236 319)",
+        "tonalRamp": [
+          "#1E0029",
+          "#4E006A",
+          "#71008E",
+          "#9505B3",
+          "#BA40D9",
+          "#E168FF",
+          "#FF8EFF",
+          "#FFD5FF"
+        ]
+      },
+      "rojo": {
+        "role": "tertiary",
+        "displayName": "Error",
+        "canonical": "oklch(63.7% 0.183 27)",
+        "tonalRamp": [
+          "#2D0000",
+          "#630000",
+          "#8A0000",
+          "#B21D1F",
+          "#DA4942",
+          "#FF6F64",
+          "#FF9487",
+          "#FFCFC3"
+        ]
+      },
+      "cabecera-arriba": {
+        "role": "secondary",
+        "displayName": "Cabecera azul real",
+        "canonical": "oklch(47.5% 0.216 265)",
+        "tonalRamp": [
+          "#01003C",
+          "#09008B",
+          "#0926B2",
+          "#224FD9",
+          "#4175FF",
+          "#619AFF",
+          "#83C1FF",
+          "#C7EDFF"
+        ]
+      },
+      "cabecera-medio": {
+        "role": "secondary",
+        "displayName": "Cabecera medio",
+        "canonical": "oklch(36.2% 0.159 266)",
+        "tonalRamp": [
+          "#02003C",
+          "#040F70",
+          "#193694",
+          "#3559BA",
+          "#547CE0",
+          "#75A0FF",
+          "#98C5FF",
+          "#C8EDFF"
+        ]
+      },
+      "cabecera-abajo": {
+        "role": "secondary",
+        "displayName": "Cabecera marino",
+        "canonical": "oklch(28.1% 0.116 266)",
+        "tonalRamp": [
+          "#02003B",
+          "#0B1C5C",
+          "#253D7F",
+          "#425DA3",
+          "#627FC8",
+          "#83A3EE",
+          "#A6C7FF",
+          "#CAEDFF"
+        ]
+      },
+      "cabecera-brillo": {
+        "role": "secondary",
+        "displayName": "Resplandor violeta",
+        "canonical": "oklch(51.9% 0.219 274)",
+        "tonalRamp": [
+          "#07003C",
+          "#1E008C",
+          "#2D18B2",
+          "#4446DA",
+          "#606CFF",
+          "#7F92FF",
+          "#A0B8FF",
+          "#D6E9FF"
+        ]
+      },
+      "destacada-inicio": {
+        "role": "secondary",
+        "displayName": "Destacada inicio",
+        "canonical": "oklch(32.9% 0.151 266)",
+        "tonalRamp": [
+          "#02003C",
+          "#06126D",
+          "#1C3791",
+          "#385AB6",
+          "#577CDC",
+          "#78A0FF",
+          "#9BC5FF",
+          "#C9EDFF"
+        ]
+      },
+      "destacada-fin": {
+        "role": "secondary",
+        "displayName": "Destacada fin",
+        "canonical": "oklch(53.9% 0.133 257)",
+        "tonalRamp": [
+          "#00003C",
+          "#001D63",
+          "#023F86",
+          "#2960AB",
+          "#4B83D0",
+          "#6DA6F7",
+          "#90CBFF",
+          "#BBF1FF"
+        ]
+      },
+      "arranque-centro": {
+        "role": "secondary",
+        "displayName": "Arranque centro",
+        "canonical": "oklch(34.0% 0.130 265)",
+        "tonalRamp": [
+          "#01003C",
+          "#061963",
+          "#1F3B86",
+          "#3C5CAA",
+          "#5C7FD0",
+          "#7DA2F7",
+          "#A0C7FF",
+          "#C7EDFF"
+        ]
+      },
+      "arranque-borde": {
+        "role": "secondary",
+        "displayName": "Arranque borde",
+        "canonical": "oklch(23.7% 0.083 263)",
+        "tonalRamp": [
+          "#00052D",
+          "#0E224D",
+          "#2A406E",
+          "#486091",
+          "#6882B5",
+          "#8AA5DA",
+          "#ADCAFF",
+          "#D1EFFF"
+        ]
+      },
+      "arranque-brillo": {
+        "role": "secondary",
+        "displayName": "Arranque brillo"
+      },
+      "borde": {
+        "role": "neutral",
+        "displayName": "Borde (blanco 8 %)"
+      },
+      "borde-fuerte": {
+        "role": "neutral",
+        "displayName": "Borde fuerte (blanco 20 %)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "display",
+        "purpose": "Título de la cabecera desplegada; 22 al colapsar."
+      },
+      "headline": {
+        "displayName": "headline",
+        "purpose": "Nombre del lugar en la tarjeta destacada."
+      },
+      "headline-sm": {
+        "displayName": "headline-sm",
+        "purpose": "Encabezados de sección y nombre en la ficha."
+      },
+      "title-lg": {
+        "displayName": "title-lg",
+        "purpose": "Número de parada, cifras tabulares, azul-claro 700."
+      },
+      "title": {
+        "displayName": "title",
+        "purpose": "Nombre de lugar en filas."
+      },
+      "title-sm": {
+        "displayName": "title-sm",
+        "purpose": "Nombre en tarjetas compactas."
+      },
+      "body-lg": {
+        "displayName": "body-lg",
+        "purpose": "Texto corrido largo."
+      },
+      "body": {
+        "displayName": "body",
+        "purpose": "Descripciones y metadatos."
+      },
+      "body-sm": {
+        "displayName": "body-sm",
+        "purpose": "Extracto de parada en texto-tenue."
+      },
+      "label": {
+        "displayName": "label",
+        "purpose": "Botones."
+      },
+      "label-sm": {
+        "displayName": "label-sm",
+        "purpose": "Etiquetas cortas."
+      },
+      "sobretitulo": {
+        "displayName": "sobretitulo",
+        "purpose": "Versalitas espaciadas con dato o estado."
+      }
+    },
+    "shadows": [
+      {
+        "name": "resplandor-destacada",
+        "value": "0 14px 36px rgba(32,71,205,0.30)",
+        "purpose": "Solo bajo la tarjeta destacada de la próxima parada."
+      },
+      {
+        "name": "sombra-postal",
+        "value": "-6px 12px 18px rgba(0,0,0,0.40)",
+        "purpose": "Postal 3D inclinada."
+      },
+      {
+        "name": "sombra-flotante",
+        "value": "0 3px 8px rgba(0,0,0,0.25)",
+        "purpose": "Insignias, píldoras y marcadores sobre mapa o visor (hasta 0 4px 12px al 50 %)."
+      },
+      {
+        "name": "sombra-ficha",
+        "value": "0 0 24px rgba(0,0,0,0.40)",
+        "purpose": "Imagen principal de la ficha."
+      }
+    ],
+    "motion": [
+      {
+        "name": "corto",
+        "value": "180ms",
+        "purpose": "Pulsación, cambio de icono, marcador elegido."
+      },
+      {
+        "name": "medio",
+        "value": "320ms",
+        "purpose": "Cambios de tamaño y puntos de progreso."
+      },
+      {
+        "name": "largo",
+        "value": "520ms",
+        "purpose": "Desplazamiento de página y carrusel."
+      },
+      {
+        "name": "escena",
+        "value": "850ms",
+        "purpose": "Mapa entrando inclinado, revelación circular, llenado del anillo."
+      },
+      {
+        "name": "salida",
+        "value": "cubic-bezier(0.33, 1, 0.68, 1)",
+        "purpose": "easeOutCubic; curva por defecto."
+      },
+      {
+        "name": "salida-fuerte",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "easeOutQuart; entradas 3D y anillos."
+      },
+      {
+        "name": "vaiven",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "easeInOutCubic; cámara del mapa y desplazamiento."
+      },
+      {
+        "name": "perspectiva",
+        "value": "0.0011",
+        "purpose": "Entrada (3,2) de la matriz en transformaciones 3D."
+      },
+      {
+        "name": "sin-movimiento",
+        "value": "MediaQuery.disableAnimations",
+        "purpose": "Todo efecto decorativo se reduce a fundido o corte."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "telefono",
+        "value": "columna única; margen 18px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón lleno",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal; uno por pantalla.",
+      "html": "<button class=\"ds-btn-lleno\">Ver en 360°</button>",
+      "css": ".ds-btn-lleno{font-family: Roboto, system-ui, sans-serif;background:#2047CD;color:#fff;border:none;border-radius:999px;height:52px;padding:0 24px;font-size:16px;font-weight:500;letter-spacing:.1px;cursor:pointer;transition:filter .18s cubic-bezier(.33,1,.68,1)}.ds-btn-lleno:hover{filter:brightness(1.12)}.ds-btn-lleno:focus-visible{outline:2px solid #6B9BF7;outline-offset:3px}.ds-btn-lleno:disabled{background:#252C3E;color:#6E7076}"
+    },
+    {
+      "name": "Botón de vidrio",
+      "kind": "button",
+      "refersTo": "button-glass",
+      "description": "Acción sobre superficies azules (tarjeta destacada).",
+      "html": "<div class=\"ds-azul\"><button class=\"ds-btn-vidrio\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"#fff\"><path d=\"M8 5v14l11-7z\"/></svg>Empezar recorrido</button></div>",
+      "css": ".ds-azul{background:linear-gradient(135deg,#112881,#1C3FAE,#376EBA);padding:24px;border-radius:28px}.ds-btn-vidrio{font-family: Roboto, system-ui, sans-serif;display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:10px 20px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26);border-radius:999px;color:#fff;font-size:16px;font-weight:500;cursor:pointer;transition:background .18s}.ds-btn-vidrio:hover{background:rgba(255,255,255,.24)}.ds-btn-vidrio:focus-visible{outline:2px solid #fff;outline-offset:3px}"
+    },
+    {
+      "name": "Botón circular",
+      "kind": "button",
+      "refersTo": "button-circular",
+      "description": "Flota sobre imagen y visor 360; siempre con etiqueta.",
+      "html": "<button class=\"ds-btn-circ\" aria-label=\"Pantalla completa\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"#fff\"><path d=\"M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z\"/></svg></button>",
+      "css": ".ds-btn-circ{width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.2);display:grid;place-items:center;cursor:pointer;transition:background .18s}.ds-btn-circ:hover{background:rgba(0,0,0,.75)}.ds-btn-circ:focus-visible{outline:2px solid #6B9BF7;outline-offset:2px}"
+    },
+    {
+      "name": "Selector segmentado",
+      "kind": "nav",
+      "refersTo": "segmented-selected",
+      "description": "«Recorrido | Mapa», copia del selector de Agenda.",
+      "html": "<div class=\"ds-seg\"><button class=\"ds-seg-b ds-seg-on\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"#fff\"><path d=\"M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z\"/></svg>Recorrido</button><button class=\"ds-seg-b\">Mapa</button></div>",
+      "css": ".ds-seg{display:flex;border:.8px solid #8E9199;border-radius:999px;overflow:hidden;background:#010406}.ds-seg-b{font-family: Roboto, system-ui, sans-serif;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border:none;background:transparent;color:#fff;font-size:16.5px;font-weight:500;cursor:pointer}.ds-seg-b+.ds-seg-b{border-left:.8px solid #8E9199}.ds-seg-on{background:#2047CD}.ds-seg-b:hover:not(.ds-seg-on){background:rgba(255,255,255,.12)}.ds-seg-b:focus-visible{outline:2px solid #6B9BF7;outline-offset:-3px}"
+    },
+    {
+      "name": "Fila de parada",
+      "kind": "card",
+      "refersTo": "card-compact",
+      "description": "Tarjeta grafito con franja de categoría y número tabular.",
+      "html": "<div class=\"ds-fila\" tabindex=\"0\"><span class=\"ds-fila-num\">02</span><div><div class=\"ds-fila-t\">Enfermería</div><div class=\"ds-fila-m\">Bienestar</div><div class=\"ds-fila-d\">Servicio de atención primaria del campus.</div></div></div>",
+      "css": ".ds-fila{font-family: Roboto, system-ui, sans-serif;position:relative;display:flex;gap:6px;padding:16px 10px 16px 18px;background:#1B1C1E;border:1px solid rgba(255,255,255,.08);border-radius:22px;overflow:hidden;color:#fff;cursor:pointer;transition:transform .18s cubic-bezier(.33,1,.68,1)}.ds-fila::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#52C46A}.ds-fila:active{transform:scale(.982)}.ds-fila:hover{background:#222326}.ds-fila:focus-visible{outline:2px solid #6B9BF7;outline-offset:2px}.ds-fila-num{width:44px;font-size:21px;font-weight:700;color:#6B9BF7;font-variant-numeric:tabular-nums}.ds-fila-t{font-size:18px;font-weight:500}.ds-fila-m{font-size:14.5px;color:#A0A2A8;margin-top:5px}.ds-fila-d{font-size:13px;color:#8E9096;margin-top:8px}"
+    },
+    {
+      "name": "Tarjeta destacada",
+      "kind": "card",
+      "refersTo": "card-featured",
+      "description": "Próxima parada; equivalente del carnet de la anfitriona.",
+      "html": "<div class=\"ds-dest\"><div class=\"ds-sobre\">SIGUIENTE PARADA</div><div class=\"ds-dest-t\">Enfermería</div><div class=\"ds-dest-d\">Parada 2 de 4 · Bienestar</div></div>",
+      "css": ".ds-dest{font-family: Roboto, system-ui, sans-serif;padding:24px 22px 22px;border-radius:28px;background:linear-gradient(135deg,#112881,#1C3FAE,#376EBA);border:1px solid rgba(255,255,255,.16);box-shadow:0 14px 36px rgba(32,71,205,.3);color:#fff}.ds-sobre{font-size:12.5px;font-weight:500;letter-spacing:1.6px;color:rgba(255,255,255,.82)}.ds-dest-t{font-size:28px;font-weight:700;letter-spacing:-.3px;margin-top:8px}.ds-dest-d{font-size:14.5px;color:#C9D5F7;margin-top:6px}"
+    },
+    {
+      "name": "Recuadro informativo",
+      "kind": "custom",
+      "refersTo": "info-box",
+      "description": "Dice que algo falta sin parecer error.",
+      "html": "<div class=\"ds-info\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"#7FA6F0\"><path d=\"M6 2v6l4 4-4 4v6h12v-6l-4-4 4-4V2H6z\"/></svg><div><div class=\"ds-info-h\">Contenido en preparación</div><div class=\"ds-info-t\">La galería de este lugar aún no está publicada.</div></div></div>",
+      "css": ".ds-info{font-family: Roboto, system-ui, sans-serif;display:flex;gap:12px;padding:14px 12px 14px 16px;background:#1F3040;border-radius:18px;color:#fff}.ds-info-h{font-size:13.5px;font-weight:500;color:#7FA6F0;margin-bottom:3px}.ds-info-t{font-size:14.5px;font-weight:500;line-height:1.4}"
+    },
+    {
+      "name": "Etiqueta",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Píldora informativa en versalitas.",
+      "html": "<span class=\"ds-chip\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"#7FA6F0\"><path d=\"M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z\"/></svg>SUGERENCIA</span>",
+      "css": ".ds-chip{font-family: Roboto, system-ui, sans-serif;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:rgba(127,166,240,.14);color:#7FA6F0;font-size:12px;font-weight:500;letter-spacing:1.6px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El módulo anfitrión",
+    "overview": "El tour no tiene identidad visual propia. Es un módulo de la app UTB oficial y se lee como tal desde el primer cuadro: tema oscuro casi negro, cabecera azul con arcos que colapsa, tarjetas grafito, Roboto, sobretítulos en versalitas, el selector segmentado de Agenda y los anillos de avance. Cada tono se **midió** sobre las capturas de `docs/capturas_utbapp/` (a 1,4 px por dp), no se inventó. Si la anfitriona cambia, se vuelve a medir allí; este archivo describe una adopción, no un diseño original. Compromiso de marca registrado en PRODUCT.md el 2026-10-11.\n\nLo único que el módulo añade es lo que la anfitriona no tiene y el tour necesita: la postal 3D de la panorámica que se inclina con el dedo, el mapa isométrico que entra inclinado, la revelación circular hacia el visor 360 y los marcadores que se contraescalan contra la cámara. Todo eso se construye con código y con el mismo vocabulario de color, radio y movimiento que el resto; no introduce material nuevo.\n\nDensidad media, de app institucional: márgenes de 18, tarjetas de radio amplio, un azul de acción por pantalla. El módulo no pinta barra inferior propia (la pone la anfitriona) y no replica el asistente robot de la anfitriona, que es global de ella.",
+    "keyCharacteristics": [
+      "Oscuro por defecto: negro con punto de azul de fondo, grafito para tarjetas.",
+      "Un solo azul de acción lleno; un azul claro para lo legible sobre negro.",
+      "Cabeceras azules con gradiente, resplandor violeta y arcos finos concéntricos, esquinas inferiores redondeadas.",
+      "Radios amplios (22-32) y píldoras en todo lo pulsable.",
+      "Movimiento de salida exponencial; todo efecto decorativo se apaga con «Quitar animaciones»."
+    ],
+    "rules": [
+      {
+        "name": "La Regla de la Medida",
+        "body": "Ningún tono entra al sistema sin haberse medido en una captura de la anfitriona. Un color nuevo se mide en `docs/capturas_utbapp/` o no existe.",
+        "section": "colors"
+      },
+      {
+        "name": "La Regla del Tercer Gris",
+        "body": "texto-tenue (#8E9096) es el gris más oscuro permitido para texto. texto-terciario (#6E7076) es para iconos y estados deshabilitados, nunca para palabras que haya que leer.",
+        "section": "colors"
+      },
+      {
+        "name": "La Regla del Punto de Materia",
+        "body": "El color de categoría vive en un punto, un icono o una franja lateral de 4 px; nunca tiñe una tarjeta entera ni un titular.",
+        "section": "colors"
+      },
+      {
+        "name": "La Regla del Sobretítulo con Dato",
+        "body": "El sobretítulo es material nativo de la anfitriona («LUNES, 5 DE OCTUBRE», «PRÓXIMA CLASE») y aquí sigue su uso: nombra un estado o lleva un dato («SIGUIENTE PARADA», «CAMINANDO HACIA», «RECURSOS · PARADA 1 DE 4», nombre de la ruta · número de lugares). Nunca se pone como adorno sobre un titular que no lo necesita.",
+        "section": "typography"
+      },
+      {
+        "name": "La Regla de la Cifra Tabular",
+        "body": "Números de parada, contadores y tiempos de audio usan cifras tabulares para no bailar al cambiar.",
+        "section": "typography"
+      },
+      {
+        "name": "La Regla Plana por Defecto",
+        "body": "Tarjetas y hojas no llevan sombra; se separan por tono y borde. La sombra es para lo que flota sobre imagen o sobre azul.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do medir cualquier tono nuevo en `docs/capturas_utbapp/` antes de usarlo y añadirlo a `ColoresUtb`.",
+      "Do usar texto-tenue (#8E9096) como el gris más bajo para texto corrido; texto-terciario solo para iconos y deshabilitados.",
+      "Do dejar un único botón lleno azul por pantalla; sobre superficies azules la acción va en botón de vidrio.",
+      "Do mantener todo objetivo táctil en 48 o más, y los botones flotantes con tooltip y etiqueta semántica.",
+      "Do hacer que cada animación decorativa consulte `sinMovimiento()` y tenga una versión quieta.",
+      "Do contraescalar contra la cámara todo lo que se dibuje sobre el mapa.",
+      "Do expresar «esto aún no existe» con el recuadro informativo azul, no con un error rojo."
+    ],
+    "donts": [
+      "Don't pintar una barra inferior propia: la pone la app anfitriona.",
+      "Don't replicar el asistente robot de la anfitriona; es global de ella.",
+      "Don't inventar una paleta, una tipografía o un radio que la anfitriona no tenga.",
+      "Don't usar sombras duras o desplazadas en seco; las sombras del sistema son difusas.",
+      "Don't usar sobretítulos sin dato ni estado detrás, ni teñir tarjetas enteras con color de categoría.",
+      "Don't introducir movimiento continuo que no se pueda apagar (incluido el giro automático del visor 360)."
+    ]
+  }
+}

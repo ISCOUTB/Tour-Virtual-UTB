@@ -56,6 +56,11 @@ class RepositorioContenido {
       if (idioma != null && idioma.trim().isNotEmpty) {
         _idiomaContenido = idioma.trim();
       }
+      // 204: el servidor no tiene nada que dar (por ejemplo, ninguna ruta
+      // para esta audiencia). No es un error.
+      if (response.statusCode == 204 || response.body.trim().isEmpty) {
+        return null;
+      }
       return jsonDecode(response.body);
     } on FalloApp {
       rethrow;

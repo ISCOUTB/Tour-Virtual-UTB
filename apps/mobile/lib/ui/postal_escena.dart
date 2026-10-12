@@ -50,6 +50,11 @@ class _PostalEscenaState extends State<PostalEscena>
   double _anchoImagen = 1;
   var _fallo = false;
 
+  /// La versión ligera no cargó y se usa la completa reducida. Pasa con
+  /// datos a medio cargar: la Biblioteca del backend compartido tiene
+  /// `imagen_url_baja` apuntando a un objeto que no existe.
+  var _sinBaja = false;
+
   late final AnimationController _inercia;
 
   @override
@@ -60,6 +65,15 @@ class _PostalEscenaState extends State<PostalEscena>
     // árbol que ya se está desmontando.
     _inercia = AnimationController.unbounded(vsync: this)
       ..addListener(() => setState(() => _giro = _inercia.value));
+  }
+
+  @override
+  void didUpdateWidget(PostalEscena anterior) {
+    super.didUpdateWidget(anterior);
+    if (anterior.escena?.id != widget.escena?.id) {
+      _fallo = false;
+      _sinBaja = false;
+    }
   }
 
   @override
@@ -104,9 +118,10 @@ class _PostalEscenaState extends State<PostalEscena>
     }
 
     final baja = escena.imagenUrlBaja;
-    final ligera = NetworkImage(
-      baja != null && baja.isNotEmpty ? baja : escena.imagenUrl,
-    );
+    final usaBaja = baja != null && baja.isNotEmpty && !_sinBaja;
+    final ImageProvider ligera = usaBaja
+        ? NetworkImage(baja)
+        : ResizeImage(NetworkImage(escena.imagenUrl), width: 1024);
     // La ficha es grande: ahí se pide la completa, reducida a 2048 px para no
     // decodificar 32 MB en un teléfono de gama baja.
     final nitida = widget.interactiva
@@ -130,6 +145,10 @@ class _PostalEscenaState extends State<PostalEscena>
         final izquierda = (w / 2 - cx) % anchoImg;
 
         Widget capa(ImageProvider proveedor, {required bool base}) => Image(
+          // Un Image nuevo por imagen: el mismo, al cambiar de la ligera a la
+          // completa, seguía reportando el error de la ligera y la postal se
+          // daba por fallida aunque la completa sí cargara.
+          key: ValueKey(proveedor),
           image: proveedor,
           width: anchoImg,
           height: altoImg,
@@ -143,10 +162,12 @@ class _PostalEscenaState extends State<PostalEscena>
           ),
           errorBuilder: (context, error, pila) {
             // Solo la capa ligera decide el fallo: si la nítida no llega,
-            // la ligera ya está a la vista.
+            // la ligera ya está a la vista. Y si la que falla es la versión
+            // ligera, antes de rendirse se prueba con la completa.
             if (base) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) setState(() => _fallo = true);
+                if (!mounted) return;
+                setState(() => usaBaja ? _sinBaja = true : _fallo = true);
               });
             }
             return const SizedBox.shrink();

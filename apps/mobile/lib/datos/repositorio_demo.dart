@@ -11,10 +11,11 @@ import 'subtitulos.dart';
 
 /// Contenido local para diseñar el frontend sin levantar la API.
 ///
-/// Es una copia de `services/api/Data/ContenidoInicial.cs`, filtrada como la
-/// vería un visitante externo: el puente A3-A5 queda fuera porque es solo para
-/// estudiantes y docentes. No inventa nada que el seed no tenga; si el seed
-/// cambia, esta copia se actualiza a mano.
+/// Es una copia de `services/api/Data/ContenidoInicial.cs` con lo que cambió
+/// en la base compartida el 2026-10-11: el puente A3-A5 es visible para todos
+/// y la Enfermería y la Zona T tienen la posición corregida en el mapa. No
+/// inventa nada que la base no tenga; si cambia, esta copia se actualiza a
+/// mano.
 ///
 /// Se activa con `--dart-define=DATOS=demo` y nunca en una compilación normal.
 /// Con `MEDIOS_DEMO` además sirve las escenas, los hotspots y los audios del
@@ -48,6 +49,7 @@ class RepositorioDemo implements RepositorioContenido {
   /// POI → (slug de sus archivos, duración del audio en segundos).
   static const _archivos = {
     1: ('biblioteca', 10),
+    2: ('puente-a3-a5', 16),
     3: ('enfermeria', 11),
     4: ('zona-t', 11),
     5: ('cancha-softbol', 12),
@@ -68,6 +70,19 @@ class RepositorioDemo implements RepositorioContenido {
       audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
     ),
     Poi(
+      id: 2,
+      lugarId: 1,
+      nombre: 'Puente A3 - A5',
+      categoria: 'Academico',
+      descripcion:
+          'Pasarela elevada que une los edificios A3 y A5 sin bajar a nivel '
+          'de calle.',
+      mapX: .6191,
+      mapY: .1793,
+      escenaPrincipalId: 2,
+      audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
+    ),
+    Poi(
       id: 3,
       lugarId: 1,
       nombre: 'Enfermeria',
@@ -75,8 +90,8 @@ class RepositorioDemo implements RepositorioContenido {
       descripcion:
           'Servicio de atencion primaria del campus: consulta, curaciones y '
           'primeros auxilios.',
-      mapX: .6186,
-      mapY: .5055,
+      mapX: .6263,
+      mapY: .5277,
       escenaPrincipalId: 3,
       audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
     ),
@@ -88,8 +103,8 @@ class RepositorioDemo implements RepositorioContenido {
       descripcion:
           'Zona de mesas al aire libre y a la sombra, junto al Centro '
           'Deportivo y Cultural.',
-      mapX: .545,
-      mapY: .555,
+      mapX: .557,
+      mapY: .540,
       escenaPrincipalId: 4,
       audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
     ),
@@ -199,8 +214,7 @@ class RepositorioDemo implements RepositorioContenido {
       throw const FalloSinContenido.soloConApi();
     }
 
-    // Escenas y hotspots del seed. Los del puente quedan fuera, igual que
-    // la API se los oculta a un visitante externo.
+    // Escenas y hotspots del seed, con los ángulos calibrados.
     Escena escena(int id, String nombre, int orden, double yaw, double pitch) {
       final (slug, _) = _archivos[id]!;
       return Escena(
@@ -236,11 +250,14 @@ class RepositorioDemo implements RepositorioContenido {
 
     final escenas = [
       escena(1, 'Biblioteca', 0, 152, -5),
+      escena(2, 'Puente A3 - A5', 1, -58, -5),
       escena(3, 'Enfermeria', 2, -158, -6),
       escena(4, 'Zona T', 3, -55, -6),
       escena(5, 'Cancha de softbol', 4, -40, -3),
     ];
     final hotspots = [
+      salto(1, 1, -12, 140, 2, 'Ir al puente A3 - A5'),
+      salto(2, 2, -10, -68, 1, 'Ir a la Biblioteca'),
       salto(3, 3, -8, -172, 4, 'Ir a la Zona T'),
       salto(4, 4, -4, -66, 5, 'Ir a la cancha de softbol'),
       salto(5, 4, 1, -156, 3, 'Ir a Enfermeria'),

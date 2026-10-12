@@ -74,14 +74,14 @@ void main() {
     expect(() => repositorio.obtenerPois(1), throwsA(isA<FalloSinContenido>()));
   });
 
-  test('el modo demo replica el seed tal como lo ve un visitante', () async {
+  test('el modo demo replica la base compartida', () async {
     const demo = RepositorioDemo();
     final pois = await demo.obtenerPois(1);
 
-    // El puente A3-A5 es solo para estudiantes y docentes: la API no se lo
-    // devuelve a un visitante externo, y el demo tampoco.
-    expect(pois.map((p) => p.nombre), isNot(contains('Puente A3 - A5')));
-    expect(pois, hasLength(4));
+    // Las cinco paradas: el puente A3-A5 es visible para todos desde el
+    // 2026-10-11.
+    expect(pois.map((p) => p.nombre), contains('Puente A3 - A5'));
+    expect(pois, hasLength(5));
     expect(pois.every((p) => p.tienePosicionEnMapa), isTrue);
 
     // Las panorámicas viven en S3: el demo lo dice en vez de fingirlas.
@@ -126,6 +126,16 @@ void main() {
       );
     },
   );
+
+  test('un 204 sin cuerpo es «no hay», no un error', () async {
+    // Así responde la API real cuando no hay ruta para la audiencia.
+    final repositorio = RepositorioContenido(
+      baseUrl: 'http://127.0.0.1:5209',
+      cliente: MockClient((_) async => http.Response('', 204)),
+    );
+
+    expect(await repositorio.obtenerRutaActual(1), isNull);
+  });
 
   group('Subtitulos', () {
     const vtt =

@@ -885,7 +885,14 @@ class _PanoramaState extends State<_Panorama> {
             _proveedor = proveedor;
             _estado = _EstadoPanorama.lista;
           });
-          widget.alResolver();
+          // Después del cuadro, nunca aquí. Al volver a una escena ya vista,
+          // la imagen está en caché y este aviso llega en el mismo build que
+          // crea el visor: el setState del padre reventaba, el error se tomaba
+          // por una panorámica fallida y el telón «Caminando hacia» se quedaba
+          // puesto para siempre.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) widget.alResolver();
+          });
         }
         terminar(true);
       },

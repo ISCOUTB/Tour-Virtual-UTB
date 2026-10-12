@@ -796,6 +796,58 @@ void main() {
     await drenarTemporizadores(tester);
   });
 
+  testWidgets('ir a una escena ya vista no deja el telón puesto', (
+    WidgetTester tester,
+  ) async {
+    // Con la panorámica en caché, el aviso de «lista» llegaba en el mismo
+    // build que creaba el visor: el setState del padre reventaba, se tomaba
+    // por una panorámica fallida y «Caminando hacia» no se levantaba nunca.
+    // Pasó en un teléfono al volver de la cancha a la Zona T.
+    usarTelefono(tester);
+    final imagen = await tester.runAsync(
+      () => createTestImage(width: 8, height: 4),
+    );
+    for (final escena in recorridoConSalto.escenas) {
+      imageCache.putIfAbsent(
+        NetworkImage(escena.imagenUrl),
+        () => OneFrameImageStreamCompleter(
+          SynchronousFuture(ImageInfo(image: imagen!.clone())),
+        ),
+      );
+    }
+    addTearDown(imageCache.clear);
+
+    await tester.pumpWidget(
+      envolver(
+        const RecorridoScreen(lugarId: 1),
+        repositorio: RepositorioFalso(recorrido: recorridoConSalto),
+        // Sin giroscopio: el canal de sensores no existe en las pruebas.
+        preferencias: const Preferencias(
+          idioma: Locale('es'),
+          movimientoTelefono: false,
+        ),
+      ),
+    );
+    await asentar(tester);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(Wrap),
+        matching: find.text('Ir a la Enfermería'),
+      ),
+    );
+    await asentar(tester);
+
+    final telon = find.ancestor(
+      of: find.text('CAMINANDO HACIA'),
+      matching: find.byType(AnimatedOpacity),
+    );
+    expect(find.text('ESCENA 2 DE 2'), findsOneWidget);
+    expect(tester.widget<AnimatedOpacity>(telon.first).opacity, 0);
+
+    await drenarTemporizadores(tester);
+  });
+
   testWidgets('un fallo de red se muestra y se puede reintentar', (
     WidgetTester tester,
   ) async {

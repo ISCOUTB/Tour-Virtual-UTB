@@ -61,12 +61,20 @@ class CabeceraTour extends SliverPersistentHeaderDelegate {
   /// Fila del título grande desplegado.
   double get _filaExpandida => math.max(64, escala.scale(34) + 12);
 
-  /// Bloque inferior: sobretítulo, titular de dos líneas y detalle.
+  /// Bloque inferior: sobretítulo y titular de hasta dos líneas cada uno, y
+  /// el detalle.
   static double _bloque(TextScaler e) =>
-      e.scale(12.5) * 1.2 + 8 + e.scale(24) * 1.2 * 2 + 5 + e.scale(14.5) * 1.4;
+      e.scale(12.5) * 1.2 * 2 +
+      8 +
+      e.scale(24) * 1.2 * 2 +
+      5 +
+      e.scale(14.5) * 1.4;
 
+  /// 276 dp de diseño, que ya contaban un sobretítulo de una línea, más la
+  /// segunda línea que ahora puede ocupar y lo que crezca el texto.
   double get altoExpandido =>
       276 +
+      12.5 * 1.2 +
       (_bloque(escala) - _bloque(TextScaler.noScaling)) +
       (_filaExpandida - 64);
 
@@ -444,6 +452,8 @@ class _Bloque extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Dos líneas: con la letra del teléfono un poco más grande, «· 1
+        // LUGAR» se cortaba, y es justo el dato.
         Text(
           mayusculasDe(context, r.sobretitulo),
           style: estiloSobretitulo(
@@ -451,7 +461,7 @@ class _Bloque extends StatelessWidget {
                 ? ColoresUtb.texto
                 : Colors.white.withValues(alpha: 0.86),
           ),
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 8),

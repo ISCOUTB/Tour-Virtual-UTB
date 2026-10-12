@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generado desde lib/l10n/textos_*.arb (tituloApp). -->
+<resources>
+    <string name="app_name">UTB Tour virtuale</string>
+</resources>

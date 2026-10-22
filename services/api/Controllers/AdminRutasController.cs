@@ -6,6 +6,7 @@ namespace TourVirtualUTB.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/rutas")]
+[RequiereClaveAdmin]
 public class AdminRutasController(IContenidoService contenidoService) : ControllerBase
 {
     [HttpPost]

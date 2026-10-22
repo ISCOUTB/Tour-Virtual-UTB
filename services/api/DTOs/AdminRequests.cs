@@ -26,8 +26,10 @@ public record CrearLugarRequest(string Nombre, string Slug);
 public record ActualizarLugarRequest(string Nombre, string Slug);
 
 // --- DTOs de Escena ---
-public record CrearEscenaRequest(int LugarId, int? PoiId, string? Nombre, string ImagenUrl, string? ImagenUrlBaja, bool EsEscenaPrincipal, int Orden, double? VistaInicialYaw, double? VistaInicialPitch);
-public record ActualizarEscenaRequest(int? PoiId, string? Nombre, string ImagenUrl, string? ImagenUrlBaja, bool EsEscenaPrincipal, int Orden, double? VistaInicialYaw, double? VistaInicialPitch);
+// ImagenUrl es opcional: lo normal es crear la escena vacía y luego subir la
+// panorámica con POST /api/admin/escenas/{id}/imagen.
+public record CrearEscenaRequest(int LugarId, int? PoiId, string? Nombre, string? ImagenUrl, string? ImagenUrlBaja, bool EsEscenaPrincipal, int Orden, double? VistaInicialYaw, double? VistaInicialPitch);
+public record ActualizarEscenaRequest(int? PoiId, string? Nombre, string? ImagenUrl, string? ImagenUrlBaja, bool EsEscenaPrincipal, int Orden, double? VistaInicialYaw, double? VistaInicialPitch);
 
 // --- DTOs de Hotspot ---
 public record CrearHotspotRequest(int EscenaId, Models.TipoHotspot Tipo, double Pitch, double Yaw, int? EscenaDestinoId, int? PoiId, string? Etiqueta);

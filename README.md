@@ -170,13 +170,13 @@ Este comando inicializa el almacenamiento de secretos asociado al proyecto .NET.
 
 ### 2. Configurar la cadena de conexión
 
-Configura `ConnectionStrings:DefaultConnection` con la cadena de conexión correspondiente a tu instancia de base de datos:
+La base de datos es el Postgres de Supabase. Usa el **session pooler** (puerto `5432`); con el transaction pooler (puerto `6543`) la API se queda colgada al conectar. La conexión directa (`db.[PROYECTO].supabase.co`) solo funciona con IPv6, así que en la mayoría de redes no sirve.
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=TourVirtualUTB;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=aws-1-us-west-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.qjnusmpwznaegeburldo;Password=[CONTRASEÑA_DB];SSL Mode=Require"
 ```
 
-La cadena anterior es un ejemplo para un entorno local con autenticación de Windows. Ajusta el servidor, el nombre de la base de datos y el método de autenticación según tu configuración real.
+La contraseña es la de la base de datos (Supabase → Project Settings → Database), no la de tu cuenta. Fíjate en que el usuario lleva el id del proyecto pegado (`postgres.qjnusmpwznaegeburldo`): con el pooler, `postgres` a secas no entra.
 
 ### 3. Configurar Supabase Storage mediante S3
 
@@ -192,13 +192,33 @@ Reemplaza los valores de ejemplo por las credenciales correspondientes a tu proy
 
 **Importante:** los nombres de las claves deben coincidir exactamente con los que lee la configuración del backend. Si el proyecto utiliza otra base de datos o proveedor de almacenamiento, sigue la configuración definida en el código y en la guía de desarrollo.
 
-### 4. Verificar los secretos configurados
+### 4. Configurar la clave de administración
+
+Los endpoints que escriben contenido (`/api/admin/*` y `POST /api/lugares/{id}/mapa`) piden la cabecera `X-Admin-Key`. Define la clave con:
+
+```powershell
+dotnet user-secrets set "Admin:ApiKey" "[UNA_CLAVE_LARGA_Y_ALEATORIA]"
+```
+
+En Swagger, pulsa **Authorize** y pega la clave. Si no la configuras, en `Development` esos endpoints quedan abiertos (la API lo avisa en el log al arrancar) y en cualquier otro entorno responden `503`.
+
+### 5. Verificar los secretos configurados
 
 ```powershell
 dotnet user-secrets list
 ```
 
 Este comando muestra los nombres y valores almacenados. Evita compartir su salida, ya que puede contener credenciales.
+
+## Subir contenido
+
+Todo se hace desde Swagger (`http://localhost:5209/swagger`) con la clave de administración.
+
+- **Videos, audios y fotos de un POI:** `POST /api/admin/pois/{poiId}/medios`. Sube el archivo y crea el medio en un solo paso. Elige `Tipo` (`video`, `audio` o `imagen`); las imágenes piden `TextoAlt`. Para video usa MP4 (H.264 + AAC), que es lo que reproducen Android, iOS y web; el límite es 50 MB, el mismo que pone Supabase en el plan gratuito. Las fotos se reducen a 2048 px y pierden los metadatos EXIF.
+- **Panorámicas:** crea la escena con `POST /api/admin/escenas` dejando `ImagenUrl` vacío, y sube la imagen con `POST /api/admin/escenas/{id}/imagen`. El servidor la reduce a 4096x2048, genera la versión de 1024x512 y borra los metadatos EXIF; guarda las dos rutas.
+- **Carpeta** es opcional. Si la dejas vacía (o con el `string` que pone Swagger) se usa la carpeta por defecto; si la indicas debe ser una de `panoramas`, `mapas`, `medios`, `imagenes`, `videos` o `audios`.
+
+Un medio también puede apuntar a una URL externa (`https://...`) creándolo con `POST /api/admin/medios`; esa URL se entrega tal cual, sin firmar.
 
 ## Migraciones de base de datos
 

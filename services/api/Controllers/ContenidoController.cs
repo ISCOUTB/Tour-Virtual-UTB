@@ -51,14 +51,23 @@ public class ContenidoController(
 
     // --- Endpoints de Gestión de Multimedia del Mapa ---
 
+    // Escribe en la base y en el bucket: necesita la clave de administración
+    // igual que los endpoints de /api/admin.
     [HttpPost("lugares/{lugarId:int}/mapa")]
+    [RequiereClaveAdmin]
     public async Task<IActionResult> SubirOActualizarMapa(int lugarId, [FromForm] SubirMultimediaRequest request)
     {
         if (request.Archivo == null || request.Archivo.Length == 0)
             return BadRequest("No se proporcionó ningún archivo.");
 
+        if (!TiposArchivo.TieneExtension(request.Archivo.FileName, TiposArchivo.ExtensionesMapa))
+            return BadRequest($"El mapa debe ser {string.Join(", ", TiposArchivo.ExtensionesMapa)}.");
+
+        var carpeta = TiposArchivo.ResolverCarpeta(request.Carpeta, "mapas");
+        if (carpeta is null) return BadRequest(TiposArchivo.MensajeCarpetaInvalida);
+
         // 1. Subimos el archivo a Supabase S3
-        var rutaS3 = await almacenamientoService.SubirArchivoAsync(request.Archivo, request.Carpeta ?? "mapas");
+        var rutaS3 = await almacenamientoService.SubirArchivoAsync(request.Archivo, carpeta);
 
         // 2. Guardamos la ruta en la base de datos a través del servicio
         var actualizado = await contenidoService.ActualizarMapaLugarAsync(lugarId, rutaS3);

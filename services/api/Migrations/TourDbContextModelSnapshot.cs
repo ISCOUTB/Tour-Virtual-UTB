@@ -33,7 +33,6 @@ namespace TourVirtualUTB.Api.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("ImagenUrl")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("ImagenUrlBaja")

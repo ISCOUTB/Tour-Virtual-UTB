@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using TourVirtualUTB.Api.Data;
 using TourVirtualUTB.Api.Services;
 
@@ -13,9 +14,21 @@ builder.Services.AddDbContext<TourDbContext>(options =>
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<IAlmacenamientoService, AlmacenamientoService>();
-builder.Services.AddScoped<IContenidoService, ContenidoService>();
+builder.Services.AddSwaggerGen(options =>
+{
+    // Botón "Authorize" en Swagger para mandar la clave de administración.
+    options.AddSecurityDefinition("ClaveAdmin", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = RequiereClaveAdminAttribute.Cabecera,
+        Description = "Clave configurada en Admin:ApiKey. Necesaria para /api/admin/* y para subir mapas."
+    });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("ClaveAdmin", document)] = []
+    });
+});
 builder.Services.AddScoped<IAlmacenamientoService, AlmacenamientoService>();
 builder.Services.AddScoped<IContenidoService, ContenidoService>();
 
@@ -52,6 +65,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+if (string.IsNullOrEmpty(app.Configuration["Admin:ApiKey"]))
+{
+    app.Logger.LogWarning(app.Environment.IsDevelopment()
+        ? "Admin:ApiKey no está configurada: los endpoints de administración quedan abiertos (solo en Development)."
+        : "Admin:ApiKey no está configurada: los endpoints de administración responderán 503.");
+}
 
 
 // if (app.Environment.IsDevelopment())

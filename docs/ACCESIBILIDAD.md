@@ -108,11 +108,39 @@ subtitulos/biblioteca.en.vtt     subtítulos de la narración en inglés
 flutter run -d windows --dart-define=DATOS=demo --dart-define=MEDIOS_DEMO=http://127.0.0.1:8765
 ```
 
-El modo demo busca solo `audios/<lugar>.<idioma>.mp3` y `subtitulos/<lugar>[.<idioma>].vtt`. En la ficha aparecen el selector de idioma, el botón CC y los subtítulos mientras suena. Los nombres de lugar son `biblioteca`, `enfermeria`, `zona-t` y `cancha-softbol`.
+El modo demo busca solo `audios/<lugar>.<idioma>.mp3` y `subtitulos/<lugar>[.<idioma>].vtt`. En la ficha aparecen el selector de idioma, el botón CC y los subtítulos mientras suena. Los nombres de lugar son `biblioteca`, `puente-a3-a5`, `enfermeria`, `zona-t`, `cancha-softbol`, `solo-cafe`, `la-placita` y `quantalab`.
 
 **Lengua de Señas Colombiana.** Un video por lugar con idioma `csn`. La persona intérprete va en plano medio, sobre fondo liso y con buena luz, y el video lleva también subtítulos.
 
 **Videos con información visual.** Si un video muestra algo que el audio no cuenta (letreros, recorridos), necesita audiodescripción (WCAG 1.2.5) o una narración que lo diga.
+
+**Cómo se producen las narraciones (decidido el 2026-10-24).**
+
+- **Guiones:** están en `scripts/narraciones/guiones.json`, para 9 lugares en los 11 idiomas.
+  - El español es literal del guion institucional de estaciones (`docs/STORYTELLING UTB.xlsx`).
+  - Las traducciones son **borradores** y necesitan revisión de un hablante nativo antes de grabar, como los textos de la interfaz. Cada idioma usa el mismo tratamiento que su interfaz.
+  - Las estaciones Pasillo de la conexión, Plaza Maloca, Laboratorio El Patio y Pasillo del éxito no tienen guion todavía: en la hoja solo traen notas de producción.
+- **Voz diseñada, no clonada.** Clonar la voz de una persona es tratar un dato personal (Ley 1581) y exige su consentimiento escrito. Por eso la voz se describe («voz adulta, cálida y clara, ritmo pausado…») y el modelo la genera. En los créditos de la app se dice que la voz es sintética.
+- **Herramientas:**
+  - **VoiceStudio**, una app de escritorio local con licencia AGPL-3, con el motor **VoxCPM2**, que es Apache-2.0 y tiene 30 idiomas, entre ellos los 10 que necesitamos.
+  - **No se usa el motor que VoiceStudio trae por defecto, OmniVoice:** sus pesos son CC-BY-NC y prohíben el uso comercial.
+  - **OpenVoice quedó descartado:** no tiene portugués, italiano, alemán ni turco, y no recibe cambios desde abril de 2025.
+- **Script:** `scripts/narraciones/generar_narraciones.py` hace todo contra la API local de VoiceStudio.
+  - `muestras` genera voces candidatas por idioma, una por semilla, para escucharlas y elegir. La elegida se guarda como `<idioma>.wav` y `<idioma>.txt` en una carpeta de voces.
+  - `elegir` escoge sola la candidata de cada idioma cuando nadie va a escucharlas todas: la que, transcrita, más se parece al guion y, entre las que empatan, la de tono más cercano a la voz española.
+  - `generar` produce todos los clips usando esa voz como referencia. Así cada idioma suena siempre con la misma narradora.
+  - `reexportar` rehace solo los MP3 desde los WAV intermedios, sin volver a generar voz. El pico queda bajo −1 dBTP gracias a un limitador a −3 dBFS después de normalizar: sin él, el MP3 rebasaba el límite al codificar.
+  - Para transcribir usa `faster-whisper` con `Systran/faster-whisper-large-v3` (2,9 GB, MIT). WhisperX, que es el que VoiceStudio trae activo, descarga además un modelo de alineación por idioma.
+  - La descripción de la voz, decidida el 2026-10-24, es: femenina adulta, cálida, tono medio, expresiva como locución publicitaria y ritmo pausado. Sale de las narraciones anteriores: unos 216 Hz de tono y unas 2 palabras por segundo contando pausas.
+- **Pasos por clip:**
+  1. Generar el audio.
+  2. Volver a transcribirlo y compararlo con el guion, para detectar palabras saltadas o inventadas.
+  3. Hacer los subtítulos alineando el guion conocido con el audio. Así cumplen el desfase de ±0,2 s.
+  4. Normalizar a −16 LUFS y −1 dBTP.
+  5. Convertir a MP3 mono de 64 kbps y nombrar el archivo como arriba.
+- **Acento:** una voz diseñada en cada idioma suena nativa. Clonar la voz española en otros idiomas arrastra su acento. Es probable que VoxCPM2 no distinga el portugués de Portugal del de Brasil; hay que escucharlo antes de publicar.
+
+**Texto alternativo de las panorámicas.** Ya está escrito para las cinco, en `scripts/datos/escenas_texto_alt.json`: qué se ve y dónde quedan las salidas. El modo demo ya lo usa, y el visor 360 lo lee en lugar de la descripción del lugar. Falta la columna en el backend (sección 4, punto 4).
 
 ## 4. Lo que necesitamos del backend
 
@@ -121,7 +149,7 @@ Es una propuesta: el backend es de otro equipo y la app ya funciona sin estos ca
 1. **Columna `idioma` en `Medio`**: `text null`, código BCP 47, en la entidad y en `MedioDto` como `idioma`. Se permiten varios audios por POI, uno por idioma. Si viene vacío, la app lo toma como español.
 2. **`subtitulos_url` firmada** como las demás URL de S3.
 3. **Traducciones del contenido.** La app envía `Accept-Language` (por ejemplo `pt-BR, es;q=0.5`) en cada consulta. El servidor responde en ese idioma si tiene traducción, o en español si no, e indica el idioma que usó con `Content-Language`. Habría que traducir el nombre y la descripción del POI, el nombre y la descripción de la ruta, el nombre de la escena y la etiqueta del hotspot. Una tabla `poi_traducciones (poi_id, idioma, nombre, descripcion)` y sus equivalentes bastan.
-4. **`texto_alt` en `Escena`**: qué se ve en la panorámica, para quien no la ve. Mientras no exista, el visor usa la descripción del POI.
+4. **`texto_alt` en `Escena`**: qué se ve en la panorámica, para quien no la ve. Mientras no exista, el visor usa la descripción del POI. Los textos de las cinco panorámicas ya están en `scripts/datos/escenas_texto_alt.json`, por slug.
 5. **Tipos nuevos de medio**: la app ignora los que no conoce en vez de fallar, así que se pueden añadir sin coordinar una versión.
 6. **Panel de administración**: debe exigir `texto_alt` y `subtitulos_url` antes de publicar, como ya dice `docs/arquitectura.md`.
 
@@ -152,6 +180,16 @@ En un teléfono real (**todavía no se ha hecho**; hasta ahora solo hay pruebas 
 - Verificación en teléfonos reales (sección 5).
 - Revisión nativa de las traducciones.
 - Traducción del contenido en el backend (sección 4). Mientras no exista, nombres y descripciones se ven en español con el aviso correspondiente.
-- Narraciones por idioma, subtítulos y videos en Lengua de Señas Colombiana.
+- **Narraciones por idioma y subtítulos:** el 2026-10-24 se generaron 88 clips (8 lugares en 11 idiomas), cada uno con su WebVTT, en `assets/narraciones/generadas/`. Esa carpeta no se versiona, igual que el resto de `assets/`.
+  - Los 88 coinciden con su guion al transcribirlos y cumplen −16 LUFS con el pico bajo −1 dBTP.
+  - El del Puente en japonés omitía el final y se rehízo con otra referencia. Conviene que la referencia lea un texto distinto del que se genera.
+  - Falta lo siguiente:
+    - que hablantes nativos revisen las traducciones y escuchen los clips;
+    - que el backend suba los archivos y cree un `Medio` por idioma (necesita la columna `idioma`, sección 4);
+    - el guion de las cuatro estaciones que solo tienen notas;
+    - Granja Solar, cuyo guion existe pero el lugar aún no está en el catálogo.
+- **Videos en Lengua de Señas Colombiana:** tienen que ser con intérprete; ninguna herramienta de voz los sustituye.
+- **Versiones en lectura fácil de los guiones:** salen por el mismo proceso, pero hay que validarlas con personas con discapacidad intelectual.
+- **Guía por voz y vibración de la realidad aumentada:** ver [plan-realidad-aumentada.md](plan-realidad-aumentada.md).
 - Idiomas de derecha a izquierda.
 - Chino tradicional, que hoy usa el simplificado.

@@ -21,8 +21,9 @@ import 'vista_async.dart';
 /// Abre un punto de interés y registra la visita (RF-19).
 ///
 /// Es la puerta única desde la lista, el mapa y el carrusel, para que todas
-/// las superficies cuenten el progreso igual. [pois] es la lista visible: da
-/// el número de parada y decide cuándo se completó el recorrido.
+/// las superficies cuenten el progreso igual. [pois] son las paradas del
+/// recorrido: dan el número de parada y deciden cuándo se completó. Un lugar
+/// que no está entre ellas abre su ficha sin número y no cuenta como visita.
 Future<void> abrirPoi(
   BuildContext context,
   WidgetRef ref, {
@@ -35,8 +36,8 @@ Future<void> abrirPoi(
   await progreso.cargado;
   if (!context.mounted) return;
 
-  final primeraVez = progreso.marcarVisitado(poi.id);
   final indice = pois.indexWhere((p) => p.id == poi.id);
+  final primeraVez = indice >= 0 && progreso.marcarVisitado(poi.id);
 
   await mostrarFichaPoi(
     context,
@@ -138,7 +139,11 @@ class _FichaPoi extends ConsumerWidget {
         28 + abajo,
       ),
       children: [
-        _Postal(escena: escena, estilo: estilo, numero: numero),
+        _Postal(
+          escena: escena,
+          estilo: estilo,
+          numero: numero > 0 ? numero : null,
+        ),
         const SizedBox(height: 22),
         if (sobretitulo.isNotEmpty) ...[
           Row(
@@ -298,7 +303,9 @@ class _Postal extends StatelessWidget {
 
   final Escena? escena;
   final EstiloCategoria estilo;
-  final int numero;
+
+  /// Nulo en un lugar que no es parada.
+  final int? numero;
 
   @override
   Widget build(BuildContext context) {

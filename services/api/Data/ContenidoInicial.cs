@@ -20,11 +20,35 @@ public static class ContenidoInicial
 
         var pois = new[]
         {
-            Poi(1, "Biblioteca", "Recursos", "Mas que una biblioteca: concentracion, disciplina, tecnologia y construccion de suenos.", .4067, .2745, "externo,estudiante,docente"),
-            Poi(2, "Puente A3 - A5", "Academico", "Pasarela elevada que une los edificios A3 y A5 sin bajar a nivel de calle.", .6191, .1793, "estudiante,docente"),
-            Poi(3, "Enfermeria", "Bienestar", "Servicio de atencion primaria del campus: consulta, curaciones y primeros auxilios.", .6186, .5055, "externo,estudiante,docente"),
-            Poi(4, "Zona T", "Servicios", "Zona de mesas al aire libre y a la sombra, junto al Centro Deportivo y Cultural.", .545, .555, "externo,estudiante,docente"),
-            Poi(5, "Cancha de softbol", "Deporte", "Campo abierto del area deportiva, usado para softbol y entrenamientos.", .5195, .658, "externo,estudiante,docente")
+            // Las cinco paradas, con panorámica. Lugares, lat/lng y textos del
+            // guion de estaciones: catálogo de scripts/mapa_campus.py.
+            Poi(1, "Biblioteca", "Recursos", "Más que una biblioteca: concentración, disciplina, tecnología y construcción de sueños.", 10.3699965, -75.4650668),
+            Poi(2, "Puente A3 - A5", "Academico", "Un punto que conecta espacios, personas y recorridos dentro del campus. Cada trayecto en la UTB hace parte de una experiencia que conecta tu presente con lo que quieres construir.", 10.3692169, -75.4647217),
+            Poi(3, "Enfermería", "Bienestar", "Bienestar y cuidado integral. Un espacio para atender tu salud, recibir orientación y recordar que cuidar de ti también hace parte de la experiencia universitaria.", 10.3692651, -75.4655196),
+            Poi(4, "Zona T", "Servicios", "Punto de encuentro, pausa y conexión. Un lugar para compartir con otros estudiantes, conversar y disfrutar los espacios que hacen del campus una comunidad.", 10.3691852, -75.4655576),
+            Poi(5, "Cancha de softbol", "Deporte", "El campus también se vive en movimiento. Espacio para el deporte, la disciplina, el trabajo en equipo y las experiencias que se construyen más allá del aula.", 10.3695823, -75.4663148),
+            // Lugares del campus sin panorámica todavía.
+            Poi(6, "Edificio A1", "Academico", null, 10.3697646, -75.465347),
+            Poi(7, "Edificio A2", "Academico", null, 10.3707763, -75.4656241),
+            Poi(8, "Edificio A3", "Academico", null, 10.3692983, -75.4648329),
+            Poi(9, "Edificio A4", "Academico", null, 10.3695805, -75.4645402),
+            Poi(10, "Edificio A5", "Academico", null, 10.3691355, -75.4646105),
+            Poi(11, "Edificio Alcatraz", "Academico", null, 10.3703807, -75.4652636),
+            Poi(12, "Auditorio", "Cultura", null, 10.3705694, -75.4657944),
+            Poi(13, "Plaza Maloca", "Cultura", null, 10.3700456, -75.4657625),
+            Poi(14, "Rectoría", "Administrativo", null, 10.3695939, -75.4652554),
+            Poi(15, "Laboratorio El Patio", "Academico", null, 10.3696815, -75.4650578),
+            Poi(16, "Centro de Cuidado Integral (QUID)", "Bienestar", null, 10.3690673, -75.4658707),
+            Poi(17, "Centro Deportivo y Cultural", "Deporte", null, 10.3692615, -75.4656845),
+            Poi(18, "Cancha de fútbol", "Deporte", null, 10.3701542, -75.4667058),
+            Poi(19, "Salas de estudio", "Recursos", null, 10.3705483, -75.4654429),
+            Poi(20, "Cafetería", "Servicios", null, 10.37042, -75.4653547),
+            Poi(21, "Tienda", "Servicios", null, 10.3692206, -75.4661076),
+            Poi(22, "Cajero automático", "Servicios", null, 10.3705307, -75.4659036),
+            Poi(23, "Pasillo de la conexión", "Administrativo", null, 10.3707567, -75.4659942),
+            Poi(24, "Solo Café", "Servicios", "Espacio de conexión, ideas y conversaciones que también transforman la experiencia universitaria. Aquí nacen amistades, proyectos y networking.", 10.3702285, -75.4655508),
+            Poi(25, "La Placita", "Cultura", "Inspirada en las plazas del Caribe. Un espacio creado para compartir, desconectarse y sentirse en casa dentro de la UTB.", 10.3704913, -75.465484),
+            Poi(26, "QuantaLab", "Academico", "Laboratorio de analítica, IA y datos. El futuro pertenece a quienes saben interpretar información y tomar decisiones.", 10.3690907, -75.4646518)
         };
         db.Pois.AddRange(pois);
 
@@ -39,9 +63,9 @@ public static class ContenidoInicial
         db.Escenas.AddRange(escenas);
         await db.SaveChangesAsync();
 
-        foreach (var poi in pois)
+        foreach (var escena in escenas)
         {
-            poi.EscenaPrincipalId = poi.Id;
+            pois.Single(p => p.Id == escena.PoiId).EscenaPrincipalId = escena.Id;
         }
 
         db.Hotspots.AddRange(
@@ -69,8 +93,8 @@ public static class ContenidoInicial
         await db.SaveChangesAsync();
     }
 
-    private static Poi Poi(int id, string nombre, string categoria, string descripcion, double x, double y, string audiencias) =>
-        new() { Id = id, LugarId = 1, Nombre = nombre, Categoria = categoria, Descripcion = descripcion, MapX = x, MapY = y, Audiencias = audiencias };
+    private static Poi Poi(int id, string nombre, string categoria, string? descripcion, double? lat, double? lng) =>
+        new() { Id = id, LugarId = 1, Nombre = nombre, Categoria = categoria, Descripcion = descripcion, Lat = lat, Lng = lng, Audiencias = "externo,estudiante,docente" };
 
     private static Escena Escena(int id, int poiId, string nombre, string url, bool principal, int orden, double yaw, double pitch) =>
         new() { Id = id, LugarId = 1, PoiId = poiId, Nombre = nombre, ImagenUrl = url, ImagenUrlBaja = url.Replace(".jpg", "-baja.jpg"), EsEscenaPrincipal = principal, Orden = orden, VistaInicialYaw = yaw, VistaInicialPitch = pitch };

@@ -1,0 +1,8 @@
+{
+  "_nota": "Texto alternativo de cada panorámica (Escena.texto_alt): lo que se ve, para quien no la ve. Lo lee el lector de pantalla en el visor 360 (WCAG 1.1.1). Escrito el 2026-10-24 mirando las panorámicas de assets/ZONAS UTB; describe el espacio y sus salidas, no a las personas. Hay que revisarlo si se cambia una panorámica. La clave es el slug del lugar, el mismo de los archivos.",
+  "biblioteca": "Vestíbulo amplio y luminoso de la biblioteca, de techo alto y piso claro. En el centro hay un mostrador de atención curvo. A la izquierda se abre un pasillo largo con estanterías y mesas de lectura; a la derecha, mesas junto a ventanales que dan a un jardín con palmeras. Al fondo a la derecha, una escalera con el letrero de salida.",
+  "puente-a3-a5": "Pasarela elevada y techada, con barandas metálicas a los dos lados, que une dos edificios de aulas de tres pisos. Desde ella se ven, abajo, árboles frondosos, senderos y un jardín con letras formadas por arbustos, y arriba, un cielo azul con nubes.",
+  "enfermeria": "Sala de atención de la enfermería, blanca y bien iluminada. A la izquierda hay un escritorio con computador y, junto a la puerta de entrada, una pequeña sala de espera con sillas verdes. Al centro y a la derecha, cubículos separados por cortinas, uno de ellos con biombos azules, y equipos como un tanque de oxígeno.",
+  "zona-t": "Plazoleta al aire libre a la sombra de árboles grandes y palmeras, con mesas metálicas y sillas de colores. A un lado se abre una explanada de césped; al otro, un edificio con columnas y una escalera exterior de peldaños amarillos.",
+  "cancha-softbol": "Campo abierto de césped seco bajo un cielo azul con nubes, rodeado de árboles. Al fondo se ve el edificio deportivo de dos pisos, con una torre de luz."
+}

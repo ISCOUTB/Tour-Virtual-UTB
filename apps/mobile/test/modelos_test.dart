@@ -39,19 +39,37 @@ void main() {
         Audiencia.estudiante,
         Audiencia.docente,
       ]);
-      expect(poi.tienePosicionEnMapa, isTrue);
+      // map_x/map_y eran la posición sobre la ilustración. El plano de OSM
+      // ubica por lat/lng, y sin ellas el lugar no se dibuja.
+      expect(poi.tienePosicionEnMapa, isFalse);
+      expect(poi.esParada, isFalse);
     });
 
-    test('un POI sin calibrar no es ubicable en el mapa', () {
+    test('lat/lng ubican el lugar y la escena principal lo hace parada', () {
       final poi = Poi.fromJson(const {
-        'id': 3,
+        'id': 1,
         'lugar_id': 1,
-        'nombre': 'Murales UTB',
-        'map_x': null,
-        'map_y': null,
+        'nombre': 'Biblioteca',
+        'lat': 10.3699965,
+        'lng': -75.4650668,
+        'escena_principal_id': 1,
+      });
+
+      expect(poi.tienePosicionEnMapa, isTrue);
+      expect(poi.esParada, isTrue);
+    });
+
+    test('un lugar sin lat/lng ni escena se lista pero no se dibuja', () {
+      final poi = Poi.fromJson(const {
+        'id': 24,
+        'lugar_id': 1,
+        'nombre': 'Granja Solar',
+        'lat': null,
+        'lng': null,
       });
 
       expect(poi.tienePosicionEnMapa, isFalse);
+      expect(poi.esParada, isFalse);
     });
   });
 

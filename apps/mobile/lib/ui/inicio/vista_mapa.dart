@@ -1,33 +1,33 @@
 import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../datos/modelos/modelos.dart';
+import '../../datos/plano_campus.dart';
 import '../../datos/progreso.dart';
-import '../../datos/proveedores.dart';
 import '../../l10n/textos.dart';
-import '../../nucleo/configuracion.dart';
 import '../../nucleo/movimiento.dart';
 import '../../nucleo/tema.dart';
 import '../comunes/componentes.dart';
 import '../ficha_poi.dart';
+import 'pintor_plano.dart';
 
-/// Mapa isométrico del campus con los puntos de interés.
+/// Plano del campus con los lugares de la UTB.
+///
+/// El plano sale de OpenStreetMap (ver [PlanoCampus]) y cada lugar se ubica
+/// por su lat/lng. Las paradas del recorrido llevan un pin numerado y entran
+/// en el carrusel de abajo; deslizarlo lleva la cámara hasta cada una. Los
+/// demás lugares son puntos que se vuelven tocables al acercarse.
 ///
 /// Entra tumbado en perspectiva y se endereza: el campus aparece como una
-/// maqueta que se levanta hacia el usuario. Debajo, un carrusel con todas las
-/// paradas; deslizarlo lleva la cámara hasta cada una.
-///
-/// El render entregado por la universidad mide 4096x2304. El lienzo tiene que
-/// respetar esa proporción: mientras fue cuadrado, toda coordenada normalizada
-/// caía desplazada en vertical.
+/// maqueta que se levanta hacia el usuario.
 class VistaMapa extends ConsumerStatefulWidget {
   const VistaMapa({super.key, required this.pois});
 
+  /// Todos los lugares, paradas o no.
   final List<Poi> pois;
 
   @override
@@ -36,10 +36,19 @@ class VistaMapa extends ConsumerStatefulWidget {
 
 class _VistaMapaState extends ConsumerState<VistaMapa>
     with TickerProviderStateMixin {
-  static const double _relacion = 4096 / 2304;
   static const double _amplitud = 1.9;
-  static const double _escalaMaxima = 2.6;
-  static const _rutaMapa = 'android/app/src/assets/mapa_campus.webp';
+
+  /// El plano es vectorial y sigue nítido de cerca; la ilustración, en mapa
+  /// de bits, no pasaba de 2,6.
+  static const double _escalaMaxima = 6;
+
+  /// Desde esta escala los lugares que no son parada se pueden tocar. Antes
+  /// son puntos mudos: con el campus entero en pantalla, veinte objetivos de
+  /// 48 dp se pisaban. Quien no ve el mapa los tiene todos en «Más lugares».
+  static const double _escalaLugares = 1.8;
+
+  /// Desde esta escala los lugares muestran su nombre sin solaparse.
+  static const double _escalaNombres = 3.2;
 
   final _controlador = TransformationController();
   late final _camara = AnimationController(
@@ -56,9 +65,12 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
   Matrix4? _encuadre;
   var _ventana = Size.zero;
   var _lienzo = Size.zero;
+  PlanoCampus? _plano;
   var _actual = 0;
   var _paginaProgramada = false;
   var _entradaIniciada = false;
+
+  List<Poi> get _paradas => widget.pois.where((p) => p.esParada).toList();
 
   @override
   void initState() {
@@ -88,6 +100,16 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
     _entrada.dispose();
     _paginas.dispose();
     super.dispose();
+  }
+
+  /// Punto del lienzo donde cae [poi], o nulo si no tiene posición o queda
+  /// fuera del plano.
+  Offset? _enLienzo(Poi poi) {
+    final plano = _plano;
+    if (plano == null || !poi.tienePosicionEnMapa) return null;
+    final n = plano.normalizar(poi.lat!, poi.lng!);
+    if (n == null) return null;
+    return Offset(n.dx * _lienzo.width, n.dy * _lienzo.height);
   }
 
   static double _escalaDeCobertura(Size ventana, Size lienzo) {
@@ -122,30 +144,30 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
       ..scaleByDouble(s, s, 1, 1);
   }
 
-  /// Encuadre inicial desde la caja de los POI, no desde el centro de la
-  /// imagen: así los márgenes propios de la ilustración quedan fuera.
+  /// Encuadre inicial desde la caja de los lugares, no desde el centro del
+  /// plano: el plano abarca todo el polígono del campus y sus calles, y los
+  /// lugares ocupan un rincón.
   ///
-  /// La cobertura manda sobre el ajuste. Ajustar la caja de los POI puede
+  /// La cobertura manda sobre el ajuste. Ajustar la caja de los lugares puede
   /// pedir menos zoom del que hace falta para llenar la ventana, y esa
   /// diferencia se veía como bandas muertas.
-  void _encuadrar(Size ventana, Size lienzo) {
+  void _encuadrar(Size ventana, Size lienzo, PlanoCampus plano) {
     _ventana = ventana;
     _lienzo = lienzo;
+    _plano = plano;
     if (_encuadre != null || ventana.isEmpty) return;
 
-    final ubicables = widget.pois.where((p) => p.tienePosicionEnMapa).toList();
+    final puntos = widget.pois.map(_enLienzo).nonNulls.toList();
 
     var izq = 0.0, arr = 0.0;
     var der = lienzo.width, aba = lienzo.height;
-    if (ubicables.isNotEmpty) {
-      final xs = ubicables.map((p) => p.mapX! * lienzo.width);
-      final ys = ubicables.map((p) => p.mapY! * lienzo.height);
-      const holgura = 90.0;
-      izq = xs.reduce(min) - holgura;
-      der = xs.reduce(max) + holgura;
-      arr = ys.reduce(min) - holgura;
+    if (puntos.isNotEmpty) {
+      const holgura = 60.0;
+      izq = puntos.map((p) => p.dx).reduce(min) - holgura;
+      der = puntos.map((p) => p.dx).reduce(max) + holgura;
+      arr = puntos.map((p) => p.dy).reduce(min) - holgura;
       // Hueco extra abajo: ahí flota el carrusel.
-      aba = ys.reduce(max) + holgura + 120;
+      aba = puntos.map((p) => p.dy).reduce(max) + holgura + 120;
     }
 
     final escala = min(
@@ -201,17 +223,10 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
 
   void _seleccionar(int indice, {bool moverCarrusel = true}) {
     setState(() => _actual = indice);
-    final poi = widget.pois[indice];
-    if (poi.tienePosicionEnMapa) {
-      final escala = max(_escalaDe(_controlador.value), 1.5);
-      _volarA(
-        _matriz(
-          poi.mapX! * _lienzo.width,
-          poi.mapY! * _lienzo.height,
-          escala,
-          alturaFoco: .38,
-        ),
-      );
+    final punto = _enLienzo(_paradas[indice]);
+    if (punto != null) {
+      final escala = max(_escalaDe(_controlador.value), 2.0);
+      _volarA(_matriz(punto.dx, punto.dy, escala, alturaFoco: .38));
     }
     if (moverCarrusel && _paginas.hasClients) {
       _paginaProgramada = true;
@@ -225,13 +240,17 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
     }
   }
 
-  void _abrir(Poi poi) => abrirPoi(context, ref, poi: poi, pois: widget.pois);
+  /// Las paradas numeran y cuentan; el resto de los lugares abre su ficha
+  /// sin número de parada.
+  void _abrir(Poi poi) => abrirPoi(context, ref, poi: poi, pois: _paradas);
 
   @override
   Widget build(BuildContext context) {
     final visitados = ref.watch(progresoProvider);
+    final plano = ref.watch(planoCampusProvider);
+    final paradas = _paradas;
     final abajo = MediaQuery.paddingOf(context).bottom;
-    final hechos = widget.pois.where((p) => visitados.contains(p.id)).length;
+    final hechos = paradas.where((p) => visitados.contains(p.id)).length;
     final txt = Textos.of(context);
     final escala = MediaQuery.textScalerOf(context);
     // El carrusel crece con el texto: el nombre y la categoría no cabían en
@@ -244,19 +263,25 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
     final tarjeta = ClipRRect(
       borderRadius: BorderRadius.circular(MedidasUtb.radioTarjeta + 2),
       child: ColoredBox(
-        // El render trae su propio fondo blanco hasta los bordes; cualquier
-        // otro color dibujaría una costura alrededor del campus.
-        color: Colors.white,
+        // El color de la tierra del plano: mientras carga, o si se aleja más
+        // allá del borde, no se ve una costura.
+        color: ColoresPlano.tierra,
         child: Stack(
           children: [
-            Positioned.fill(child: _lienzoInteractivo(visitados)),
+            Positioned.fill(
+              child: plano.when(
+                data: (p) => _lienzoInteractivo(p, paradas, visitados),
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const _MapaAusente(),
+              ),
+            ),
             Positioned(
               left: 12,
               right: 12 + MedidasUtb.toque + 8,
               top: 12,
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: _Leyenda(hechos: hechos, total: widget.pois.length),
+                child: _Leyenda(hechos: hechos, total: paradas.length),
               ),
             ),
             Positioned(
@@ -284,13 +309,23 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
                 ],
               ),
             ),
-            if (widget.pois.isNotEmpty)
+            // ODbL: los datos de OSM se usan con la atribución a la vista.
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12 + (paradas.isEmpty ? 0 : altoCarrusel + 8),
+              child: const Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _CreditoOsm(),
+              ),
+            ),
+            if (paradas.isNotEmpty)
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 12,
                 height: altoCarrusel,
-                child: _carrusel(visitados),
+                child: _carrusel(paradas, visitados),
               ),
           ],
         ),
@@ -332,15 +367,20 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
     );
   }
 
-  Widget _lienzoInteractivo(Set<int> visitados) {
+  Widget _lienzoInteractivo(
+    PlanoCampus plano,
+    List<Poi> paradas,
+    Set<int> visitados,
+  ) {
+    final altoContraste = PaletaUtb.de(context).altoContraste;
     return LayoutBuilder(
       builder: (context, restricciones) {
         final ancho = max(
           restricciones.maxWidth * _amplitud,
-          restricciones.maxHeight * _relacion,
+          restricciones.maxHeight * plano.proporcion,
         );
-        final lienzo = Size(ancho, ancho / _relacion);
-        _encuadrar(restricciones.biggest, lienzo);
+        final lienzo = Size(ancho, ancho / plano.proporcion);
+        _encuadrar(restricciones.biggest, lienzo, plano);
 
         return InteractiveViewer(
           transformationController: _controlador,
@@ -359,10 +399,17 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
                   child: Semantics(
                     image: true,
                     label: Textos.of(context).mapaDescripcion,
-                    child: const _ImagenMapa(ruta: _rutaMapa),
+                    child: RepaintBoundary(
+                      child: CustomPaint(
+                        painter: PintorPlano(
+                          plano: plano,
+                          altoContraste: altoContraste,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                Positioned.fill(child: _marcadores(lienzo, visitados)),
+                Positioned.fill(child: _marcadores(paradas, visitados)),
               ],
             ),
           ),
@@ -373,22 +420,44 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
 
   /// Los marcadores escalan al revés que el mapa: en pantalla miden siempre lo
   /// mismo, así que acercarse no los vuelve enormes ni alejarse los esconde.
-  Widget _marcadores(Size lienzo, Set<int> visitados) {
+  Widget _marcadores(List<Poi> paradas, Set<int> visitados) {
     final animar = !sinMovimiento(context);
+    final lugares = widget.pois.where((p) => !p.esParada);
 
     return ValueListenableBuilder<Matrix4>(
       valueListenable: _controlador,
       builder: (context, matriz, _) {
-        final k = 1 / _escalaDe(matriz).clamp(0.2, 10.0);
+        final escala = _escalaDe(matriz);
+        final k = 1 / escala.clamp(0.2, 10.0);
+        final tocables = escala >= _escalaLugares;
+        final conNombre = escala >= _escalaNombres;
 
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            for (final (i, poi) in widget.pois.indexed)
-              if (poi.tienePosicionEnMapa)
+            // Los lugares van debajo: donde se cruzan con una parada, manda
+            // la parada.
+            for (final poi in lugares)
+              if (_enLienzo(poi) case final punto?)
                 Positioned(
-                  left: poi.mapX! * lienzo.width - _Marcador.ancho / 2,
-                  top: poi.mapY! * lienzo.height - _Marcador.punta,
+                  left: punto.dx - _PuntoLugar.lado / 2,
+                  top: punto.dy - _PuntoLugar.lado / 2,
+                  child: Transform.scale(
+                    scale: k,
+                    child: tocables
+                        ? _PuntoLugar(
+                            poi: poi,
+                            conNombre: conNombre,
+                            alTocar: () => _abrir(poi),
+                          )
+                        : const _PuntoMudo(),
+                  ),
+                ),
+            for (final (i, poi) in paradas.indexed)
+              if (_enLienzo(poi) case final punto?)
+                Positioned(
+                  left: punto.dx - _Marcador.ancho / 2,
+                  top: punto.dy - _Marcador.punta,
                   child: Transform.scale(
                     scale: k,
                     alignment: const Alignment(
@@ -416,15 +485,15 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
     );
   }
 
-  Widget _carrusel(Set<int> visitados) {
+  Widget _carrusel(List<Poi> paradas, Set<int> visitados) {
     return PageView.builder(
       controller: _paginas,
-      itemCount: widget.pois.length,
+      itemCount: paradas.length,
       onPageChanged: (i) {
         if (!_paginaProgramada) _seleccionar(i, moverCarrusel: false);
       },
       itemBuilder: (context, i) {
-        final poi = widget.pois[i];
+        final poi = paradas[i];
         return AnimatedBuilder(
           animation: _paginas,
           builder: (context, hijo) {
@@ -460,51 +529,6 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
   }
 }
 
-class _ImagenMapa extends ConsumerWidget {
-  const _ImagenMapa({required this.ruta});
-
-  final String ruta;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Decodificar a 4096 cuesta unos 38 MB: más de lo que aguanta un
-    // teléfono de gama baja. A 2560 sigue nítido con el zoom máximo.
-    final local = Image.asset(
-      ruta,
-      cacheWidth: 2560,
-      fit: BoxFit.fill,
-      filterQuality: FilterQuality.medium,
-      // La ilustración es material institucional y no se versiona: en una
-      // copia sin ella, el mapa lo dice en vez de quedar en blanco.
-      errorBuilder: (context, error, pila) => const _MapaAusente(),
-    );
-    const blanco = ColoredBox(color: Colors.white);
-
-    // El backend sirve el mapa desde S3 para que el panel pueda cambiarlo.
-    // Si no hay URL o falla, se usa la ilustración empaquetada, que es la
-    // misma sobre la que se calibraron las coordenadas.
-    return ref
-        .watch(mapaUrlProvider(Configuracion.lugarPorDefecto))
-        .when(
-          data: (url) => url == null
-              ? local
-              : CachedNetworkImage(
-                  imageUrl: url,
-                  // La URL firmada cambia en cada consulta; el nombre del
-                  // objeto en S3 no, salvo que el panel suba otro mapa.
-                  cacheKey: Uri.parse(url).replace(query: '').toString(),
-                  fit: BoxFit.fill,
-                  memCacheWidth: 2560,
-                  filterQuality: FilterQuality.medium,
-                  placeholder: (_, _) => blanco,
-                  errorWidget: (_, _, _) => local,
-                ),
-          loading: () => blanco,
-          error: (_, _) => local,
-        );
-  }
-}
-
 class _MapaAusente extends StatelessWidget {
   const _MapaAusente();
 
@@ -529,6 +553,134 @@ class _MapaAusente extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// «© colaboradores de OpenStreetMap», sobre el plano.
+class _CreditoOsm extends StatelessWidget {
+  const _CreditoOsm();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: Text(
+          Textos.of(context).creditoOsm,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            // Gris de OSM sobre blanco: 10:1.
+            color: const Color(0xFF333333),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Lugar del campus que no es parada: un círculo con el icono de su
+/// categoría. Tocarlo abre su ficha.
+class _PuntoLugar extends StatelessWidget {
+  const _PuntoLugar({
+    required this.poi,
+    required this.conNombre,
+    required this.alTocar,
+  });
+
+  /// Caja táctil, centrada en el punto del mapa. Material pide 48 dp.
+  static const double lado = 48;
+
+  final Poi poi;
+  final bool conNombre;
+  final VoidCallback alTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final txt = Textos.of(context);
+    final estilo = EstiloCategoria.de(poi.categoria);
+    final categoria = poi.categoria == null
+        ? null
+        : EstiloCategoria.nombre(txt, poi.categoria!);
+
+    return SemanticaConContenido(
+      etiqueta: categoria == null ? poi.nombre : '${poi.nombre}, $categoria',
+      contenido: poi.nombre,
+      boton: true,
+      alTocar: alTocar,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: alTocar,
+        child: SizedBox(
+          width: lado,
+          height: lado,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              // Grafito con el color de la categoría: se separa igual del
+              // techo claro de un edificio que del verde de una cancha.
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: ColoresUtb.superficie,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x55000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(estilo.icono, size: 16, color: estilo.color),
+              ),
+              if (conNombre)
+                Positioned(
+                  top: lado - 6,
+                  left: -60,
+                  right: -60,
+                  child: IgnorePointer(
+                    child: Center(child: _EtiquetaPin(texto: poi.nombre)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// El mismo lugar visto desde lejos: un punto que no se toca ni se anuncia.
+class _PuntoMudo extends StatelessWidget {
+  const _PuntoMudo();
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: IgnorePointer(
+        child: SizedBox(
+          width: _PuntoLugar.lado,
+          height: _PuntoLugar.lado,
+          child: Center(
+            child: Container(
+              width: 11,
+              height: 11,
+              decoration: BoxDecoration(
+                color: ColoresUtb.superficie,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
         ),
       ),
     );

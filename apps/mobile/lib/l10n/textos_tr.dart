@@ -219,6 +219,15 @@ class TextosTr extends Textos {
   String get categoriaDeporte => 'Spor';
 
   @override
+  String get categoriaCultura => 'Kültür';
+
+  @override
+  String get categoriaAdministrativo => 'İdari';
+
+  @override
+  String get categoriaSostenibilidad => 'Sürdürülebilirlik';
+
+  @override
   String get verTodoCampus => 'Tüm kampüsü gör';
 
   @override
@@ -232,7 +241,7 @@ class TextosTr extends Textos {
 
   @override
   String get mapaDescripcion =>
-      'Kampüsün resimli haritası. Her durağın numaralı bir işareti var.';
+      'Kampüs planı. Her durağın numaralı bir işareti, diğer yerlerin bir noktası var.';
 
   @override
   String visitadosDeTotal(int hechos, int total) {
@@ -241,6 +250,12 @@ class TextosTr extends Textos {
 
   @override
   String get sinUbicacionMapa => 'Haritada konumu yok';
+
+  @override
+  String get masLugares => 'Kampüsteki diğer yerler';
+
+  @override
+  String get creditoOsm => '© OpenStreetMap katkıda bulunanlar';
 
   @override
   String get sinDescripcion => 'Bu yerin henüz açıklaması yok.';

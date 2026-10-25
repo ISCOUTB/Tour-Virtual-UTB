@@ -29,10 +29,6 @@ final poiDetalleProvider = FutureProvider.family<PoiDetalle, int>((ref, poiId) {
   return ref.watch(repositorioContenidoProvider).obtenerPoiDetalle(poiId);
 });
 
-final mapaUrlProvider = FutureProvider.family<String?, int>((ref, lugarId) {
-  return ref.watch(repositorioContenidoProvider).obtenerUrlMapa(lugarId);
-});
-
 /// Subtítulos y transcripción de un medio, por URL del archivo.
 final subtitulosProvider = FutureProvider.family<Subtitulos, String>((
   ref,

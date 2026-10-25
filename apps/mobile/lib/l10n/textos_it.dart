@@ -222,6 +222,15 @@ class TextosIt extends Textos {
   String get categoriaDeporte => 'Sport';
 
   @override
+  String get categoriaCultura => 'Cultura';
+
+  @override
+  String get categoriaAdministrativo => 'Amministrazione';
+
+  @override
+  String get categoriaSostenibilidad => 'Sostenibilità';
+
+  @override
   String get verTodoCampus => 'Vedi tutto il campus';
 
   @override
@@ -235,7 +244,7 @@ class TextosIt extends Textos {
 
   @override
   String get mapaDescripcion =>
-      'Mappa illustrata del campus. Ogni tappa ha un indicatore numerato.';
+      'Mappa del campus. Ogni tappa ha un indicatore numerato e gli altri luoghi un punto.';
 
   @override
   String visitadosDeTotal(int hechos, int total) {
@@ -244,6 +253,12 @@ class TextosIt extends Textos {
 
   @override
   String get sinUbicacionMapa => 'Non presente sulla mappa';
+
+  @override
+  String get masLugares => 'Altri luoghi del campus';
+
+  @override
+  String get creditoOsm => '© contributori di OpenStreetMap';
 
   @override
   String get sinDescripcion =>

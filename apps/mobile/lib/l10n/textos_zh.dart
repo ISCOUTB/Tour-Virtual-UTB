@@ -208,6 +208,15 @@ class TextosZh extends Textos {
   String get categoriaDeporte => '体育';
 
   @override
+  String get categoriaCultura => '文化';
+
+  @override
+  String get categoriaAdministrativo => '行政';
+
+  @override
+  String get categoriaSostenibilidad => '可持续发展';
+
+  @override
   String get verTodoCampus => '查看整个校园';
 
   @override
@@ -220,7 +229,7 @@ class TextosZh extends Textos {
   String get mapaNoCargo => '无法加载校园地图。';
 
   @override
-  String get mapaDescripcion => '校园插画地图。每个站点都有带编号的标记。';
+  String get mapaDescripcion => '校园地图。每个站点都有带编号的标记，其他地点显示为圆点。';
 
   @override
   String visitadosDeTotal(int hechos, int total) {
@@ -229,6 +238,12 @@ class TextosZh extends Textos {
 
   @override
   String get sinUbicacionMapa => '地图上无位置';
+
+  @override
+  String get masLugares => '校园其他地点';
+
+  @override
+  String get creditoOsm => '© OpenStreetMap 贡献者';
 
   @override
   String get sinDescripcion => '此地点暂无介绍。';

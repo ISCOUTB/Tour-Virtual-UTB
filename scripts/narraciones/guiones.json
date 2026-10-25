@@ -1,0 +1,182 @@
+{
+  "_nota": "Guiones de narración por lugar e idioma. El español es literal del guion institucional de estaciones (docs/STORYTELLING UTB.xlsx, columna Speech). Las traducciones son BORRADORES sin revisión de un hablante nativo: hay que revisarlas antes de generar los audios definitivos, igual que los textos de la interfaz. Las estaciones 1 (Pasillo de la conexión), 2 (Plaza Maloca), 6 (Laboratorio El Patio) y 7 (Pasillo del éxito) no están aquí: en el guion solo traen notas de producción, no un texto para leer. Etiquetas de idioma: las de la app (lib/nucleo/idiomas.dart), que son también el sufijo del archivo: audios/<lugar>.<idioma>.mp3. El español es el original y va sin sufijo.",
+  "idiomas": ["es", "en", "pt", "pt-PT", "fr", "it", "de", "tr", "ko", "ja", "zh"],
+  "tratamiento": {
+    "es": "tú",
+    "en": "you",
+    "pt": "você",
+    "pt-PT": "formal (o senhor / impessoal)",
+    "fr": "vous",
+    "it": "tu",
+    "de": "du",
+    "tr": "siz",
+    "ko": "합니다체, sin pronombre",
+    "ja": "です・ます",
+    "zh": "你"
+  },
+  "guiones": [
+    {
+      "lugar": "biblioteca",
+      "poi": "Biblioteca",
+      "estacion": 5,
+      "texto": {
+        "es": "Más que una biblioteca: concentración, disciplina, tecnología y construcción de sueños.",
+        "en": "More than a library: focus, discipline, technology and a place to build your dreams.",
+        "pt": "Mais que uma biblioteca: concentração, disciplina, tecnologia e construção de sonhos.",
+        "pt-PT": "Mais do que uma biblioteca: concentração, disciplina, tecnologia e construção de sonhos.",
+        "fr": "Plus qu’une bibliothèque : concentration, discipline, technologie et des rêves qui se construisent.",
+        "it": "Più di una biblioteca: concentrazione, disciplina, tecnologia e sogni da costruire.",
+        "de": "Mehr als eine Bibliothek: Konzentration, Disziplin, Technologie und Träume, die Gestalt annehmen.",
+        "tr": "Bir kütüphaneden çok daha fazlası: odaklanma, disiplin, teknoloji ve hayallerin inşası.",
+        "ko": "도서관 그 이상의 공간입니다. 집중과 규율, 기술, 그리고 꿈을 쌓아 가는 곳입니다.",
+        "ja": "図書館以上の場所です。集中、規律、テクノロジー、そして夢を形にする場所です。",
+        "zh": "不只是一座图书馆：这里有专注、自律与科技，也是筑梦的地方。"
+      }
+    },
+    {
+      "lugar": "puente-a3-a5",
+      "poi": "Puente A3 - A5",
+      "estacion": 13,
+      "texto": {
+        "es": "Un punto que conecta espacios, personas y recorridos dentro del campus. Cada trayecto en la UTB hace parte de una experiencia que conecta tu presente con lo que quieres construir.",
+        "en": "A point that connects spaces, people and routes across campus. Every journey at UTB is part of an experience that connects your present with what you want to build.",
+        "pt": "Um ponto que conecta espaços, pessoas e percursos dentro do campus. Cada trajeto na UTB faz parte de uma experiência que conecta o seu presente com aquilo que você quer construir.",
+        "pt-PT": "Um ponto que liga espaços, pessoas e percursos dentro do campus. Cada trajeto na UTB faz parte de uma experiência que liga o seu presente àquilo que quer construir.",
+        "fr": "Un point qui relie des espaces, des personnes et des parcours sur le campus. Chaque trajet à l’UTB fait partie d’une expérience qui relie votre présent à ce que vous voulez construire.",
+        "it": "Un punto che collega spazi, persone e percorsi all’interno del campus. Ogni tragitto all’UTB fa parte di un’esperienza che collega il tuo presente a ciò che vuoi costruire.",
+        "de": "Ein Ort, der Räume, Menschen und Wege auf dem Campus verbindet. Jeder Weg an der UTB ist Teil einer Erfahrung, die deine Gegenwart mit dem verbindet, was du aufbauen willst.",
+        "tr": "Kampüsteki mekânları, insanları ve rotaları birbirine bağlayan bir nokta. UTB'deki her yolculuk, bugününüzü inşa etmek istediklerinize bağlayan bir deneyimin parçasıdır.",
+        "ko": "캠퍼스 안의 공간과 사람, 그리고 길을 잇는 곳입니다. UTB에서의 모든 여정은 현재와 앞으로 이루고 싶은 미래를 이어 주는 경험의 일부입니다.",
+        "ja": "キャンパスの空間と人、そして道をつなぐ場所です。UTBでのひとつひとつの道のりが、今の自分とこれから築きたい未来をつなぐ経験の一部になります。",
+        "zh": "这里连接着校园中的空间、人与路线。在UTB走过的每一段路，都是把你的现在与你想创造的未来连在一起的经历。"
+      }
+    },
+    {
+      "lugar": "enfermeria",
+      "poi": "Enfermería",
+      "estacion": 10,
+      "texto": {
+        "es": "Bienestar y cuidado integral. Un espacio para atender tu salud, recibir orientación y recordar que cuidar de ti también hace parte de la experiencia universitaria.",
+        "en": "Wellbeing and comprehensive care. A space to look after your health, get guidance and remember that taking care of yourself is also part of the university experience.",
+        "pt": "Bem-estar e cuidado integral. Um espaço para cuidar da sua saúde, receber orientação e lembrar que cuidar de você também faz parte da experiência universitária.",
+        "pt-PT": "Bem-estar e cuidado integral. Um espaço para cuidar da sua saúde, receber orientação e lembrar que cuidar de si também faz parte da experiência universitária.",
+        "fr": "Bien-être et soins complets. Un espace pour prendre soin de votre santé, recevoir des conseils et vous rappeler que prendre soin de vous fait aussi partie de l’expérience universitaire.",
+        "it": "Benessere e cura integrale. Uno spazio per prenderti cura della tua salute, ricevere orientamento e ricordare che prenderti cura di te fa parte anche dell’esperienza universitaria.",
+        "de": "Wohlbefinden und ganzheitliche Betreuung. Ein Ort, um auf deine Gesundheit zu achten, dich beraten zu lassen und daran zu denken, dass Selbstfürsorge auch zum Studium gehört.",
+        "tr": "Esenlik ve bütüncül bakım. Sağlığınızla ilgilenmek, rehberlik almak ve kendinize iyi bakmanın da üniversite deneyiminin bir parçası olduğunu hatırlamak için bir alan.",
+        "ko": "웰빙과 통합 케어의 공간입니다. 건강을 돌보고 상담을 받으며, 자신을 돌보는 일도 대학 생활의 일부라는 것을 기억하는 곳입니다.",
+        "ja": "ウェルビーイングと総合的なケアの場所です。健康を守り、相談を受け、自分を大切にすることも大学生活の一部だと思い出せる場所です。",
+        "zh": "身心健康与全面关怀。在这里照顾你的健康、获得指导，并记住：照顾好自己也是大学生活的一部分。"
+      }
+    },
+    {
+      "lugar": "zona-t",
+      "poi": "Zona T",
+      "estacion": 12,
+      "texto": {
+        "es": "Punto de encuentro, pausa y conexión. Un lugar para compartir con otros estudiantes, conversar y disfrutar los espacios que hacen del campus una comunidad.",
+        "en": "A place to meet, pause and connect. Somewhere to spend time with other students, talk and enjoy the spaces that turn the campus into a community.",
+        "pt": "Ponto de encontro, pausa e conexão. Um lugar para conviver com outros estudantes, conversar e aproveitar os espaços que fazem do campus uma comunidade.",
+        "pt-PT": "Ponto de encontro, pausa e ligação. Um lugar para conviver com outros estudantes, conversar e aproveitar os espaços que fazem do campus uma comunidade.",
+        "fr": "Lieu de rencontre, de pause et de lien. Un endroit pour partager avec d’autres étudiants, discuter et profiter des espaces qui font du campus une communauté.",
+        "it": "Punto d’incontro, di pausa e di connessione. Un luogo per stare con altri studenti, chiacchierare e godersi gli spazi che fanno del campus una comunità.",
+        "de": "Treffpunkt, Pause und Verbindung. Ein Ort, um Zeit mit anderen Studierenden zu verbringen, sich zu unterhalten und die Räume zu genießen, die den Campus zu einer Gemeinschaft machen.",
+        "tr": "Buluşma, mola ve bağ kurma noktası. Diğer öğrencilerle vakit geçirmek, sohbet etmek ve kampüsü bir topluluğa dönüştüren alanların tadını çıkarmak için bir yer.",
+        "ko": "만남과 휴식, 그리고 연결의 장소입니다. 다른 학생들과 함께 이야기를 나누고, 캠퍼스를 하나의 공동체로 만드는 공간을 즐기는 곳입니다.",
+        "ja": "出会いと休憩、そしてつながりの場所です。ほかの学生と過ごし、語り合い、キャンパスをひとつのコミュニティにする空間を楽しめます。",
+        "zh": "相聚、休憩与交流之地。在这里与其他同学相处、聊天，享受让校园成为一个社区的空间。"
+      }
+    },
+    {
+      "lugar": "cancha-softbol",
+      "poi": "Cancha de softbol",
+      "estacion": 11,
+      "texto": {
+        "es": "El campus también se vive en movimiento. Espacio para el deporte, la disciplina, el trabajo en equipo y las experiencias que se construyen más allá del aula.",
+        "en": "Campus life also happens on the move. A space for sport, discipline, teamwork and the experiences built beyond the classroom.",
+        "pt": "O campus também se vive em movimento. Espaço para o esporte, a disciplina, o trabalho em equipe e as experiências que se constroem além da sala de aula.",
+        "pt-PT": "O campus também se vive em movimento. Espaço para o desporto, a disciplina, o trabalho de equipa e as experiências que se constroem para além da sala de aula.",
+        "fr": "Le campus se vit aussi en mouvement. Un espace pour le sport, la discipline, l’esprit d’équipe et les expériences qui se construisent au-delà de la salle de classe.",
+        "it": "Il campus si vive anche in movimento. Uno spazio per lo sport, la disciplina, il lavoro di squadra e le esperienze che si costruiscono oltre l’aula.",
+        "de": "Der Campus wird auch in Bewegung gelebt. Ein Ort für Sport, Disziplin, Teamarbeit und Erfahrungen, die über den Hörsaal hinausgehen.",
+        "tr": "Kampüs hareket hâlinde de yaşanır. Spor, disiplin, takım çalışması ve sınıfın ötesinde kurulan deneyimler için bir alan.",
+        "ko": "캠퍼스는 움직임 속에서도 살아 있습니다. 스포츠와 규율, 팀워크, 그리고 강의실 밖에서 쌓아 가는 경험을 위한 공간입니다.",
+        "ja": "キャンパスは体を動かしながらも楽しめます。スポーツ、規律、チームワーク、そして教室の外で築かれる経験のための場所です。",
+        "zh": "校园生活也在运动中展开。这里是运动、自律、团队合作，以及在课堂之外积累经历的地方。"
+      }
+    },
+    {
+      "lugar": "solo-cafe",
+      "poi": "Solo Café",
+      "estacion": 3,
+      "texto": {
+        "es": "Espacio de conexión, ideas y conversaciones que también transforman la experiencia universitaria. Aquí nacen amistades, proyectos y networking.",
+        "en": "A space for connection, ideas and conversations that also shape the university experience. Friendships, projects and networking start here.",
+        "pt": "Espaço de conexão, ideias e conversas que também transformam a experiência universitária. Aqui nascem amizades, projetos e networking.",
+        "pt-PT": "Espaço de ligação, ideias e conversas que também transformam a experiência universitária. Aqui nascem amizades, projetos e networking.",
+        "fr": "Un espace de lien, d’idées et de conversations qui transforment aussi l’expérience universitaire. Ici naissent des amitiés, des projets et des réseaux.",
+        "it": "Uno spazio di connessione, idee e conversazioni che trasformano anche l’esperienza universitaria. Qui nascono amicizie, progetti e networking.",
+        "de": "Ein Ort für Begegnung, Ideen und Gespräche, die das Studium ebenfalls prägen. Hier entstehen Freundschaften, Projekte und Netzwerke.",
+        "tr": "Üniversite deneyimini de dönüştüren bağlantıların, fikirlerin ve sohbetlerin alanı. Dostluklar, projeler ve yeni bağlantılar burada doğar.",
+        "ko": "대학 생활을 바꾸어 가는 연결과 아이디어, 대화의 공간입니다. 이곳에서 우정과 프로젝트, 그리고 네트워크가 시작됩니다.",
+        "ja": "大学生活をも変えていく、つながりとアイデア、会話の場所です。ここから友情やプロジェクト、人脈が生まれます。",
+        "zh": "这里是交流、创意与对话的空间，同样改变着大学生活。友谊、项目与人脉都从这里开始。"
+      }
+    },
+    {
+      "lugar": "la-placita",
+      "poi": "La Placita",
+      "estacion": 4,
+      "texto": {
+        "es": "Inspirada en las plazas del Caribe. Un espacio creado para compartir, desconectarse y sentirse en casa dentro de la UTB.",
+        "en": "Inspired by the squares of the Caribbean. A space made for sharing, unwinding and feeling at home at UTB.",
+        "pt": "Inspirada nas praças do Caribe. Um espaço criado para conviver, desconectar e se sentir em casa na UTB.",
+        "pt-PT": "Inspirada nas praças das Caraíbas. Um espaço criado para conviver, desligar e sentir-se em casa na UTB.",
+        "fr": "Inspirée des places des Caraïbes. Un espace conçu pour partager, décrocher et se sentir chez soi à l’UTB.",
+        "it": "Ispirata alle piazze dei Caraibi. Uno spazio creato per condividere, staccare e sentirsi a casa all’UTB.",
+        "de": "Inspiriert von den Plätzen der Karibik. Ein Ort zum Zusammensein, zum Abschalten und um sich an der UTB zu Hause zu fühlen.",
+        "tr": "Karayip meydanlarından esinlenildi. Paylaşmak, kafa dinlemek ve UTB'de kendinizi evinizde hissetmek için yaratılmış bir alan.",
+        "ko": "카리브해의 광장에서 영감을 받은 곳입니다. 함께 어울리고, 잠시 쉬며, UTB에서 집처럼 편안함을 느끼도록 만든 공간입니다.",
+        "ja": "カリブの広場に着想を得た場所です。分かち合い、ひと息つき、UTBの中で我が家のようにくつろげるよう作られました。",
+        "zh": "灵感来自加勒比地区的广场。这里是为分享、放松，并在UTB找到家的感觉而打造的空间。"
+      }
+    },
+    {
+      "lugar": "quantalab",
+      "poi": "QuantaLab",
+      "estacion": 8,
+      "texto": {
+        "es": "Laboratorio de analítica, IA y datos. El futuro pertenece a quienes saben interpretar información y tomar decisiones.",
+        "en": "A lab for analytics, AI and data. The future belongs to those who know how to interpret information and make decisions.",
+        "pt": "Laboratório de análise, IA e dados. O futuro pertence a quem sabe interpretar informações e tomar decisões.",
+        "pt-PT": "Laboratório de análise, IA e dados. O futuro pertence a quem sabe interpretar informação e tomar decisões.",
+        "fr": "Laboratoire d’analytique, d’IA et de données. L’avenir appartient à celles et ceux qui savent interpréter l’information et prendre des décisions.",
+        "it": "Laboratorio di analisi, IA e dati. Il futuro appartiene a chi sa interpretare le informazioni e prendere decisioni.",
+        "de": "Labor für Analytik, KI und Daten. Die Zukunft gehört denen, die Informationen deuten und Entscheidungen treffen können.",
+        "tr": "Analitik, yapay zekâ ve veri laboratuvarı. Gelecek, bilgiyi yorumlamayı ve karar vermeyi bilenlerindir.",
+        "ko": "분석, AI, 데이터를 다루는 연구실입니다. 미래는 정보를 해석하고 결정을 내릴 줄 아는 사람들의 것입니다.",
+        "ja": "分析、AI、データのラボです。未来は、情報を読み解き、決断できる人のものです。",
+        "zh": "数据分析、人工智能与数据实验室。未来属于懂得解读信息并做出决策的人。"
+      }
+    },
+    {
+      "lugar": "granja-solar",
+      "poi": "Granja Solar",
+      "estacion": 9,
+      "pendiente": "Todavía no está en el catálogo de lugares: queda lejos del núcleo del campus y falta ubicarla. No se genera audio hasta que exista.",
+      "texto": {
+        "es": "Sostenibilidad aplicada. La UTB genera cerca del 46% de su energía con paneles solares y convierte el campus en un laboratorio vivo.",
+        "en": "Sustainability in practice. UTB generates about 46% of its energy with solar panels and turns the campus into a living laboratory.",
+        "pt": "Sustentabilidade aplicada. A UTB gera cerca de 46% da sua energia com painéis solares e transforma o campus em um laboratório vivo.",
+        "pt-PT": "Sustentabilidade aplicada. A UTB produz cerca de 46% da sua energia com painéis solares e transforma o campus num laboratório vivo.",
+        "fr": "La durabilité en pratique. L’UTB produit près de 46 % de son énergie grâce à des panneaux solaires et fait du campus un laboratoire vivant.",
+        "it": "Sostenibilità applicata. L’UTB produce circa il 46% della sua energia con pannelli solari e trasforma il campus in un laboratorio vivente.",
+        "de": "Gelebte Nachhaltigkeit. Die UTB erzeugt rund 46 % ihrer Energie mit Solarmodulen und macht den Campus zu einem lebendigen Labor.",
+        "tr": "Uygulamada sürdürülebilirlik. UTB, enerjisinin yaklaşık %46'sını güneş panelleriyle üretiyor ve kampüsü yaşayan bir laboratuvara dönüştürüyor.",
+        "ko": "실천하는 지속 가능성입니다. UTB는 에너지의 약 46%를 태양광 패널로 생산하며 캠퍼스를 살아 있는 실험실로 만듭니다.",
+        "ja": "実践するサステナビリティ。UTBはエネルギーの約46%を太陽光パネルで生み出し、キャンパスを生きた実験室にしています。",
+        "zh": "可持续发展的实践。UTB约46%的能源来自太阳能电池板，让校园成为一座活的实验室。"
+      }
+    }
+  ]
+}

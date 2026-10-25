@@ -21,7 +21,7 @@
   "categoriaAcademico": "Académico",
   "categoriaDeporte": "Desporto",
   "mapaNoCargo": "Não foi possível carregar o mapa do campus.",
-  "mapaDescripcion": "Mapa ilustrado do campus. Cada paragem tem um marcador numerado.",
+  "mapaDescripcion": "Mapa do campus. Cada paragem tem um marcador numerado e os restantes locais, um ponto.",
   "fotos": "Fotografias",
   "deslizaParaMirar": "Deslize para ver",
   "fotoDelLugar": "Fotografia do lugar",

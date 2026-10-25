@@ -426,6 +426,24 @@ abstract class Textos {
   /// **'Deporte'**
   String get categoriaDeporte;
 
+  /// No description provided for @categoriaCultura.
+  ///
+  /// In es, this message translates to:
+  /// **'Cultura'**
+  String get categoriaCultura;
+
+  /// No description provided for @categoriaAdministrativo.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrativo'**
+  String get categoriaAdministrativo;
+
+  /// No description provided for @categoriaSostenibilidad.
+  ///
+  /// In es, this message translates to:
+  /// **'Sostenibilidad'**
+  String get categoriaSostenibilidad;
+
   /// No description provided for @verTodoCampus.
   ///
   /// In es, this message translates to:
@@ -453,7 +471,7 @@ abstract class Textos {
   /// No description provided for @mapaDescripcion.
   ///
   /// In es, this message translates to:
-  /// **'Mapa ilustrado del campus. Cada parada tiene un marcador numerado.'**
+  /// **'Plano del campus. Cada parada tiene un marcador numerado y los demás lugares, un punto.'**
   String get mapaDescripcion;
 
   /// No description provided for @visitadosDeTotal.
@@ -467,6 +485,18 @@ abstract class Textos {
   /// In es, this message translates to:
   /// **'Sin ubicación en el mapa'**
   String get sinUbicacionMapa;
+
+  /// No description provided for @masLugares.
+  ///
+  /// In es, this message translates to:
+  /// **'Más lugares del campus'**
+  String get masLugares;
+
+  /// No description provided for @creditoOsm.
+  ///
+  /// In es, this message translates to:
+  /// **'© colaboradores de OpenStreetMap'**
+  String get creditoOsm;
 
   /// No description provided for @sinDescripcion.
   ///

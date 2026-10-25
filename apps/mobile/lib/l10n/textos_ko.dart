@@ -208,6 +208,15 @@ class TextosKo extends Textos {
   String get categoriaDeporte => '스포츠';
 
   @override
+  String get categoriaCultura => '문화';
+
+  @override
+  String get categoriaAdministrativo => '행정';
+
+  @override
+  String get categoriaSostenibilidad => '지속 가능성';
+
+  @override
   String get verTodoCampus => '캠퍼스 전체 보기';
 
   @override
@@ -220,7 +229,8 @@ class TextosKo extends Textos {
   String get mapaNoCargo => '캠퍼스 지도를 불러올 수 없습니다.';
 
   @override
-  String get mapaDescripcion => '캠퍼스 일러스트 지도입니다. 각 방문지에 번호 표시가 있습니다.';
+  String get mapaDescripcion =>
+      '캠퍼스 지도입니다. 각 방문지에 번호 표시가 있고, 다른 장소는 점으로 표시됩니다.';
 
   @override
   String visitadosDeTotal(int hechos, int total) {
@@ -229,6 +239,12 @@ class TextosKo extends Textos {
 
   @override
   String get sinUbicacionMapa => '지도에 위치 없음';
+
+  @override
+  String get masLugares => '캠퍼스의 다른 장소';
+
+  @override
+  String get creditoOsm => '© OpenStreetMap 기여자';
 
   @override
   String get sinDescripcion => '아직 이 장소에 대한 설명이 없습니다.';

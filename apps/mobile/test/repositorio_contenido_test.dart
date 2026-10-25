@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -80,14 +81,48 @@ void main() {
 
     // Las cinco paradas: el puente A3-A5 es visible para todos desde el
     // 2026-10-11.
-    expect(pois.map((p) => p.nombre), contains('Puente A3 - A5'));
-    expect(pois, hasLength(5));
-    expect(pois.every((p) => p.tienePosicionEnMapa), isTrue);
+    final paradas = pois.where((p) => p.esParada).toList();
+    expect(paradas.map((p) => p.nombre), contains('Puente A3 - A5'));
+    expect(paradas, hasLength(5));
+    expect(paradas.every((p) => p.tienePosicionEnMapa), isTrue);
+
+    // Los demás lugares del campus, sin panorámica, incluidas las estaciones
+    // del guion que el equipo marcó sobre el mapa.
+    final otros = pois.where((p) => !p.esParada).toList();
+    expect(
+      otros.map((p) => p.nombre),
+      containsAll(['Edificio A1', 'QuantaLab']),
+    );
+    expect(otros.every((p) => p.tienePosicionEnMapa), isTrue);
 
     // Las panorámicas viven en S3: el demo lo dice en vez de fingirlas.
     expect(() => demo.obtenerRecorrido(1), throwsA(isA<FalloSinContenido>()));
-    expect(await demo.obtenerUrlMapa(1), isNull);
   });
+
+  test(
+    'cada panorámica del demo se describe para el lector de pantalla',
+    () async {
+      // Copia de scripts/datos/escenas_texto_alt.json: si una cambia y la otra
+      // no, esto lo dice.
+      final datos =
+          jsonDecode(
+                File(
+                  '../../scripts/datos/escenas_texto_alt.json',
+                ).readAsStringSync(),
+              )
+              as Map<String, dynamic>;
+      const demo = RepositorioDemo(medios: 'http://medios.invalid');
+      final recorrido = await demo.obtenerRecorrido(1);
+
+      expect(recorrido.escenas, hasLength(5));
+      for (final escena in recorrido.escenas) {
+        final slug = Uri.parse(
+          escena.imagenUrl,
+        ).pathSegments.last.replaceFirst('.jpg', '');
+        expect(escena.textoAlt, datos[slug], reason: slug);
+      }
+    },
+  );
 
   test(
     'el demo encuentra las narraciones por idioma de la carpeta local',

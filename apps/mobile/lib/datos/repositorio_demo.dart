@@ -11,11 +11,11 @@ import 'subtitulos.dart';
 
 /// Contenido local para diseñar el frontend sin levantar la API.
 ///
-/// Es una copia de `services/api/Data/ContenidoInicial.cs` con lo que cambió
-/// en la base compartida el 2026-10-11: el puente A3-A5 es visible para todos
-/// y la Enfermería y la Zona T tienen la posición corregida en el mapa. No
-/// inventa nada que la base no tenga; si cambia, esta copia se actualiza a
-/// mano.
+/// Es una copia de `services/api/Data/ContenidoInicial.cs`, con el puente
+/// A3-A5 visible para todos como en la base compartida. Los lugares, su
+/// lat/lng y los textos del guion de estaciones salen del catálogo de
+/// `scripts/mapa_campus.py`. No inventa nada que la base no tenga; si cambia,
+/// esta copia se actualiza a mano.
 ///
 /// Se activa con `--dart-define=DATOS=demo` y nunca en una compilación normal.
 /// Con `MEDIOS_DEMO` además sirve las escenas, los hotspots y los audios del
@@ -47,14 +47,63 @@ class RepositorioDemo implements RepositorioContenido {
   String get idiomaContenido => idiomaOriginal.languageCode;
 
   /// POI → (slug de sus archivos, duración del audio en segundos).
+  ///
+  /// Las duraciones son las de las narraciones en español generadas el
+  /// 2026-10-24 (scripts/narraciones). Los tres últimos no son paradas: tienen
+  /// narración pero todavía no panorámica.
   static const _archivos = {
-    1: ('biblioteca', 10),
-    2: ('puente-a3-a5', 16),
-    3: ('enfermeria', 11),
-    4: ('zona-t', 11),
-    5: ('cancha-softbol', 12),
+    1: ('biblioteca', 7),
+    2: ('puente-a3-a5', 14),
+    3: ('enfermeria', 12),
+    4: ('zona-t', 12),
+    5: ('cancha-softbol', 11),
+    24: ('solo-cafe', 12),
+    25: ('la-placita', 9),
+    26: ('quantalab', 10),
   };
 
+  /// Qué se ve en cada panorámica, para el lector de pantalla. Copia de
+  /// `scripts/datos/escenas_texto_alt.json`; la API todavía no tiene la
+  /// columna.
+  static const _textosAlt = {
+    1:
+        'Vestíbulo amplio y luminoso de la biblioteca, de techo alto y piso '
+        'claro. En el centro hay un mostrador de atención curvo. A la '
+        'izquierda se abre un pasillo largo con estanterías y mesas de '
+        'lectura; a la derecha, mesas junto a ventanales que dan a un jardín '
+        'con palmeras. Al fondo a la derecha, una escalera con el letrero de '
+        'salida.',
+    2:
+        'Pasarela elevada y techada, con barandas metálicas a los dos lados, '
+        'que une dos edificios de aulas de tres pisos. Desde ella se ven, '
+        'abajo, árboles frondosos, senderos y un jardín con letras formadas '
+        'por arbustos, y arriba, un cielo azul con nubes.',
+    3:
+        'Sala de atención de la enfermería, blanca y bien iluminada. A la '
+        'izquierda hay un escritorio con computador y, junto a la puerta de '
+        'entrada, una pequeña sala de espera con sillas verdes. Al centro y a '
+        'la derecha, cubículos separados por cortinas, uno de ellos con '
+        'biombos azules, y equipos como un tanque de oxígeno.',
+    4:
+        'Plazoleta al aire libre a la sombra de árboles grandes y palmeras, '
+        'con mesas metálicas y sillas de colores. A un lado se abre una '
+        'explanada de césped; al otro, un edificio con columnas y una '
+        'escalera exterior de peldaños amarillos.',
+    5:
+        'Campo abierto de césped seco bajo un cielo azul con nubes, rodeado '
+        'de árboles. Al fondo se ve el edificio deportivo de dos pisos, con '
+        'una torre de luz.',
+  };
+
+  static const _todas = [
+    Audiencia.externo,
+    Audiencia.estudiante,
+    Audiencia.docente,
+  ];
+
+  /// Lugares de `scripts/datos/pois_campus.json`, que genera
+  /// `scripts/mapa_campus.py`: los cinco con panorámica son paradas; el
+  /// resto, lugares del campus sin contenido todavía.
   static const _pois = [
     Poi(
       id: 1,
@@ -62,12 +111,12 @@ class RepositorioDemo implements RepositorioContenido {
       nombre: 'Biblioteca',
       categoria: 'Recursos',
       descripcion:
-          'Mas que una biblioteca: concentracion, disciplina, tecnologia y '
-          'construccion de suenos.',
-      mapX: .4067,
-      mapY: .2745,
+          'Más que una biblioteca: concentración, disciplina, tecnología y '
+          'construcción de sueños.',
+      lat: 10.3699965,
+      lng: -75.4650668,
       escenaPrincipalId: 1,
-      audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
+      audiencias: _todas,
     ),
     Poi(
       id: 2,
@@ -75,25 +124,27 @@ class RepositorioDemo implements RepositorioContenido {
       nombre: 'Puente A3 - A5',
       categoria: 'Academico',
       descripcion:
-          'Pasarela elevada que une los edificios A3 y A5 sin bajar a nivel '
-          'de calle.',
-      mapX: .6191,
-      mapY: .1793,
+          'Un punto que conecta espacios, personas y recorridos dentro del '
+          'campus. Cada trayecto en la UTB hace parte de una experiencia que '
+          'conecta tu presente con lo que quieres construir.',
+      lat: 10.3692169,
+      lng: -75.4647217,
       escenaPrincipalId: 2,
-      audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
+      audiencias: _todas,
     ),
     Poi(
       id: 3,
       lugarId: 1,
-      nombre: 'Enfermeria',
+      nombre: 'Enfermería',
       categoria: 'Bienestar',
       descripcion:
-          'Servicio de atencion primaria del campus: consulta, curaciones y '
-          'primeros auxilios.',
-      mapX: .6263,
-      mapY: .5277,
+          'Bienestar y cuidado integral. Un espacio para atender tu salud, '
+          'recibir orientación y recordar que cuidar de ti también hace parte'
+          ' de la experiencia universitaria.',
+      lat: 10.3692651,
+      lng: -75.4655196,
       escenaPrincipalId: 3,
-      audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
+      audiencias: _todas,
     ),
     Poi(
       id: 4,
@@ -101,12 +152,13 @@ class RepositorioDemo implements RepositorioContenido {
       nombre: 'Zona T',
       categoria: 'Servicios',
       descripcion:
-          'Zona de mesas al aire libre y a la sombra, junto al Centro '
-          'Deportivo y Cultural.',
-      mapX: .557,
-      mapY: .540,
+          'Punto de encuentro, pausa y conexión. Un lugar para compartir con '
+          'otros estudiantes, conversar y disfrutar los espacios que hacen '
+          'del campus una comunidad.',
+      lat: 10.3691852,
+      lng: -75.4655576,
       escenaPrincipalId: 4,
-      audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
+      audiencias: _todas,
     ),
     Poi(
       id: 5,
@@ -114,12 +166,212 @@ class RepositorioDemo implements RepositorioContenido {
       nombre: 'Cancha de softbol',
       categoria: 'Deporte',
       descripcion:
-          'Campo abierto del area deportiva, usado para softbol y '
-          'entrenamientos.',
-      mapX: .5195,
-      mapY: .658,
+          'El campus también se vive en movimiento. Espacio para el deporte, '
+          'la disciplina, el trabajo en equipo y las experiencias que se '
+          'construyen más allá del aula.',
+      lat: 10.3695823,
+      lng: -75.4663148,
       escenaPrincipalId: 5,
-      audiencias: [Audiencia.externo, Audiencia.estudiante, Audiencia.docente],
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 6,
+      lugarId: 1,
+      nombre: 'Edificio A1',
+      categoria: 'Academico',
+      lat: 10.3697646,
+      lng: -75.465347,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 7,
+      lugarId: 1,
+      nombre: 'Edificio A2',
+      categoria: 'Academico',
+      lat: 10.3707763,
+      lng: -75.4656241,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 8,
+      lugarId: 1,
+      nombre: 'Edificio A3',
+      categoria: 'Academico',
+      lat: 10.3692983,
+      lng: -75.4648329,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 9,
+      lugarId: 1,
+      nombre: 'Edificio A4',
+      categoria: 'Academico',
+      lat: 10.3695805,
+      lng: -75.4645402,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 10,
+      lugarId: 1,
+      nombre: 'Edificio A5',
+      categoria: 'Academico',
+      lat: 10.3691355,
+      lng: -75.4646105,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 11,
+      lugarId: 1,
+      nombre: 'Edificio Alcatraz',
+      categoria: 'Academico',
+      lat: 10.3703807,
+      lng: -75.4652636,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 12,
+      lugarId: 1,
+      nombre: 'Auditorio',
+      categoria: 'Cultura',
+      lat: 10.3705694,
+      lng: -75.4657944,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 13,
+      lugarId: 1,
+      nombre: 'Plaza Maloca',
+      categoria: 'Cultura',
+      lat: 10.3700456,
+      lng: -75.4657625,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 14,
+      lugarId: 1,
+      nombre: 'Rectoría',
+      categoria: 'Administrativo',
+      lat: 10.3695939,
+      lng: -75.4652554,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 15,
+      lugarId: 1,
+      nombre: 'Laboratorio El Patio',
+      categoria: 'Academico',
+      lat: 10.3696815,
+      lng: -75.4650578,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 16,
+      lugarId: 1,
+      nombre: 'Centro de Cuidado Integral (QUID)',
+      categoria: 'Bienestar',
+      lat: 10.3690673,
+      lng: -75.4658707,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 17,
+      lugarId: 1,
+      nombre: 'Centro Deportivo y Cultural',
+      categoria: 'Deporte',
+      lat: 10.3692615,
+      lng: -75.4656845,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 18,
+      lugarId: 1,
+      nombre: 'Cancha de fútbol',
+      categoria: 'Deporte',
+      lat: 10.3701542,
+      lng: -75.4667058,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 19,
+      lugarId: 1,
+      nombre: 'Salas de estudio',
+      categoria: 'Recursos',
+      lat: 10.3705483,
+      lng: -75.4654429,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 20,
+      lugarId: 1,
+      nombre: 'Cafetería',
+      categoria: 'Servicios',
+      lat: 10.37042,
+      lng: -75.4653547,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 21,
+      lugarId: 1,
+      nombre: 'Tienda',
+      categoria: 'Servicios',
+      lat: 10.3692206,
+      lng: -75.4661076,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 22,
+      lugarId: 1,
+      nombre: 'Cajero automático',
+      categoria: 'Servicios',
+      lat: 10.3705307,
+      lng: -75.4659036,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 23,
+      lugarId: 1,
+      nombre: 'Pasillo de la conexión',
+      categoria: 'Administrativo',
+      lat: 10.3707567,
+      lng: -75.4659942,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 24,
+      lugarId: 1,
+      nombre: 'Solo Café',
+      categoria: 'Servicios',
+      descripcion:
+          'Espacio de conexión, ideas y conversaciones que también '
+          'transforman la experiencia universitaria. Aquí nacen amistades, '
+          'proyectos y networking.',
+      lat: 10.3702285,
+      lng: -75.4655508,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 25,
+      lugarId: 1,
+      nombre: 'La Placita',
+      categoria: 'Cultura',
+      descripcion:
+          'Inspirada en las plazas del Caribe. Un espacio creado para '
+          'compartir, desconectarse y sentirse en casa dentro de la UTB.',
+      lat: 10.3704913,
+      lng: -75.465484,
+      audiencias: _todas,
+    ),
+    Poi(
+      id: 26,
+      lugarId: 1,
+      nombre: 'QuantaLab',
+      categoria: 'Academico',
+      descripcion:
+          'Laboratorio de analítica, IA y datos. El futuro pertenece a '
+          'quienes saben interpretar información y tomar decisiones.',
+      lat: 10.3690907,
+      lng: -75.4646518,
+      audiencias: _todas,
     ),
   ];
 
@@ -228,6 +480,7 @@ class RepositorioDemo implements RepositorioContenido {
         orden: orden,
         vistaInicialYaw: yaw,
         vistaInicialPitch: pitch,
+        textoAlt: _textosAlt[id],
       );
     }
 
@@ -298,8 +551,4 @@ class RepositorioDemo implements RepositorioContenido {
     descripcion: 'Recorrido institucional para visitantes.',
     audiencia: Audiencia.externo,
   );
-
-  /// Sin URL, el mapa usa la ilustración empaquetada.
-  @override
-  Future<String?> obtenerUrlMapa(int lugarId) async => null;
 }

@@ -544,6 +544,21 @@ class EstiloCategoria {
         Icons.sports_rounded,
         'deporte',
       ),
+      'cultura' => const EstiloCategoria(
+        ColoresUtb.rojo,
+        Icons.theater_comedy_rounded,
+        'cultura',
+      ),
+      'administrativo' => const EstiloCategoria(
+        ColoresUtb.azulInfo,
+        Icons.account_balance_rounded,
+        'administrativo',
+      ),
+      'sostenibilidad' => const EstiloCategoria(
+        ColoresUtb.verde,
+        Icons.solar_power_rounded,
+        'sostenibilidad',
+      ),
       _ => const EstiloCategoria(ColoresUtb.azulClaro, Icons.place_rounded),
     };
   }
@@ -560,6 +575,9 @@ class EstiloCategoria {
         'bienestar' => txt.categoriaBienestar,
         'servicios' => txt.categoriaServicios,
         'deporte' => txt.categoriaDeporte,
+        'cultura' => txt.categoriaCultura,
+        'administrativo' => txt.categoriaAdministrativo,
+        'sostenibilidad' => txt.categoriaSostenibilidad,
         _ => categoria,
       };
 

@@ -77,6 +77,41 @@ abstract final class ColoresUtb {
   static const arranqueBrillo = Color(0xFF214E77);
 }
 
+/// Colores del plano del campus.
+///
+/// No son de la app UTB sino de la cartografía estándar de OpenStreetMap
+/// (OSM Carto): el plano tiene que leerse como un mapa de OSM, que es lo que
+/// cualquiera reconoce. La tarjeta del mapa es clara por la misma razón, como
+/// ya lo era con la ilustración.
+abstract final class ColoresPlano {
+  static const tierra = Color(0xFFF2EFE9);
+  static const zona = Color(0xFFE0DFDF);
+  static const campus = Color(0xFFFFFFE5);
+  static const bordeCampus = Color(0xFFD4C59C);
+  static const verde = Color(0xFFCDEBB0);
+  static const arboles = Color(0xFFADD19E);
+  static const agua = Color(0xFFAAD3DF);
+  static const parqueadero = Color(0xFFEEEEEE);
+  static const bordeParqueadero = Color(0xFFCCCCCC);
+  static const cancha = Color(0xFFAAE0CB);
+  static const bordeCancha = Color(0xFF88C9AE);
+  static const plazoleta = Color(0xFFDDDDE8);
+  static const edificio = Color(0xFFD9D0C9);
+  static const bordeEdificio = Color(0xFFC4B6AB);
+  static const via = Color(0xFFFFFFFF);
+  static const bordeVia = Color(0xFFBBBBBB);
+  static const viaPrincipal = Color(0xFFFCD6A4);
+  static const bordeViaPrincipal = Color(0xFFC99E64);
+  static const sendero = Color(0xFFFA8072);
+
+  // Alto contraste: bordes y senderos oscurecidos hasta 3:1 contra el fondo
+  // del campus (WCAG 1.4.11), sin cambiar los rellenos que dan el aspecto.
+  static const bordeEdificioFuerte = Color(0xFF6B5B4E);
+  static const bordeViaFuerte = Color(0xFF6E6E6E);
+  static const senderoFuerte = Color(0xFFC0392B);
+  static const bordeCampusFuerte = Color(0xFF8A7A4A);
+}
+
 /// Medidas compartidas. Las capturas están a 1,4 px por dp.
 abstract final class MedidasUtb {
   /// Margen lateral de página.

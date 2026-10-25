@@ -284,8 +284,11 @@ as String,
 /// @nodoc
 mixin _$Poi {
 
- int get id;@JsonKey(name: 'lugar_id') int get lugarId; String get nombre; String? get categoria; String? get descripcion; double? get lat; double? get lng;/// Posicion del marcador sobre el render ilustrado, normalizada a [0,1].
-/// Puede venir nula mientras el POI no se haya calibrado desde el panel.
+ int get id;@JsonKey(name: 'lugar_id') int get lugarId; String get nombre; String? get categoria; String? get descripcion;/// Posición en el plano del campus, que es el de OpenStreetMap. Nula en
+/// los lugares que todavía nadie ha ubicado: la app los lista pero no los
+/// dibuja.
+ double? get lat; double? get lng;/// Posición sobre la antigua ilustración isométrica, normalizada a [0,1].
+/// El mapa ya no la usa; el servidor la sigue enviando.
 @JsonKey(name: 'map_x') double? get mapX;@JsonKey(name: 'map_y') double? get mapY;@JsonKey(name: 'escena_principal_id') int? get escenaPrincipalId; List<Audiencia> get audiencias; bool get activo;
 /// Create a copy of Poi
 /// with the given fields replaced by the non-null parameter values.
@@ -499,10 +502,13 @@ class _Poi extends Poi {
 @override final  String nombre;
 @override final  String? categoria;
 @override final  String? descripcion;
+/// Posición en el plano del campus, que es el de OpenStreetMap. Nula en
+/// los lugares que todavía nadie ha ubicado: la app los lista pero no los
+/// dibuja.
 @override final  double? lat;
 @override final  double? lng;
-/// Posicion del marcador sobre el render ilustrado, normalizada a [0,1].
-/// Puede venir nula mientras el POI no se haya calibrado desde el panel.
+/// Posición sobre la antigua ilustración isométrica, normalizada a [0,1].
+/// El mapa ya no la usa; el servidor la sigue enviando.
 @override@JsonKey(name: 'map_x') final  double? mapX;
 @override@JsonKey(name: 'map_y') final  double? mapY;
 @override@JsonKey(name: 'escena_principal_id') final  int? escenaPrincipalId;

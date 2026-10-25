@@ -110,13 +110,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
+  /// El avance se cuenta sobre las paradas: un lugar sin panorámica no es
+  /// algo que el recorrido pida visitar.
   ResumenTour? _resumen(
     Textos txt,
-    List<Poi>? pois,
+    List<Poi>? lugares,
     Set<int> visitados,
     Ruta? ruta,
   ) {
-    if (pois == null) return null;
+    if (lugares == null) return null;
+    final pois = lugares.where((p) => p.esParada).toList();
     final total = pois.length;
     final hechos = pois.where((p) => visitados.contains(p.id)).length;
     final siguiente = pois.where((p) => !visitados.contains(p.id)).firstOrNull;
@@ -212,7 +215,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   switch (_modo) {
                     ModoTour.recorrido => pois.when(
                       data: (lista) => ListaRecorrido(
-                        pois: lista,
+                        pois: [...lista.where((p) => p.esParada)],
+                        otros: [...lista.where((p) => !p.esParada)],
                         alAbrirMapa: () =>
                             _cambiarModo(ModoTour.mapa, cabecera.rango),
                       ),

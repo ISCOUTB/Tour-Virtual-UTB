@@ -163,25 +163,39 @@ class RepositorioFalso implements RepositorioContenido {
   @override
   Future<Subtitulos> obtenerSubtitulos(String url) async =>
       throw const FalloSinContenido();
-
-  /// Sin URL: el mapa usa la ilustración empaquetada.
-  @override
-  Future<String?> obtenerUrlMapa(int lugarId) async => null;
 }
 
+/// Tres paradas y un lugar del campus sin panorámica. Las posiciones son las
+/// reales del plano de OSM.
 const poisDePrueba = [
   Poi(
     id: 1,
     lugarId: 1,
     nombre: 'Biblioteca',
     categoria: 'Recursos',
-    mapX: 0.63,
-    mapY: 0.30,
+    lat: 10.3699965,
+    lng: -75.4650668,
     escenaPrincipalId: 3,
   ),
-  Poi(id: 2, lugarId: 1, nombre: 'Zona de comidas', mapX: 0.42, mapY: 0.58),
-  // Sin calibrar: no debe dibujarse en el mapa.
-  Poi(id: 3, lugarId: 1, nombre: 'Murales UTB'),
+  Poi(
+    id: 2,
+    lugarId: 1,
+    nombre: 'Zona de comidas',
+    lat: 10.3691852,
+    lng: -75.4655576,
+    escenaPrincipalId: 4,
+  ),
+  // Sin ubicar: no debe dibujarse en el mapa.
+  Poi(id: 3, lugarId: 1, nombre: 'Murales UTB', escenaPrincipalId: 5),
+  // No es parada: punto en el mapa y fila en «Más lugares», sin número.
+  Poi(
+    id: 4,
+    lugarId: 1,
+    nombre: 'Cancha de fútbol',
+    categoria: 'Deporte',
+    lat: 10.3701542,
+    lng: -75.4667058,
+  ),
 ];
 
 const espanol = Preferencias(idioma: Locale('es'));
@@ -397,17 +411,54 @@ void main() {
     await drenarTemporizadores(tester);
   });
 
-  testWidgets('solo dibuja marcadores de los POI calibrados', (
+  testWidgets('solo dibuja marcadores de los POI ubicados', (
     WidgetTester tester,
   ) async {
     await montarModulo(tester);
     await abrirMapa(tester);
 
-    // Tres POIs, pero solo dos traen map_x/map_y. El tercero se omite en lugar
-    // de inventarle una posicion; el carrusel sí lo lista.
+    // Tres paradas, pero solo dos traen lat/lng. La tercera se omite en lugar
+    // de inventarle una posicion; el carrusel sí la lista.
     expect(marcador('Parada 1, Biblioteca, Recursos'), findsOneWidget);
     expect(marcador('Parada 2, Zona de comidas'), findsOneWidget);
     expect(marcador('Parada 3, Murales UTB'), findsNothing);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('los lugares que no son parada se tocan al acercarse', (
+    WidgetTester tester,
+  ) async {
+    // Con el campus entero en pantalla, veinte objetivos de 48 dp se pisan:
+    // de lejos son puntos mudos, y de cerca, botones con su nombre.
+    await montarModulo(tester);
+    await abrirMapa(tester);
+
+    expect(marcador('Cancha de fútbol, Deporte'), findsNothing);
+
+    await tester.tap(find.byTooltip('Acercar'));
+    await asentar(tester);
+    await tester.tap(find.byTooltip('Acercar'));
+    await asentar(tester);
+
+    expect(marcador('Cancha de fútbol, Deporte'), findsOneWidget);
+    // No es una parada: ni número ni sitio en el carrusel.
+    expect(
+      etiquetaSemantica('Parada 4, Cancha de fútbol, Deporte'),
+      findsNothing,
+    );
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('el mapa da el crédito de OpenStreetMap', (
+    WidgetTester tester,
+  ) async {
+    // ODbL: los datos de OSM se pueden usar con la atribución a la vista.
+    await montarModulo(tester);
+    await abrirMapa(tester);
+
+    expect(find.text('© colaboradores de OpenStreetMap'), findsOneWidget);
 
     await drenarTemporizadores(tester);
   });
@@ -587,15 +638,47 @@ void main() {
   ) async {
     await montarModulo(tester);
 
+    // Cuenta las paradas, no el lugar sin panorámica.
     expect(find.text('0 de 3 lugares'), findsOneWidget);
     expect(find.text('Empieza tu recorrido'), findsOneWidget);
     expect(find.text('Empezar recorrido'), findsOneWidget);
-    // Incluye el POI sin coordenadas: la lista no depende de estar calibrado.
+    // Incluye el POI sin coordenadas: la lista no depende de estar ubicado.
     await tester.scrollUntilVisible(
       etiquetaSemantica('Parada 3, Murales UTB'),
       200,
     );
     expect(etiquetaSemantica('Parada 3, Murales UTB'), findsOneWidget);
+
+    // Los demás lugares van aparte, sin número.
+    await tester.scrollUntilVisible(
+      etiquetaSemantica('Cancha de fútbol, Deporte'),
+      200,
+    );
+    await asentar(tester);
+    expect(find.text('Más lugares del campus'), findsOneWidget);
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('un lugar que no es parada no cuenta como visita', (
+    WidgetTester tester,
+  ) async {
+    final referencia = await montarModulo(tester);
+
+    await tester.scrollUntilVisible(
+      etiquetaSemantica('Cancha de fútbol, Deporte'),
+      200,
+    );
+    await tester.tap(etiquetaSemantica('Cancha de fútbol, Deporte'));
+    await asentar(tester);
+
+    // La ficha abre sin número de parada y dice que no hay 360.
+    expect(find.text('DEPORTE'), findsOneWidget);
+    expect(
+      find.text('Este lugar todavía no tiene recorrido en 360°.'),
+      findsOneWidget,
+    );
+    expect(referencia.read(progresoProvider), isNot(contains(4)));
 
     await drenarTemporizadores(tester);
   });
@@ -1092,12 +1175,25 @@ void main() {
       // propone la siguiente.
       tester.semantics.tap(find.semantics.byLabel(RegExp('^Siguiente parada')));
       await asentar(tester);
-      // La Zona de comidas no tiene panorámica, y su ficha lo dice.
+      final ver360 = find.text('Ver en 360°');
+      expect(ver360, findsOneWidget);
+      Navigator.of(tester.element(ver360)).pop();
+      await asentar(tester);
+
+      // Un lugar sin panorámica, desde «Más lugares»: su ficha lo dice.
+      await tester.scrollUntilVisible(
+        etiquetaSemantica('Cancha de fútbol, Deporte'),
+        200,
+      );
+      tester.semantics.tap(find.semantics.byLabel('Cancha de fútbol, Deporte'));
+      await asentar(tester);
       final sin360 = find.text(
         'Este lugar todavía no tiene recorrido en 360°.',
       );
       expect(sin360, findsOneWidget);
       Navigator.of(tester.element(sin360)).pop();
+      await asentar(tester);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 3000));
       await asentar(tester);
 
       tester.semantics.tap(

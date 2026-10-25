@@ -24,14 +24,23 @@ import '../postal_escena.dart';
 /// Responde lo que el mapa no contesta —cuántos lugares hay, cuáles son,
 /// cuáles ya vi y por dónde sigo— con la gramática de la Agenda de la app UTB:
 /// una tarjeta destacada arriba y una línea de tiempo de paradas debajo.
+///
+/// Debajo van los demás lugares del campus. Es también la forma de llegar a
+/// ellos sin el mapa: allí solo se pueden tocar de cerca, y los que aún no
+/// tienen posición no aparecen.
 class ListaRecorrido extends ConsumerWidget {
   const ListaRecorrido({
     super.key,
     required this.pois,
+    this.otros = const [],
     required this.alAbrirMapa,
   });
 
+  /// Las paradas, con panorámica.
   final List<Poi> pois;
+
+  /// Los demás lugares del campus.
+  final List<Poi> otros;
   final VoidCallback alAbrirMapa;
 
   @override
@@ -40,14 +49,40 @@ class ListaRecorrido extends ConsumerWidget {
     final abajo = MediaQuery.paddingOf(context).bottom;
     final txt = Textos.of(context);
 
+    void abrir(Poi poi) => abrirPoi(context, ref, poi: poi, pois: pois);
+
+    final masLugares = [
+      if (otros.isNotEmpty) ...[
+        const SizedBox(height: 34),
+        CabeceraSeccion(
+          titulo: txt.masLugares,
+          subtitulo: txt.cantidadLugares(otros.length),
+        ),
+        const SizedBox(height: 14),
+        for (final poi in otros)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: FilaLugar(poi: poi, alTocar: () => abrir(poi)),
+          ),
+      ],
+    ];
+
     if (pois.isEmpty) {
       return SliverPadding(
-        padding: const EdgeInsets.all(MedidasUtb.margen),
-        sliver: SliverToBoxAdapter(
-          child: RecuadroInfo(
-            icono: Icons.inbox_outlined,
-            texto: txt.sinLugaresPublicados,
-          ),
+        padding: EdgeInsets.fromLTRB(
+          MedidasUtb.margen,
+          MedidasUtb.margen,
+          MedidasUtb.margen,
+          28 + abajo,
+        ),
+        sliver: SliverList.list(
+          children: [
+            RecuadroInfo(
+              icono: Icons.inbox_outlined,
+              texto: txt.sinLugaresPublicados,
+            ),
+            ...masLugares,
+          ],
         ),
       );
     }
@@ -71,8 +106,6 @@ class ListaRecorrido extends ConsumerWidget {
             curve: Movimiento.salida,
           );
     }
-
-    void abrir(Poi poi) => abrirPoi(context, ref, poi: poi, pois: pois);
 
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
@@ -122,6 +155,7 @@ class ListaRecorrido extends ConsumerWidget {
             ),
           const SizedBox(height: 22),
           entrada(TarjetaSugerencia(alAbrirMapa: alAbrirMapa), pois.length + 2),
+          ...masLugares,
           const SizedBox(height: 34),
           const _Pie(),
         ],
@@ -645,6 +679,72 @@ extension on FilaParada {
     final parada = txt.paradaSemantica(numero, poi.nombre);
     final conCategoria = categoria == null ? parada : '$parada, $categoria';
     return visitado ? txt.yaVisitado(conCategoria) : conCategoria;
+  }
+}
+
+/// Lugar del campus que no es parada: sin número ni riel, porque no forma
+/// parte del orden del recorrido ni cuenta para el avance.
+class FilaLugar extends StatelessWidget {
+  const FilaLugar({super.key, required this.poi, required this.alTocar});
+
+  final Poi poi;
+  final VoidCallback alTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final textos = Theme.of(context).textTheme;
+    final txt = Textos.of(context);
+    final paleta = PaletaUtb.de(context);
+    final estilo = EstiloCategoria.de(poi.categoria);
+    final categoria = poi.categoria == null
+        ? null
+        : EstiloCategoria.nombre(txt, poi.categoria!);
+    final detalle = [
+      categoria ?? txt.lugarDelCampus,
+      if (!poi.tienePosicionEnMapa) txt.sinUbicacionMapa,
+    ].join(' · ');
+
+    return SemanticaConContenido(
+      etiqueta: categoria == null ? poi.nombre : '${poi.nombre}, $categoria',
+      contenido: poi.nombre,
+      boton: true,
+      alTocar: alTocar,
+      child: TarjetaUtb(
+        radio: 22,
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+        alTocar: alTocar,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: estilo.color.withValues(alpha: 0.16),
+              ),
+              child: Icon(estilo.icono, size: 20, color: estilo.color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextoDeContenido(poi.nombre, style: textos.titleMedium),
+                  const SizedBox(height: 3),
+                  Text(
+                    detalle,
+                    style: textos.bodyMedium?.copyWith(
+                      color: paleta.textoSecundario,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: paleta.textoTerciario),
+          ],
+        ),
+      ),
+    );
   }
 }
 

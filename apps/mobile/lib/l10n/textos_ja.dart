@@ -208,6 +208,15 @@ class TextosJa extends Textos {
   String get categoriaDeporte => 'スポーツ';
 
   @override
+  String get categoriaCultura => '文化';
+
+  @override
+  String get categoriaAdministrativo => '事務';
+
+  @override
+  String get categoriaSostenibilidad => 'サステナビリティ';
+
+  @override
   String get verTodoCampus => 'キャンパス全体を表示';
 
   @override
@@ -220,7 +229,8 @@ class TextosJa extends Textos {
   String get mapaNoCargo => 'キャンパスの地図を読み込めませんでした。';
 
   @override
-  String get mapaDescripcion => 'キャンパスのイラスト地図です。各立ち寄り先に番号付きのマーカーがあります。';
+  String get mapaDescripcion =>
+      'キャンパスの地図です。各立ち寄り先に番号付きのマーカーがあり、その他の場所は点で示されます。';
 
   @override
   String visitadosDeTotal(int hechos, int total) {
@@ -229,6 +239,12 @@ class TextosJa extends Textos {
 
   @override
   String get sinUbicacionMapa => '地図上の位置なし';
+
+  @override
+  String get masLugares => 'キャンパスのその他の場所';
+
+  @override
+  String get creditoOsm => '© OpenStreetMap 貢献者';
 
   @override
   String get sinDescripcion => 'この場所の説明はまだありません。';

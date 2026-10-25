@@ -77,11 +77,15 @@ abstract class Poi with _$Poi {
     required String nombre,
     String? categoria,
     String? descripcion,
+
+    /// Posición en el plano del campus, que es el de OpenStreetMap. Nula en
+    /// los lugares que todavía nadie ha ubicado: la app los lista pero no los
+    /// dibuja.
     double? lat,
     double? lng,
 
-    /// Posicion del marcador sobre el render ilustrado, normalizada a [0,1].
-    /// Puede venir nula mientras el POI no se haya calibrado desde el panel.
+    /// Posición sobre la antigua ilustración isométrica, normalizada a [0,1].
+    /// El mapa ya no la usa; el servidor la sigue enviando.
     @JsonKey(name: 'map_x') double? mapX,
     @JsonKey(name: 'map_y') double? mapY,
 
@@ -94,8 +98,14 @@ abstract class Poi with _$Poi {
 
   factory Poi.fromJson(Map<String, dynamic> json) => _$PoiFromJson(json);
 
-  /// Solo los POI calibrados pueden dibujarse en el mapa.
-  bool get tienePosicionEnMapa => mapX != null && mapY != null;
+  /// Solo los POI con lat/lng pueden dibujarse en el mapa.
+  bool get tienePosicionEnMapa => lat != null && lng != null;
+
+  /// Parada del recorrido: un lugar con panorámica. Las paradas llevan número,
+  /// cuentan para el progreso y entran en la lista y el carrusel; el resto de
+  /// los lugares del campus se muestran en el mapa y en «Más lugares», sin
+  /// número, hasta que tengan su escena.
+  bool get esParada => escenaPrincipalId != null;
 }
 
 @freezed

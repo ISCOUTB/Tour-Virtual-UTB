@@ -6,6 +6,7 @@ namespace TourVirtualUTB.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/hotspots")]
+[RequiereClaveAdmin]
 public class AdminHotspotsController(IContenidoService contenidoService) : ControllerBase
 {
     [HttpPost]

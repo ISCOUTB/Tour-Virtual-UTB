@@ -11,8 +11,9 @@ public class Escena
     public int? PoiId { get; set; }
     public Poi? Poi { get; set; }
     
-    [Required]
-    public string ImagenUrl { get; set; } = string.Empty;
+    // Null mientras no se haya subido la panorámica (antes se rellenaba con
+    // "temp" porque el campo era obligatorio).
+    public string? ImagenUrl { get; set; }
     public string? ImagenUrlBaja { get; set; }
     public string? Nombre { get; set; }
     public bool EsEscenaPrincipal { get; set; }

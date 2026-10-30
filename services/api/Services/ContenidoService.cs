@@ -25,7 +25,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         var escenas = await db.Escenas
             .AsNoTracking()
             .Include(e => e.Poi)
-            .Where(e => e.LugarId == lugarId &&
+            // Una escena sin panorámica todavía no se puede mostrar.
+            .Where(e => e.LugarId == lugarId && e.ImagenUrl != null &&
                         (e.PoiId == null || (e.Poi!.Activo &&
                             ("," + e.Poi.Audiencias + ",").Contains("," + audStr + ","))))
             .OrderBy(e => e.Orden)
@@ -167,8 +168,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
             LugarId = request.LugarId,
             PoiId = request.PoiId,
             Nombre = request.Nombre,
-            ImagenUrl = request.ImagenUrl,
-            ImagenUrlBaja = request.ImagenUrlBaja,
+            ImagenUrl = RutaONull(request.ImagenUrl),
+            ImagenUrlBaja = RutaONull(request.ImagenUrlBaja),
             EsEscenaPrincipal = request.EsEscenaPrincipal,
             Orden = request.Orden,
             VistaInicialYaw = request.VistaInicialYaw,
@@ -187,8 +188,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
 
         escena.PoiId = request.PoiId;
         escena.Nombre = request.Nombre;
-        escena.ImagenUrl = request.ImagenUrl;
-        escena.ImagenUrlBaja = request.ImagenUrlBaja;
+        escena.ImagenUrl = RutaONull(request.ImagenUrl);
+        escena.ImagenUrlBaja = RutaONull(request.ImagenUrlBaja);
         escena.EsEscenaPrincipal = request.EsEscenaPrincipal;
         escena.Orden = request.Orden;
         escena.VistaInicialYaw = request.VistaInicialYaw;
@@ -376,4 +377,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         return true;
     }
 
+    // Swagger rellena los campos de texto con "string" y antes se usaba "temp"
+    // como relleno; ninguno es una ruta real del bucket.
+    private static string? RutaONull(string? ruta) =>
+        string.IsNullOrWhiteSpace(ruta) || ruta.Trim() is "string" or "temp" ? null : ruta.Trim();
 }

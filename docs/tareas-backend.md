@@ -59,7 +59,8 @@ Es lo que el lector de pantalla dice en el visor 360, para quien no ve la imagen
 
 ## 6. API: revisar `ContenidoInicial.cs`
 
-- [ ] Compilarlo y revisarlo. Se cambió desde la rama de frontend sin SDK de .NET, así que no se compiló.
+- [x] Compilarlo. Se cambió desde la rama de frontend sin SDK de .NET; desde el 2026-10-29 compila en el CI de `master`.
+- [ ] Revisarlo.
   - Trae los 26 POI con lat/lng y asigna la escena principal desde las escenas.
   - Solo importa para una base nueva: `Program.cs` tiene la siembra comentada.
 

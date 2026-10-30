@@ -444,12 +444,15 @@ ThemeData temaUtb({bool altoContraste = false}) {
       ),
       textStyle: textosTema.bodySmall,
     ),
+    // iOS no se nombra: sin entrada, PageTransitionsTheme ya usa la
+    // transición de Cupertino. Nombrarla ata el módulo a una versión de
+    // Flutter, porque CupertinoPageTransitionsBuilder pasó de material a
+    // cupertino entre la 3.41 y la 3.47.
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
         TargetPlatform.android: FadeForwardsPageTransitionsBuilder(
           backgroundColor: ColoresUtb.fondo,
         ),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(
           backgroundColor: ColoresUtb.fondo,
         ),

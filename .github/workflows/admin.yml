@@ -1,0 +1,51 @@
+name: Frontend admin
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/admin/**'
+      - '.github/workflows/admin.yml'
+  pull_request:
+    paths:
+      - 'apps/admin/**'
+      - '.github/workflows/admin.yml'
+
+# El token de GitHub de estos jobs solo necesita leer el código.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: apps/admin
+
+jobs:
+  verificar:
+    name: Auditar, analizar y compilar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/admin/package-lock.json
+
+      # Sin scripts de instalación: ninguno hace falta para compilar, y son la
+      # vía habitual de los paquetes npm comprometidos.
+      - name: Instalar dependencias
+        run: npm ci --ignore-scripts
+
+      # Falla con vulnerabilidades altas o críticas, como las tres de Next.js
+      # corregidas el 2026-10-30 (16.4.0 -> 16.4.3).
+      - name: Auditar dependencias
+        run: npm audit --audit-level=high
+
+      - name: Analisis estatico
+        run: npm run lint
+
+      - name: Compilar
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

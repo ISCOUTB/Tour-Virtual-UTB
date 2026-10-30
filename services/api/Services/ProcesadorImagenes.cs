@@ -7,7 +7,8 @@ public sealed record ImagenProcesada(MemoryStream Contenido, int Ancho, int Alto
 
 public sealed record PanoramaProcesada(ImagenProcesada Completa, ImagenProcesada Baja);
 
-public sealed class ImagenNoValidaException() : Exception("El archivo no es una imagen válida.");
+public sealed class ImagenNoValidaException(string mensaje = "El archivo no es una imagen válida.")
+    : Exception(mensaje);
 
 /// <summary>
 /// Hace en el servidor lo mismo que scripts/subir_medios.py: las panorámicas
@@ -19,6 +20,11 @@ public sealed class ImagenNoValidaException() : Exception("El archivo no es una 
 /// </summary>
 public static class ProcesadorImagenes
 {
+    // Un PNG de pocos KB puede declarar 50 000 x 50 000 px y pedir más de
+    // 10 GB al decodificarse, lo que tumba el servidor. Las panorámicas
+    // originales rondan los 40 MP y una foto de teléfono, 12 a 50.
+    private const long PixelesMaximos = 64_000_000;
+
     public static PanoramaProcesada ProcesarPanorama(Stream original)
     {
         using var imagen = Decodificar(original, aplicarOrientacion: false);
@@ -38,10 +44,26 @@ public static class ProcesadorImagenes
         return Codificar(reducida, 82);
     }
 
+    /// <summary>
+    /// Mapas ilustrados: máximo 4096 px por lado y sin metadatos. Volver a
+    /// codificar también garantiza que lo guardado es una imagen y no otro
+    /// archivo con extensión de imagen.
+    /// </summary>
+    public static ImagenProcesada ProcesarMapa(Stream original)
+    {
+        using var imagen = Decodificar(original, aplicarOrientacion: false);
+        using var reducida = Reducir(imagen, 4096, 4096);
+        return Codificar(reducida, 88);
+    }
+
     private static SKBitmap Decodificar(Stream original, bool aplicarOrientacion)
     {
         using var datos = SKData.Create(original) ?? throw new ImagenNoValidaException();
         using var codec = SKCodec.Create(datos) ?? throw new ImagenNoValidaException();
+        // El codec lee las dimensiones de la cabecera sin decodificar nada.
+        if ((long)codec.Info.Width * codec.Info.Height > PixelesMaximos)
+            throw new ImagenNoValidaException(
+                $"La imagen pasa de {PixelesMaximos / 1_000_000} megapíxeles. Redúcela antes de subirla.");
         var bitmap = SKBitmap.Decode(codec) ?? throw new ImagenNoValidaException();
 
         if (!aplicarOrientacion || codec.EncodedOrigin == SKEncodedOrigin.TopLeft)

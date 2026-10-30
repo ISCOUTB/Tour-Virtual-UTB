@@ -126,7 +126,8 @@ CI (GitHub Actions) verifica en cada pull request:
 
 - el módulo: formato, código generado y análisis;
 - la app de demostración: pruebas y APK de depuración;
-- la API: compilación;
+- la API: compilación y dependencias vulnerables;
+- el panel admin: dependencias vulnerables, análisis y compilación;
 - el contrato OpenAPI.
 
 ## Documentación
@@ -151,3 +152,6 @@ El SRS (`SRSIEEE830TourVirtualUTBv3.1.pdf`) es la autoridad sobre los requisitos
 - Panorámicas, audios, el mapa ilustrado y los documentos fuente son material de la universidad. Viven fuera del repositorio (`assets/`, ignorado).
 - Toda panorámica pasa por el difuminado de caras y la eliminación de EXIF antes de publicarse (Ley 1581; ver `docs/arquitectura.md`, sección 7).
 - Las capturas de la UTB APP muestran datos personales y no se suben.
+- El panel admin **nunca** envía `X-Admin-Key` desde el navegador. Cuando escriba contenido, debe hacerlo desde el servidor de Next.js (route handlers o server actions), con la clave en una variable de entorno sin el prefijo `NEXT_PUBLIC_`. Además, el panel necesita su propio inicio de sesión antes de publicarse.
+- La API solo acepta imágenes que puede volver a codificar (JPEG, PNG, WebP; nunca SVG) y de hasta 64 megapíxeles.
+- El CI falla si una dependencia tiene una vulnerabilidad conocida: `npm audit` en el panel y `dotnet list package --vulnerable` en la API. Las acciones de terceros van fijadas por commit, y los workflows solo tienen permiso de lectura.

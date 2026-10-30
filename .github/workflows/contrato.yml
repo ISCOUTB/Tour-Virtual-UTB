@@ -10,6 +10,10 @@ on:
       - 'packages/contracts/**'
       - '.github/workflows/contrato.yml'
 
+# El token de GitHub de estos jobs solo necesita leer el código.
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Validar OpenAPI
@@ -22,4 +26,4 @@ jobs:
           node-version: '22'
 
       - name: Validar contrato
-        run: npx --yes @redocly/cli@latest lint packages/contracts/openapi.yaml
+        run: npx --yes @redocly/cli@2.64.0 lint packages/contracts/openapi.yaml

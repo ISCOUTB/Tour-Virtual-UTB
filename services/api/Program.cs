@@ -7,8 +7,16 @@ using TourVirtualUTB.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configurar la Base de Datos
-builder.Services.AddDbContext<TourDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// La cadena real va en user-secrets o en la variable de entorno
+// ConnectionStrings__DefaultConnection. appsettings.Development.json trae
+// una de ejemplo para un Postgres local; fuera de Development no hay valor
+// por defecto, y sin cadena la API no arranca en lugar de fallar en la
+// primera consulta.
+var cadenaConexion = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(cadenaConexion))
+    throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection.");
+
+builder.Services.AddDbContext<TourDbContext>(options => options.UseNpgsql(cadenaConexion));
 
 // 2. Agregar Controladores
 builder.Services.AddControllers().AddJsonOptions(options =>

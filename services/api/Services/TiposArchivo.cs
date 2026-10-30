@@ -27,7 +27,6 @@ public static class TiposArchivo
         [".aac"] = "audio/aac",
         [".ogg"] = "audio/ogg",
         [".wav"] = "audio/wav",
-        [".svg"] = "image/svg+xml",
     };
 
     private static readonly Dictionary<TipoMedio, string[]> ExtensionesPorTipo = new()
@@ -39,7 +38,10 @@ public static class TiposArchivo
     };
 
     public static readonly string[] ExtensionesPanorama = [".jpg", ".jpeg", ".png", ".webp"];
-    public static readonly string[] ExtensionesMapa = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
+    // Sin SVG: es un documento que puede llevar scripts, y quien abra su URL
+    // firmada los ejecutaría. Todo lo que se acepta aquí se vuelve a codificar
+    // como JPEG antes de subirse.
+    public static readonly string[] ExtensionesMapa = [".jpg", ".jpeg", ".png", ".webp"];
 
     private static readonly string[] CarpetasPermitidas =
         ["panoramas", "mapas", "medios", "imagenes", "videos", "audios"];

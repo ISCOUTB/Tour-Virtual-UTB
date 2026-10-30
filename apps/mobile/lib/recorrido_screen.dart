@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:panorama_viewer/panorama_viewer.dart' as pv;
 
+import 'datos/fuente_medio.dart';
 import 'datos/modelos/modelos.dart';
 import 'datos/preferencias.dart';
 import 'datos/proveedores.dart';
@@ -857,10 +858,12 @@ class _PanoramaState extends State<_Panorama> {
     final baja = widget.escena.imagenUrlBaja;
     var hayAlgo = false;
     if (baja != null && baja.isNotEmpty) {
-      hayAlgo = await _intentar(NetworkImage(baja));
+      hayAlgo = await _intentar(FuenteMedio.imagen(baja));
     }
 
-    final completa = await _intentar(NetworkImage(widget.escena.imagenUrl));
+    final completa = await _intentar(
+      FuenteMedio.imagen(widget.escena.imagenUrl),
+    );
 
     // Solo es un fallo si no se pudo mostrar ninguna de las dos.
     if (!completa && !hayAlgo && mounted) {

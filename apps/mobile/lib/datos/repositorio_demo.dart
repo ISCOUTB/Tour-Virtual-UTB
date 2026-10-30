@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import '../nucleo/configuracion.dart';
+import 'fuente_medio.dart';
 import '../nucleo/errores.dart';
 import '../nucleo/idiomas.dart';
 import 'modelos/modelos.dart';
@@ -35,12 +37,15 @@ class RepositorioDemo implements RepositorioContenido {
   const RepositorioDemo({this.medios = Configuracion.mediosDemo, this.cliente});
 
   /// URL base de los medios locales. Vacía, el demo no tiene panorámicas.
+  /// `empaquetados` toma los que van dentro de la app ([FuenteMedio]).
   final String medios;
 
   /// Para las pruebas. Nulo, cada consulta abre y cierra el suyo.
   final http.Client? cliente;
 
-  String get _base => medios.replaceFirst(RegExp(r'/$'), '');
+  String get _base => medios == FuenteMedio.empaquetados
+      ? 'asset:///${FuenteMedio.carpeta}'
+      : medios.replaceFirst(RegExp(r'/$'), '');
 
   /// El seed está escrito en español.
   @override
@@ -447,6 +452,7 @@ class RepositorioDemo implements RepositorioContenido {
   }
 
   Future<bool> _existe(String url) async {
+    if (FuenteMedio.esEmpaquetado(url)) return FuenteMedio.existe(url);
     final c = cliente ?? http.Client();
     try {
       final r = await c
@@ -529,6 +535,15 @@ class RepositorioDemo implements RepositorioContenido {
   /// demo no los inventa.
   @override
   Future<Subtitulos> obtenerSubtitulos(String url) async {
+    if (FuenteMedio.esEmpaquetado(url)) {
+      if (!await FuenteMedio.existe(url)) throw const FalloSinContenido();
+      final datos = await rootBundle.load(FuenteMedio.claveDe(url));
+      return Subtitulos.leer(
+        utf8.decode(
+          datos.buffer.asUint8List(datos.offsetInBytes, datos.lengthInBytes),
+        ),
+      );
+    }
     final c = cliente ?? http.Client();
     try {
       final r = await c.get(Uri.parse(url));

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/semantics.dart';
 
+import '../datos/fuente_medio.dart';
 import '../datos/modelos/modelos.dart';
 import '../l10n/textos.dart';
 import '../nucleo/movimiento.dart';
@@ -120,12 +121,12 @@ class _PostalEscenaState extends State<PostalEscena>
     final baja = escena.imagenUrlBaja;
     final usaBaja = baja != null && baja.isNotEmpty && !_sinBaja;
     final ImageProvider ligera = usaBaja
-        ? NetworkImage(baja)
-        : ResizeImage(NetworkImage(escena.imagenUrl), width: 1024);
+        ? FuenteMedio.imagen(baja)
+        : ResizeImage(FuenteMedio.imagen(escena.imagenUrl), width: 1024);
     // La ficha es grande: ahí se pide la completa, reducida a 2048 px para no
     // decodificar 32 MB en un teléfono de gama baja.
     final nitida = widget.interactiva
-        ? ResizeImage(NetworkImage(escena.imagenUrl), width: 2048)
+        ? ResizeImage(FuenteMedio.imagen(escena.imagenUrl), width: 2048)
         : null;
 
     final ventana = LayoutBuilder(

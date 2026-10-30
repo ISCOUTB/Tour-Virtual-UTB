@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:utb_tour/datos/fuente_medio.dart';
 import 'package:utb_tour/datos/repositorio_contenido.dart';
 import 'package:utb_tour/datos/repositorio_demo.dart';
 import 'package:utb_tour/datos/subtitulos.dart';
@@ -97,6 +99,24 @@ void main() {
 
     // Las panorámicas viven en S3: el demo lo dice en vez de fingirlas.
     expect(() => demo.obtenerRecorrido(1), throwsA(isA<FalloSinContenido>()));
+  });
+
+  test('el APK sin red toma los medios de dentro de la app', () async {
+    // MEDIOS_DEMO=empaquetados: nada sale a la red. Las carpetas van vacías en
+    // el repositorio, así que solo se fija de dónde se piden.
+    TestWidgetsFlutterBinding.ensureInitialized();
+    const demo = RepositorioDemo(medios: FuenteMedio.empaquetados);
+
+    final recorrido = await demo.obtenerRecorrido(1);
+    final detalle = await demo.obtenerPoiDetalle(1);
+
+    const base = 'asset:///${FuenteMedio.carpeta}';
+    expect(recorrido.escenas.first.imagenUrl, '$base/panoramas/biblioteca.jpg');
+    expect(detalle.audios.first.url, '$base/audios/biblioteca.mp3');
+    expect(
+      FuenteMedio.imagen(recorrido.escenas.first.imagenUrl),
+      isA<AssetImage>(),
+    );
   });
 
   test(

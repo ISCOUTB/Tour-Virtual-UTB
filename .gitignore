@@ -37,3 +37,9 @@ apps/mobile/android/app/src/assets/mapa_campus.webp
 /services/api/wwwroot/images/
 *.user
 *.suo
+
+# Medios del APK de demostracion sin red: panoramicas sin difuminar y
+# narraciones. Solo se versionan las carpetas vacias que declara pubspec.yaml;
+# las llena scripts/preparar_apk_demo.py.
+/apps/mobile/android/app/src/assets/demo/*/*
+!/apps/mobile/android/app/src/assets/demo/*/.gitkeep

@@ -80,6 +80,13 @@ flutter:
 
   assets:
     - android/app/src/assets/
+    # Medios del APK de demostración que funciona sin red
+    # (--dart-define=MEDIOS_DEMO=empaquetados). En el repositorio van vacías:
+    # son panorámicas y narraciones institucionales, y las llena
+    # scripts/preparar_apk_demo.py antes de compilar.
+    - android/app/src/assets/demo/panoramas/
+    - android/app/src/assets/demo/audios/
+    - android/app/src/assets/demo/subtitulos/
 
   # Roboto es la letra de la app UTB anfitriona. Va empaquetada para que iOS y
   # el escritorio de desarrollo rindan igual que Android. Subconjuntos latino y

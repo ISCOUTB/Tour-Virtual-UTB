@@ -41,5 +41,9 @@ abstract final class Configuracion {
   /// Dentro deben estar `panoramas/<slug>.jpg`, `panoramas/<slug>-baja.jpg` y
   /// `audios/<slug>.mp3`, las mismas claves que usa el seed de la API. Los
   /// genera `scripts/subir_medios.py` a partir del material institucional.
+  ///
+  /// Con `MEDIOS_DEMO=empaquetados` los medios van dentro de la app y no hace
+  /// falta red ni servidor: es el APK para enseñar el proyecto. Lo prepara
+  /// `scripts/preparar_apk_demo.py`.
   static const mediosDemo = String.fromEnvironment('MEDIOS_DEMO');
 }

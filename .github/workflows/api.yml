@@ -11,6 +11,10 @@ on:
       - 'services/api/**'
       - '.github/workflows/api.yml'
 
+# El token de GitHub de estos jobs solo necesita leer el código.
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: services/api
@@ -31,3 +35,10 @@ jobs:
 
       - name: Compilar
         run: dotnet build --no-restore --configuration Release
+
+      # Falla si algún paquete NuGet, directo o transitivo, tiene una
+      # vulnerabilidad publicada.
+      - name: Buscar dependencias vulnerables
+        run: |
+          dotnet list package --vulnerable --include-transitive | tee vulnerables.txt
+          ! grep -qi "following vulnerable packages" vulnerables.txt

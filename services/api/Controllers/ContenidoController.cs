@@ -55,10 +55,15 @@ public class ContenidoController(
     // igual que los endpoints de /api/admin.
     [HttpPost("lugares/{lugarId:int}/mapa")]
     [RequiereClaveAdmin]
+    [RequestSizeLimit(TiposArchivo.TamanoMaximoBytes + 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = TiposArchivo.TamanoMaximoBytes + 1024 * 1024)]
     public async Task<IActionResult> SubirOActualizarMapa(int lugarId, [FromForm] SubirMultimediaRequest request)
     {
         if (request.Archivo == null || request.Archivo.Length == 0)
             return BadRequest("No se proporcionó ningún archivo.");
+
+        if (request.Archivo.Length > TiposArchivo.TamanoMaximoBytes)
+            return BadRequest($"El archivo pesa más de {TiposArchivo.TamanoMaximoBytes / (1024 * 1024)} MB.");
 
         if (!TiposArchivo.TieneExtension(request.Archivo.FileName, TiposArchivo.ExtensionesMapa))
             return BadRequest($"El mapa debe ser {string.Join(", ", TiposArchivo.ExtensionesMapa)}.");
@@ -66,8 +71,26 @@ public class ContenidoController(
         var carpeta = TiposArchivo.ResolverCarpeta(request.Carpeta, "mapas");
         if (carpeta is null) return BadRequest(TiposArchivo.MensajeCarpetaInvalida);
 
-        // 1. Subimos el archivo a Supabase S3
-        var rutaS3 = await almacenamientoService.SubirArchivoAsync(request.Archivo, carpeta);
+        // 1. Se vuelve a codificar, como las fotos y las panorámicas: antes se
+        //    subía tal cual llegaba, con metadatos y sin comprobar que fuera
+        //    una imagen.
+        ImagenProcesada mapa;
+        try
+        {
+            await using var original = request.Archivo.OpenReadStream();
+            mapa = ProcesadorImagenes.ProcesarMapa(original);
+        }
+        catch (ImagenNoValidaException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
+        string rutaS3;
+        await using (mapa.Contenido)
+        {
+            var nombre = Path.ChangeExtension(request.Archivo.FileName, ".jpg");
+            rutaS3 = await almacenamientoService.SubirStreamAsync(mapa.Contenido, carpeta, nombre, "image/jpeg");
+        }
 
         // 2. Guardamos la ruta en la base de datos a través del servicio
         var actualizado = await contenidoService.ActualizarMapaLugarAsync(lugarId, rutaS3);

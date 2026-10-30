@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import 'datos/proveedores.dart';
 import 'l10n/textos.dart';
-import 'nucleo/configuracion.dart';
+import 'configuracion_tour.dart';
 import 'nucleo/idiomas.dart';
 import 'nucleo/movimiento.dart';
 import 'nucleo/rutas.dart';
@@ -40,7 +40,8 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
   void initState() {
     super.initState();
     _temporizadores.add(Timer(_tope, _salir));
-    ref.listenManual(poisProvider(Configuracion.lugarPorDefecto), (_, valor) {
+    final lugar = ref.read(configuracionTourProvider).lugarId;
+    ref.listenManual(poisProvider(lugar), (_, valor) {
       if (valor.isLoading) return;
       final resta = _minimo - _reloj.elapsed;
       if (resta <= Duration.zero) {
@@ -71,7 +72,8 @@ class _LoadingScreenState extends ConsumerState<LoadingScreen> {
     final ancho = MediaQuery.sizeOf(context).width;
 
     Widget logo = Image.asset(
-      'android/app/src/assets/logo_utb.png',
+      'assets/logo_utb.png',
+      package: 'tour_virtual',
       width: (ancho * 0.66).clamp(200.0, 320.0),
       semanticLabel: 'Universidad Tecnológica de Bolívar',
       // El logo es material institucional y puede no estar en una copia

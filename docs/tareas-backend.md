@@ -65,7 +65,7 @@ Es lo que el lector de pantalla dice en el visor 360, para quien no ve la imagen
 
 ## 7. Panel de administración
 
-- [ ] **Formulario de POI con lat/lng**, idealmente eligiendo el punto sobre el mismo plano que usa la app: `apps/mobile/android/app/src/assets/campus_osm.geojson`. Leaflet o MapLibre lo leen tal cual.
+- [ ] **Formulario de POI con lat/lng**, idealmente eligiendo el punto sobre el mismo plano que usa la app: `packages/tour_virtual/assets/campus_osm.geojson`. Leaflet o MapLibre lo leen tal cual.
   - Es ODbL: hay que mostrar «© colaboradores de OpenStreetMap».
   - Una vista de los lugares sin posición.
 - [ ] **Medios:**

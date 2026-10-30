@@ -1,0 +1,72 @@
+name: tour_virtual
+description: >-
+  Módulo Tour Virtual de la Universidad Tecnológica de Bolívar: recorrido 360,
+  plano del campus y fichas de cada lugar, en 11 idiomas y accesible. Se
+  incrusta en la UTB APP con el widget TourVirtual; apps/mobile es una app de
+  demostración que lo usa.
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  flutter_animate: ^4.5.2
+  panorama_viewer: ^2.0.7
+  http: ^1.6.0
+  flutter_riverpod: ^2.6.1
+  go_router: ^17.4.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
+  cached_network_image: ^3.4.1
+  video_player: ^2.11.1
+  just_audio: ^0.10.6
+  shared_preferences: ^2.5.5
+  # just_audio no trae implementación para Windows: sin esta, cada audio
+  # falla con MissingPluginException en el escritorio de desarrollo.
+  just_audio_windows: ^0.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.15.1
+  freezed: ^3.2.5
+  json_serializable: ^6.14.1
+
+flutter:
+  # Textos de la interfaz en lib/l10n/*.arb; ver l10n.yaml.
+  generate: true
+
+  # Desde la app que use el paquete, estos recursos se piden con el prefijo
+  # `packages/tour_virtual/` (ver PlanoCampus.ruta y FuenteMedio.carpeta).
+  assets:
+    - assets/
+    # Medios del APK de demostración que funciona sin red
+    # (ContenidoLocal(medios: FuenteMedio.empaquetados)). En el repositorio van
+    # vacías: son panorámicas y narraciones institucionales, y las llena
+    # scripts/preparar_apk_demo.py antes de compilar.
+    - assets/demo/panoramas/
+    - assets/demo/audios/
+    - assets/demo/subtitulos/
+
+  # Roboto es la letra de la app UTB anfitriona. Va empaquetada para que iOS y
+  # el escritorio de desarrollo rindan igual que Android. Subconjuntos latino y
+  # latino extendido de Fontsource (roboto@5.2.5) fusionados en un archivo: el
+  # extendido trae las letras turcas (ğ, ş, İ). Chino, japonés y coreano usan
+  # la letra del sistema. Licencia SIL OFL 1.1. Por venir de un paquete, la
+  # familia se nombra `packages/tour_virtual/Roboto` (ver familiaLetra).
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fuentes/Roboto-400.ttf
+          weight: 400
+        - asset: assets/fuentes/Roboto-500.ttf
+          weight: 500
+        - asset: assets/fuentes/Roboto-700.ttf
+          weight: 700

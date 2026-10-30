@@ -1,0 +1,7 @@
+# Herramientas de Dart y Flutter.
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+# Es un paquete: la versión exacta de cada dependencia la fija la app que lo usa.
+pubspec.lock

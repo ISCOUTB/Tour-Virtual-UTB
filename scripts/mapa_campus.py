@@ -5,7 +5,7 @@ El mapa del modulo dejo de ser la ilustracion isometrica de la universidad: es
 un plano dibujado por la app con los datos de OSM del Campus Ternera (way
 68735397). Este script produce los tres archivos de los que depende:
 
-- `apps/mobile/android/app/src/assets/campus_osm.geojson`: el plano. Edificios,
+- `packages/tour_virtual/assets/campus_osm.geojson`: el plano. Edificios,
   vias, senderos, canchas y zonas verdes del campus y su entorno, sin puntos
   sueltos: los lugares con nombre van como POI, no como etiquetas del plano.
 - `scripts/datos/pois_campus.json`: el catalogo de lugares con su lat/lng y de
@@ -55,7 +55,7 @@ from datetime import date
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-PLANO = RAIZ / "apps" / "mobile" / "android" / "app" / "src" / "assets" / "campus_osm.geojson"
+PLANO = RAIZ / "packages" / "tour_virtual" / "assets" / "campus_osm.geojson"
 DATOS = RAIZ / "scripts" / "datos"
 OVERPASS = "https://overpass-api.de/api/interpreter"
 

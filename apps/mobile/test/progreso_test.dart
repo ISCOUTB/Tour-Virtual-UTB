@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:utb_tour/datos/progreso.dart';
+import 'package:tour_virtual/datos/progreso.dart';
 
 /// El progreso se lee del disco de forma asincrona y el conjunto arranca
 /// vacio. Esa ventana causaba que el cierre del recorrido saliera habiendo
@@ -14,7 +14,7 @@ void main() {
 
   test('cargado espera a que el progreso guardado este en memoria', () async {
     SharedPreferences.setMockInitialValues({
-      'flutter.poisVisitados': ['1', '2', '5'],
+      'flutter.tourVirtual.poisVisitados': ['1', '2', '5'],
     });
     final contenedor = ProviderContainer();
     addTearDown(contenedor.dispose);
@@ -32,7 +32,7 @@ void main() {
     // La carga hacia `state = ids`, que pisaba lo marcado mientras tanto.
     // Ahora es union.
     SharedPreferences.setMockInitialValues({
-      'flutter.poisVisitados': ['1', '2'],
+      'flutter.tourVirtual.poisVisitados': ['1', '2'],
     });
     final contenedor = ProviderContainer();
     addTearDown(contenedor.dispose);
@@ -57,7 +57,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getStringList('poisVisitados'), ['7']);
+    expect(prefs.getStringList('tourVirtual.poisVisitados'), ['7']);
   });
 
   test('marcar dos veces el mismo lugar solo cuenta la primera', () {

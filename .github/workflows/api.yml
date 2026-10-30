@@ -2,7 +2,7 @@ name: API backend
 
 on:
   push:
-    branches: [master, frontend-development, integration/backend-unification]
+    branches: [master]
     paths:
       - 'services/api/**'
       - '.github/workflows/api.yml'

@@ -12,7 +12,7 @@ Desde el 2026-10-24 el mapa del módulo es un plano de OpenStreetMap del Campus 
 
 | Archivo | Qué es |
 |---|---|
-| `apps/mobile/android/app/src/assets/campus_osm.geojson` | El plano: edificios, vías, senderos, escaleras, canchas, parqueaderos. Unos 46 KB, empaquetado con la app. |
+| `packages/tour_virtual/assets/campus_osm.geojson` | El plano: edificios, vías, senderos, escaleras, canchas, parqueaderos. Unos 46 KB, empaquetado con la app. |
 | `scripts/datos/pois_campus.json` | Los 26 lugares, con lat/lng y de dónde sale cada posición. |
 | `scripts/datos/pois_campus.sql` | El mismo catálogo para la base compartida (ver «Qué le toca a backend»). |
 

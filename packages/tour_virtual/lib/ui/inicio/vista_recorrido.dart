@@ -9,7 +9,7 @@ import '../../datos/modelos/modelos.dart';
 import '../../datos/progreso.dart';
 import '../../datos/proveedores.dart';
 import '../../l10n/textos.dart';
-import '../../nucleo/configuracion.dart';
+import '../../configuracion_tour.dart';
 import '../../nucleo/idiomas.dart';
 import '../../nucleo/movimiento.dart';
 import '../../nucleo/tema.dart';
@@ -926,12 +926,14 @@ class _BordePunteado extends CustomPainter {
       old.radio != radio || old.color != color;
 }
 
-class _Pie extends StatelessWidget {
+class _Pie extends ConsumerWidget {
   const _Pie();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final txt = Textos.of(context);
+    // Contenido de prueba y no de la base: se dice, para no confundirlo.
+    final esLocal = ref.watch(configuracionTourProvider).esLocal;
     return Column(
       children: [
         Text(
@@ -941,7 +943,7 @@ class _Pie extends StatelessWidget {
             color: PaletaUtb.de(context).textoTenue,
           ),
         ),
-        if (Configuracion.datosDemo) ...[
+        if (esLocal) ...[
           const SizedBox(height: 10),
           ChipEtiqueta(
             texto: txt.datosDemostracion,

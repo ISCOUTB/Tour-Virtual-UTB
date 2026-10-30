@@ -109,7 +109,7 @@ El contenido lo produce personal institucional, no el equipo de desarrollo.
   edificios nombrados y sus posiciones. Es material institucional real.
 - `docs/capturas_utbapp/` — capturas de la app UTB anfitriona: la autoridad
   visual del módulo. No se versionan: muestran datos personales.
-- `apps/mobile/android/app/src/assets/` — logo institucional (extraído del
+- `packages/tour_virtual/assets/` — logo institucional (extraído del
   vector de `assets/Mapa_UTB.pdf`) y la tipografía Roboto.
 - `docs/utb-tour-inmersivo-mvp.md` y `docs/arquitectura.md` — alcance y
   decisiones técnicas.

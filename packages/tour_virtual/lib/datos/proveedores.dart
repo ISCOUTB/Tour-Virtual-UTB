@@ -1,20 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../nucleo/configuracion.dart';
+import '../configuracion_tour.dart';
 import 'modelos/modelos.dart';
 import 'preferencias.dart';
 import 'repositorio_contenido.dart';
 import 'repositorio_demo.dart';
 import 'subtitulos.dart';
 
-/// Repositorio del idioma activo. Cambiar de idioma lo reemplaza, y con él
-/// se vuelve a pedir todo el contenido con el nuevo `Accept-Language`.
+/// Repositorio de la fuente con que se abrió el módulo y del idioma activo.
+/// Cambiar de idioma lo reemplaza, y con él se vuelve a pedir todo el
+/// contenido con el nuevo `Accept-Language`.
 final repositorioContenidoProvider = Provider<RepositorioContenido>((ref) {
-  if (Configuracion.datosDemo) return const RepositorioDemo();
-  return RepositorioContenido(
-    baseUrl: Configuracion.apiBaseUrl,
-    idioma: ref.watch(idiomaProvider).toLanguageTag(),
-  );
+  final configuracion = ref.watch(configuracionTourProvider);
+  return switch (configuracion.fuente) {
+    ContenidoLocal(:final medios) => RepositorioDemo(medios: medios),
+    ContenidoRemoto(:final urlApi) => RepositorioContenido(
+      baseUrl: urlApi,
+      idioma: ref.watch(idiomaProvider).toLanguageTag(),
+      audiencia: configuracion.audiencia,
+    ),
+  };
 });
 
 final poisProvider = FutureProvider.family<List<Poi>, int>((ref, lugarId) {
@@ -55,5 +60,3 @@ Escena? escenaPrincipalDe(WidgetRef ref, Poi poi) {
   if (id == null) return null;
   return ref.watch(recorridoProvider(poi.lugarId)).valueOrNull?.escenaPorId(id);
 }
-
-Future<void> inicializarBackend() async {}

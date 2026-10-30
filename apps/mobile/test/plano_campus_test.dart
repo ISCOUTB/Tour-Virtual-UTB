@@ -2,15 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:utb_tour/datos/plano_campus.dart';
-import 'package:utb_tour/datos/repositorio_demo.dart';
+import 'package:tour_virtual/datos/plano_campus.dart';
+import 'package:tour_virtual/datos/repositorio_demo.dart';
 
 /// El plano lo genera `scripts/mapa_campus.py` desde OpenStreetMap. Estas
 /// pruebas leen el archivo empaquetado tal cual, así que fallan si alguien lo
 /// regenera roto o con otra caja.
 void main() {
   final json =
-      jsonDecode(File(PlanoCampus.ruta).readAsStringSync())
+      jsonDecode(
+            File(
+              '../../packages/tour_virtual/assets/campus_osm.geojson',
+            ).readAsStringSync(),
+          )
           as Map<String, dynamic>;
   final plano = PlanoCampus.desdeGeoJson(json);
 

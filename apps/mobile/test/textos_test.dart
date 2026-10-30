@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:utb_tour/l10n/textos.dart';
-import 'package:utb_tour/main.dart';
-import 'package:utb_tour/nucleo/idiomas.dart';
+import 'package:tour_virtual/l10n/textos.dart';
+import 'package:tour_virtual/app_tour.dart';
+import 'package:tour_virtual/nucleo/idiomas.dart';
 
 /// Claves de un ARB sin sus metadatos.
 Map<String, String> _mensajes(File arb) {
@@ -17,8 +17,10 @@ Map<String, String> _mensajes(File arb) {
 }
 
 void main() {
-  final carpeta = Directory('lib/l10n');
-  final plantillaArb = File('lib/l10n/textos_es.arb');
+  final carpeta = Directory('../../packages/tour_virtual/lib/l10n');
+  final plantillaArb = File(
+    '../../packages/tour_virtual/lib/l10n/textos_es.arb',
+  );
   final plantilla = _mensajes(plantillaArb);
   final metadatos =
       jsonDecode(plantillaArb.readAsStringSync()) as Map<String, dynamic>;

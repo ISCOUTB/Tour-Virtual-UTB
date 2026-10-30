@@ -6,29 +6,25 @@ debe hacer el equipo para continuar el backend sin romper la aplicación móvil.
 
 ## 1. Estado y decisiones actuales
 
-La rama de integración es:
+`master` contiene la última versión integrada de las tres partes. Las ramas
+anteriores a la reorganización del 2026-10-29 quedaron archivadas como
+etiquetas (ver sección 12).
 
-```text
-integration/backend-unification
-```
+| Parte | Carpeta | Tecnología | Estado |
+|---|---|---|---|
+| Frontend móvil | `packages/tour_virtual`, `apps/mobile` | Flutter/Dart, Riverpod, go_router | Funcional, con contenido remoto o local |
+| Backend | `services/api` | ASP.NET Core sobre .NET 10, EF Core 10 | Funcional en desarrollo |
+| Persistencia | — | PostgreSQL y Storage (S3) de Supabase | Migraciones EF versionadas |
+| Frontend de administración | `apps/admin` | Next.js 16 | Listado de POI; formularios pendientes |
+| Contrato | `packages/contracts` | OpenAPI, DTOs `snake_case` | Implementado |
+| CI | `.github/workflows` | GitHub Actions | Móvil, API y contrato |
+| Autenticación y autorización | — | Sesión de la UTB APP | Pendiente; depende de la UTB |
 
-El trabajo se revisa en el [PR #8](https://github.com/ISCOUTB/Tour-Virtual-UTB/pull/8).
-La base actual es:
-
-| Parte | Tecnología | Estado |
-|---|---|---|
-| Aplicación | Flutter/Dart, Riverpod, go_router | Funcional |
-| API | ASP.NET Core sobre .NET 9 | Funcional en desarrollo |
-| Persistencia | SQL Server + Entity Framework Core 9 | Modelo y seed de desarrollo |
-| Contrato móvil | JSON HTTP con DTOs `snake_case` | Implementado |
-| CI | GitHub Actions | API, análisis, pruebas y APK debug |
-| Panel administrativo | Next.js | No iniciado |
-| Autenticación y autorización | Claims/identidad de producción | Pendiente |
-| Migración SQL Server productiva | Migración EF versionada | Pendiente |
-
-La integración conserva el stack que existía en la rama `backend`: **.NET 9 +
-EF Core 9 + SQL Server**. El móvil ya no consulta Supabase directamente; lee
-contenido mediante `RepositorioContenido` contra la API.
+El móvil no consulta la base directamente. Lee el contenido de la API mediante
+`RepositorioContenido`, o del contenido incluido en el módulo mediante
+`RepositorioDemo`. Cuál de los dos se usará en producción, y cómo se integra
+con la UTB APP, no depende del equipo: las dos vías están listas y
+documentadas en [`docs/integracion-utb-app.md`](./integracion-utb-app.md).
 
 La migración futura a Firebase/Firestore y la incorporación de AR pertenecen al
 roadmap del SRS, pero todavía no están implementadas. No deben iniciarse
@@ -52,13 +48,18 @@ eliminando el contrato actual sin una migración verificable.
 ## 2. Qué hay en el repositorio
 
 ```text
-apps/mobile/          Aplicación Flutter para visitantes, estudiantes y docentes
-services/api/         API ASP.NET Core y modelo EF Core
-packages/contracts/   Contrato OpenAPI administrativo
-supabase/             Esquema y datos históricos de la implementación anterior
-docs/                 Requisitos, arquitectura y esta guía
-.github/workflows/    Validaciones automáticas
+packages/tour_virtual/  Frontend móvil: el módulo Flutter que se incrusta en la UTB APP
+apps/mobile/            App de demostración que abre el módulo; genera el APK y corre las pruebas
+apps/admin/             Frontend de administración (Next.js)
+services/api/           Backend: API ASP.NET Core y modelo EF Core
+packages/contracts/     Contrato OpenAPI administrativo
+scripts/                Mapa del campus, narraciones, medios y APK de demostración
+supabase/               Esquema y datos históricos de la implementación anterior
+docs/                   Requisitos, arquitectura, integración y esta guía
+.github/workflows/      Validaciones automáticas
 ```
+
+Cómo encaja el módulo en la UTB APP: [integracion-utb-app.md](integracion-utb-app.md).
 
 La API y el móvil comparten conceptualmente estas entidades:
 
@@ -87,8 +88,9 @@ A3-A5 se reserva para estudiantes y docentes.
 
 ### Backend
 
-- .NET SDK 9.
-- SQL Server o LocalDB.
+- .NET SDK 10.
+- Acceso a la base PostgreSQL y al Storage del proyecto en Supabase. Las
+  credenciales las entrega el equipo de backend y nunca se versionan.
 - Visual Studio, VS Code o Rider con soporte C# opcional.
 
 ### Herramientas auxiliares
@@ -118,7 +120,7 @@ Desde PowerShell:
 git clone https://github.com/ISCOUTB/Tour-Virtual-UTB.git
 cd Tour-Virtual-UTB
 git fetch origin
-git switch --track origin/integration/backend-unification
+git switch master
 ```
 
 Preparar Flutter:
@@ -142,24 +144,18 @@ autorización.
 
 ## 5. Ejecutar el backend
 
-La configuración de desarrollo usa LocalDB:
-
-```text
-Server=(localdb)\mssqllocaldb
-Database=TourVirtualDb
-```
-
-Si el equipo utiliza otra instancia, no se modifica el archivo versionado con
-secretos. Se configura mediante user-secrets o variables de entorno.
-
-Ejemplo con user-secrets:
+La API usa la base PostgreSQL del proyecto en Supabase y su Storage
+compatible con S3. Las credenciales se configuran con `dotnet user-secrets`,
+nunca en un archivo versionado. Los comandos exactos, incluida la cadena del
+pooler de Supabase, están en el [`README.md`](../README.md#backend).
 
 ```powershell
 cd services/api
-dotnet user-secrets init
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=TourVirtualDb;Trusted_Connection=True;TrustServerCertificate=True"
 dotnet run --launch-profile http
 ```
+
+`scripts/correr_api.ps1` hace lo mismo y, si hay un teléfono Android conectado
+por USB, le reenvía el puerto para que la app llegue a `http://127.0.0.1:5209`.
 
 La API queda disponible en:
 
@@ -167,9 +163,9 @@ La API queda disponible en:
 http://localhost:5209
 ```
 
-En `Development`, `ContenidoInicial` ejecuta `EnsureCreated` y carga el seed
-si la base está vacía. Esto es exclusivamente para desarrollo: no reemplaza
-una migración EF Core versionada ni una carga de datos de producción.
+La base compartida solo cambia mediante los endpoints de administración o
+SQL revisado. `ContenidoInicial.InicializarAsync`, que sembraba una base vacía,
+está comentado en `Program.cs`.
 
 Swagger está disponible en:
 
@@ -272,7 +268,7 @@ la app antes de que el backend sepa guardarlos; el formato está en
 ## 7. Contrato entre API y Flutter
 
 El único punto de red del móvil es
-[`RepositorioContenido`](../apps/mobile/lib/datos/repositorio_contenido.dart).
+[`RepositorioContenido`](../packages/tour_virtual/lib/datos/repositorio_contenido.dart).
 Las pantallas no deben llamar HTTP ni acceder directamente a la base.
 
 Endpoints actuales:
@@ -286,7 +282,7 @@ Endpoints actuales:
 
 Los DTOs están en
 [`ContenidoDtos.cs`](../services/api/DTOs/ContenidoDtos.cs). Los modelos Dart
-están en [`modelos.dart`](../apps/mobile/lib/datos/modelos/modelos.dart).
+están en [`modelos.dart`](../packages/tour_virtual/lib/datos/modelos/modelos.dart).
 
 No se deben cambiar nombres como `lugar_id`, `map_x`, `imagen_url`,
 `escena_destino_id` o `duracion_seg` sin actualizar ambos lados y sus pruebas.
@@ -307,27 +303,30 @@ Archivos principales:
 
 | Archivo | Responsabilidad |
 |---|---|
-| [`main.dart`](../apps/mobile/lib/main.dart) | Arranque, tema, idioma y ajustes de accesibilidad |
-| [`tema.dart`](../apps/mobile/lib/nucleo/tema.dart) | Colores medidos de la app UTB, paleta de alto contraste, tipografía y tema M3 |
-| [`l10n/`](../apps/mobile/lib/l10n/) | Textos de la interfaz, uno por idioma (`textos_es.arb` es la plantilla) |
-| [`idiomas.dart`](../apps/mobile/lib/nucleo/idiomas.dart) | Idiomas disponibles y cómo se elige uno |
-| [`preferencias.dart`](../apps/mobile/lib/datos/preferencias.dart) | Idioma, tamaño de texto, contraste, movimiento y subtítulos elegidos en el módulo |
-| [`subtitulos.dart`](../apps/mobile/lib/datos/subtitulos.dart) | Lectura de WebVTT/SRT para subtítulos en vivo y transcripción |
-| [`movimiento.dart`](../apps/mobile/lib/nucleo/movimiento.dart) | Duraciones, curvas y «quitar animaciones» |
-| [`pantalla_tour.dart`](../apps/mobile/lib/ui/inicio/pantalla_tour.dart) | Pantalla del módulo: cabecera, selector Recorrido/Mapa |
-| [`vista_mapa.dart`](../apps/mobile/lib/ui/inicio/vista_mapa.dart) | Mapa del campus, marcadores y carrusel |
-| [`ui/comunes/`](../apps/mobile/lib/ui/comunes/) | Piezas compartidas: tarjetas, fondos con arcos, anillos, 3D |
-| [`repositorio_contenido.dart`](../apps/mobile/lib/datos/repositorio_contenido.dart) | Lecturas HTTP |
-| [`proveedores.dart`](../apps/mobile/lib/datos/proveedores.dart) | Providers Riverpod |
-| [`modelos.dart`](../apps/mobile/lib/datos/modelos/modelos.dart) | Modelos Freezed/JSON |
-| [`configuracion.dart`](../apps/mobile/lib/nucleo/configuracion.dart) | `--dart-define` y defaults |
-| [`rutas.dart`](../apps/mobile/lib/nucleo/rutas.dart) | Navegación |
-| [`errores.dart`](../apps/mobile/lib/nucleo/errores.dart) | Errores mostrables |
+| [`tour_virtual.dart`](../packages/tour_virtual/lib/tour_virtual.dart) | Lo único que importa la app anfitriona: `TourVirtual`, `ConfiguracionTour` |
+| [`configuracion_tour.dart`](../packages/tour_virtual/lib/configuracion_tour.dart) | Fuente de contenido (API o local), lugar, audiencia y salida |
+| [`app_tour.dart`](../packages/tour_virtual/lib/app_tour.dart) | Widget `TourVirtual`, tema, idioma y ajustes de accesibilidad |
+| [`main.dart`](../apps/mobile/lib/main.dart) | App de demostración: abre el módulo con la configuración de `--dart-define` |
+| [`tema.dart`](../packages/tour_virtual/lib/nucleo/tema.dart) | Colores medidos de la app UTB, paleta de alto contraste, tipografía y tema M3 |
+| [`l10n/`](../packages/tour_virtual/lib/l10n/) | Textos de la interfaz, uno por idioma (`textos_es.arb` es la plantilla) |
+| [`idiomas.dart`](../packages/tour_virtual/lib/nucleo/idiomas.dart) | Idiomas disponibles y cómo se elige uno |
+| [`preferencias.dart`](../packages/tour_virtual/lib/datos/preferencias.dart) | Idioma, tamaño de texto, contraste, movimiento y subtítulos elegidos en el módulo |
+| [`subtitulos.dart`](../packages/tour_virtual/lib/datos/subtitulos.dart) | Lectura de WebVTT/SRT para subtítulos en vivo y transcripción |
+| [`movimiento.dart`](../packages/tour_virtual/lib/nucleo/movimiento.dart) | Duraciones, curvas y «quitar animaciones» |
+| [`pantalla_tour.dart`](../packages/tour_virtual/lib/ui/inicio/pantalla_tour.dart) | Pantalla del módulo: cabecera, selector Recorrido/Mapa |
+| [`vista_mapa.dart`](../packages/tour_virtual/lib/ui/inicio/vista_mapa.dart) | Mapa del campus, marcadores y carrusel |
+| [`ui/comunes/`](../packages/tour_virtual/lib/ui/comunes/) | Piezas compartidas: tarjetas, fondos con arcos, anillos, 3D |
+| [`repositorio_contenido.dart`](../packages/tour_virtual/lib/datos/repositorio_contenido.dart) | Lecturas HTTP |
+| [`proveedores.dart`](../packages/tour_virtual/lib/datos/proveedores.dart) | Providers Riverpod |
+| [`modelos.dart`](../packages/tour_virtual/lib/datos/modelos/modelos.dart) | Modelos Freezed/JSON |
+| [`configuracion.dart`](../packages/tour_virtual/lib/nucleo/configuracion.dart) | `--dart-define` y defaults |
+| [`rutas.dart`](../packages/tour_virtual/lib/nucleo/rutas.dart) | Navegación |
+| [`errores.dart`](../packages/tour_virtual/lib/nucleo/errores.dart) | Errores mostrables |
 
-Al cambiar un modelo:
+Al cambiar un modelo (el código del módulo vive en el paquete):
 
 ```powershell
-cd apps/mobile
+cd packages/tour_virtual
 dart run build_runner build
 ```
 
@@ -367,7 +366,7 @@ La API usa:
 - `Data/ContenidoInicial.cs`: seed local temporal.
 - `Controllers/ContenidoController.cs`: endpoints de lectura.
 - `DTOs/ContenidoDtos.cs`: contrato JSON.
-- `Program.cs`: SQL Server, CORS, Swagger y arranque.
+- `Program.cs`: PostgreSQL (Npgsql), Storage S3, CORS, Swagger y arranque.
 
 Al cambiar una entidad:
 
@@ -378,18 +377,17 @@ Al cambiar una entidad:
 5. Añadir pruebas de contrato e integración.
 6. Verificar audiencia, orden, relaciones y URLs de medios.
 
-La migración EF Core productiva todavía debe generarse cuando el equipo tenga
-el SDK y una instancia SQL Server disponible:
+Las migraciones viven en `services/api/Migrations` (`InitialPostgres`,
+`AgregarMapaUrl`, `EscenaImagenOpcional`). Una nueva se crea y aplica así:
 
 ```powershell
 cd services/api
-dotnet ef migrations add InicializacionContenido
+dotnet ef migrations add <Nombre>
 dotnet ef database update
 ```
 
-Antes de ejecutar esos comandos se debe decidir si se conserva el seed actual,
-cómo se preservan los IDs y cómo se importan los datos existentes. No se debe
-usar `EnsureCreated` en producción.
+`database update` se ejecuta solo contra la base prevista para el entorno, y
+nunca se edita una migración ya aplicada.
 
 ## 10. Contenido y archivos sensibles
 
@@ -403,18 +401,25 @@ trabajo sin autorización. Los medios deben:
 5. tener texto alternativo y subtítulos/transcripción cuando aplique;
 6. almacenarse fuera de Git y servirse mediante el almacenamiento acordado.
 
-El mapa y los assets actualmente versionados se encuentran bajo
-`apps/mobile/android/app/src/assets/`. No se debe crear otra ruta de assets sin
-actualizar `pubspec.yaml` y todas las plataformas afectadas.
+El mapa y los assets versionados se encuentran bajo
+`packages/tour_virtual/assets/` y se declaran en el `pubspec.yaml` del paquete.
+Desde el código se piden con el prefijo `packages/tour_virtual/` (o con
+`package: 'tour_virtual'`), que es como los encuentra cualquier app que use el
+módulo; sin él funcionarían en una app y fallarían en la UTB APP.
 
 ## 11. Pruebas y validación
 
 Móvil:
 
 ```powershell
-cd apps/mobile
+cd packages/tour_virtual          # el módulo
 dart format .
 dart run build_runner build
+flutter gen-l10n
+flutter analyze --fatal-infos
+
+cd ../../apps/mobile              # la app de demostración, con las pruebas
+dart format .
 flutter analyze --fatal-infos
 flutter test
 flutter build apk --debug
@@ -463,14 +468,19 @@ git diff --check
 git diff --stat
 ```
 
-Crear ramas desde la rama actualizada:
+`master` es la rama principal y siempre contiene la última versión integrada
+de las tres partes (móvil, backend y administración). Las ramas de trabajo
+salen de ella y vuelven a ella por pull request:
 
 ```powershell
 git fetch origin
-git switch integration/backend-unification
+git switch master
 git pull --ff-only
-git switch -c feature/nombre-corto
+git switch -c <parte>/<tema>      # p. ej. movil/realidad-aumentada, backend/medios-idioma, admin/formulario-poi
 ```
+
+Las ramas anteriores a la reorganización del 2026-10-29 quedaron archivadas
+como etiquetas `archivo/<rama>`; se recuperan con `git switch -c <rama> archivo/<rama>`.
 
 Reglas:
 
@@ -484,12 +494,13 @@ Reglas:
 
 ### Bloque inmediato — estabilizar la integración
 
-1. Mantener el PR de integración y resolver cualquier cambio de la rama
-   `backend` mediante revisión conjunta.
-2. Generar y revisar la migración EF Core 9 para SQL Server.
-3. Cargar los datos existentes con preservación de IDs, relaciones y conteos.
-4. Añadir pruebas de integración contra SQL Server.
-5. Decidir el almacenamiento de panoramas y audios para desarrollo y staging.
+1. Completar las tareas de backend de [`docs/tareas-backend.md`](./tareas-backend.md)
+   (issue #10): lat/lng, catálogo de lugares, narraciones por idioma,
+   subtítulos y texto alternativo.
+2. Completar el panel de administración: formularios de POI, escenas y medios.
+3. Añadir pruebas de integración de la API contra PostgreSQL.
+4. Acordar con la UTB la vía de integración y la fuente de contenido
+   ([`docs/integracion-utb-app.md`](./integracion-utb-app.md)).
 
 ### Bloque de seguridad y producción
 

@@ -5,11 +5,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:utb_tour/datos/fuente_medio.dart';
-import 'package:utb_tour/datos/repositorio_contenido.dart';
-import 'package:utb_tour/datos/repositorio_demo.dart';
-import 'package:utb_tour/datos/subtitulos.dart';
-import 'package:utb_tour/nucleo/errores.dart';
+import 'package:tour_virtual/datos/fuente_medio.dart';
+import 'package:tour_virtual/datos/repositorio_contenido.dart';
+import 'package:tour_virtual/datos/repositorio_demo.dart';
+import 'package:tour_virtual/datos/subtitulos.dart';
+import 'package:tour_virtual/nucleo/errores.dart';
 
 void main() {
   test(

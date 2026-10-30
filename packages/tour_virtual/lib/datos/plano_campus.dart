@@ -116,7 +116,9 @@ class PlanoCampus {
     );
   }
 
-  static const ruta = 'android/app/src/assets/campus_osm.geojson';
+  /// Clave del recurso. Lleva el prefijo del paquete: es como lo encuentra la
+  /// app que usa el módulo, sea la de demostración o la UTB APP.
+  static const ruta = 'packages/tour_virtual/assets/campus_osm.geojson';
 
   final double oeste, sur, este, norte;
 

@@ -12,9 +12,11 @@ class RepositorioContenido {
   RepositorioContenido({
     required String baseUrl,
     String idioma = 'es',
+    Audiencia? audiencia,
     http.Client? cliente,
   }) : _baseUrl = baseUrl,
        _idioma = idioma,
+       _audiencia = audiencia,
        _cliente = cliente ?? http.Client();
 
   final String _baseUrl;
@@ -23,6 +25,9 @@ class RepositorioContenido {
 
   /// Idioma de la interfaz, como etiqueta BCP 47.
   final String _idioma;
+
+  /// Perfil del usuario que da la app anfitriona; elige el recorrido curado.
+  final Audiencia? _audiencia;
 
   String _idiomaContenido = idiomaOriginal.languageCode;
 
@@ -41,6 +46,8 @@ class RepositorioContenido {
     'Accept-Language': mismoIdioma(_idioma, idiomaOriginal.languageCode)
         ? _idioma
         : '$_idioma, ${idiomaOriginal.languageCode};q=0.5',
+    // La API la lee en ContenidoController.AudienciaActual; sin ella, externo.
+    'X-UTB-Audiencia': ?_audiencia?.name,
   };
 
   Future<dynamic> _get(String path) async {

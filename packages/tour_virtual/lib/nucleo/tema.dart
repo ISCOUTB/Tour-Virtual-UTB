@@ -208,12 +208,17 @@ class PaletaUtb extends ThemeExtension<PaletaUtb> {
   }
 }
 
+/// Roboto, la letra de la app UTB anfitriona. Va empaquetada en el módulo, y
+/// la letra de un paquete se nombra con su prefijo: `'Roboto'` a secas no la
+/// encuentra cuando el módulo corre dentro de otra app.
+const familiaLetra = 'packages/tour_virtual/Roboto';
+
 /// Estilo de las etiquetas en versalitas («PRÓXIMA CLASE», «LUNES, 5 DE…»).
 ///
 /// La anfitriona las usa sobre cada bloque de contenido, así que aquí también.
 TextStyle estiloSobretitulo({Color color = ColoresUtb.textoSecundario}) =>
     TextStyle(
-      fontFamily: 'Roboto',
+      fontFamily: familiaLetra,
       fontSize: 12.5,
       fontWeight: FontWeight.w500,
       letterSpacing: 1.6,
@@ -256,7 +261,7 @@ ThemeData temaUtb({bool altoContraste = false}) {
 
   // Roboto es la letra de la anfitriona: va empaquetada para que iOS y el
   // escritorio de desarrollo se vean igual que Android.
-  const familia = 'Roboto';
+  const familia = familiaLetra;
   const textos = TextTheme(
     displaySmall: TextStyle(
       fontSize: 34,

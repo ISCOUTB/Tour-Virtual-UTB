@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:utb_tour/datos/modelos/modelos.dart';
+import 'package:tour_virtual/datos/modelos/modelos.dart';
 
 /// Estas pruebas fijan el contrato entre las columnas de Postgres y los
 /// modelos del cliente.

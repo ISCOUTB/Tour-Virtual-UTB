@@ -48,13 +48,13 @@ Los ajustes del módulo están en el botón del globo de la cabecera, el que mue
 
 **Cómo se elige:** se toma el primero de los idiomas del teléfono que esté traducido. Si ninguno lo está, el módulo usa **inglés**, no español: alguien con el teléfono en ruso o en árabe entiende antes el inglés. El usuario puede fijar otro idioma desde el globo y la elección se recuerda.
 
-**Dónde están los textos:** en `apps/mobile/lib/l10n/textos_<código>.arb`. Ningún texto de la interfaz se escribe directamente en el código; se usa `Textos.of(context).clave`.
+**Dónde están los textos:** en `packages/tour_virtual/lib/l10n/textos_<código>.arb`. Ningún texto de la interfaz se escribe directamente en el código; se usa `Textos.of(context).clave`.
 
 Para **añadir o cambiar un texto**:
 
 1. Escríbelo en `textos_es.arb`. Si es ambiguo, añade una `description` para quien traduce.
 2. Tradúcelo en cada `textos_<código>.arb`.
-3. Ejecuta `flutter pub get` (o `flutter gen-l10n`) y versiona los `.dart` que se generan.
+3. Ejecuta `flutter gen-l10n` dentro de `packages/tour_virtual` y versiona los `.dart` que se generan.
 4. `test/textos_test.dart` falla si a un idioma le falta una clave o un marcador como `{nombre}`.
 
 Para **añadir un idioma**: crea su `.arb` completo, agrega una línea en `idiomasUi` y su nombre en `nombreDeIdioma` (los dos en `lib/nucleo/idiomas.dart`) y verifica que la prueba de textos pase. Los idiomas que se escriben de derecha a izquierda, como el árabe, todavía no están preparados: antes hay que cambiar los márgenes y alineaciones fijos a sus versiones direccionales.

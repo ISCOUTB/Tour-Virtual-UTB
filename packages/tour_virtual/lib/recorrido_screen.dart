@@ -1098,7 +1098,7 @@ class _BotonHotspot extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontFamily: 'Roboto',
+                      fontFamily: familiaLetra,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: Colors.white,

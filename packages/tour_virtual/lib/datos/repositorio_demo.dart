@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
-import '../nucleo/configuracion.dart';
 import 'fuente_medio.dart';
 import '../nucleo/errores.dart';
 import '../nucleo/idiomas.dart';
@@ -34,7 +33,7 @@ import 'subtitulos.dart';
 /// subtitulos/biblioteca.en.vtt   subtítulos de la narración en inglés
 /// ```
 class RepositorioDemo implements RepositorioContenido {
-  const RepositorioDemo({this.medios = Configuracion.mediosDemo, this.cliente});
+  const RepositorioDemo({this.medios = '', this.cliente});
 
   /// URL base de los medios locales. Vacía, el demo no tiene panorámicas.
   /// `empaquetados` toma los que van dentro de la app ([FuenteMedio]).

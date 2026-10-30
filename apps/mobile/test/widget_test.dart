@@ -4,21 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:utb_tour/datos/modelos/modelos.dart';
-import 'package:utb_tour/datos/preferencias.dart';
-import 'package:utb_tour/datos/progreso.dart';
-import 'package:utb_tour/datos/proveedores.dart';
-import 'package:utb_tour/datos/repositorio_contenido.dart';
-import 'package:utb_tour/datos/subtitulos.dart';
-import 'package:utb_tour/l10n/textos.dart';
-import 'package:utb_tour/loading_screen.dart';
-import 'package:utb_tour/main.dart';
-import 'package:utb_tour/nucleo/errores.dart';
-import 'package:utb_tour/nucleo/rutas.dart';
-import 'package:utb_tour/nucleo/tema.dart';
-import 'package:utb_tour/recorrido_screen.dart';
-import 'package:utb_tour/ui/comunes/fondos.dart';
-import 'package:utb_tour/ui/recorrido_completado.dart';
+import 'package:tour_virtual/datos/modelos/modelos.dart';
+import 'package:tour_virtual/datos/preferencias.dart';
+import 'package:tour_virtual/datos/progreso.dart';
+import 'package:tour_virtual/datos/proveedores.dart';
+import 'package:tour_virtual/datos/repositorio_contenido.dart';
+import 'package:tour_virtual/datos/subtitulos.dart';
+import 'package:tour_virtual/l10n/textos.dart';
+import 'package:tour_virtual/loading_screen.dart';
+import 'package:tour_virtual/app_tour.dart';
+import 'package:tour_virtual/nucleo/errores.dart';
+import 'package:tour_virtual/nucleo/rutas.dart';
+import 'package:tour_virtual/nucleo/tema.dart';
+import 'package:tour_virtual/recorrido_screen.dart';
+import 'package:tour_virtual/ui/comunes/fondos.dart';
+import 'package:tour_virtual/ui/recorrido_completado.dart';
 
 // Dos peculiaridades de estas pantallas condicionan como se prueban:
 //
@@ -1070,7 +1070,7 @@ void main() {
       expect(idiomaDe(tester, find.byType(HomeScreen)), const Locale('en'));
       expect(find.text('Map'), findsOneWidget);
       final guardadas = await SharedPreferences.getInstance();
-      expect(guardadas.getString('pref.idioma'), 'en');
+      expect(guardadas.getString('tourVirtual.pref.idioma'), 'en');
 
       await drenarTemporizadores(tester);
     });

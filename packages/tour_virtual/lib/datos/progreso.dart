@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 360: es el momento en que el usuario conoce el lugar, y funciona aunque la
 /// panorámica falle.
 class ProgresoRecorrido extends Notifier<Set<int>> {
-  static const _clave = 'poisVisitados';
+  static const _clave = 'tourVirtual.poisVisitados';
 
   late final Future<SharedPreferences?> _prefs;
   late final Future<void> _cargado;

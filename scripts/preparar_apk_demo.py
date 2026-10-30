@@ -38,7 +38,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 ORIGEN = RAIZ / "assets" / "narraciones" / "generadas"
 MOVIL = RAIZ / "apps" / "mobile"
-DESTINO = MOVIL / "android" / "app" / "src" / "assets" / "demo"
+DESTINO = RAIZ / "packages" / "tour_virtual" / "assets" / "demo"
 CARPETAS = {"panoramas": "*.jpg", "audios": "*.mp3", "subtitulos": "*.vtt"}
 APK = MOVIL / "build" / "app" / "outputs" / "flutter-apk" / "app-release.apk"
 

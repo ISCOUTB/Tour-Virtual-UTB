@@ -31,7 +31,7 @@ import '../../datos/modelos/modelos.dart';
 import '../../datos/progreso.dart';
 import '../../datos/proveedores.dart';
 import '../../l10n/textos.dart';
-import '../../nucleo/configuracion.dart';
+import '../../configuracion_tour.dart';
 import '../../nucleo/errores.dart';
 import '../../nucleo/idiomas.dart';
 import '../../nucleo/movimiento.dart';
@@ -160,7 +160,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const lugar = Configuracion.lugarPorDefecto;
+    final configuracion = ref.watch(configuracionTourProvider);
+    final lugar = configuracion.lugarId;
     final txt = Textos.of(context);
     final escala = MediaQuery.textScalerOf(context);
     final altoSelector = _altoSelector(escala);
@@ -171,11 +172,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // las hojas modales abiertas encima, y la flecha aparecía al abrir una
     // ficha.
     final puedeVolver = ModalRoute.of(context)?.canPop ?? false;
+    // Dentro de la UTB APP, la pantalla principal del módulo no tiene nada
+    // debajo en su propio navegador: salir lo resuelve la anfitriona.
+    final alSalir = configuracion.alSalir;
 
     final cabecera = CabeceraTour(
       arriba: MediaQuery.paddingOf(context).top,
       resumen: _resumen(txt, pois.valueOrNull, visitados, ruta),
-      alVolver: puedeVolver ? () => Navigator.maybePop(context) : null,
+      alVolver: puedeVolver ? () => Navigator.maybePop(context) : alSalir,
       alAjustes: () => mostrarAjustes(context),
       escala: escala,
     );

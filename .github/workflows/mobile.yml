@@ -1,24 +1,28 @@
-name: App movil
+name: Frontend movil
 
+# El modulo vive en packages/tour_virtual (lo que se incrusta en la UTB APP) y
+# apps/mobile es la app de demostracion que lo abre, corre las pruebas y
+# genera el APK. Un cambio en cualquiera de los dos verifica ambos.
 on:
   push:
-    branches: [master, frontend-development, integration/backend-unification]
+    branches: [master]
     paths:
+      - 'packages/tour_virtual/**'
       - 'apps/mobile/**'
       - '.github/workflows/mobile.yml'
   pull_request:
     paths:
+      - 'packages/tour_virtual/**'
       - 'apps/mobile/**'
       - '.github/workflows/mobile.yml'
 
-defaults:
-  run:
-    working-directory: apps/mobile
-
 jobs:
-  verificar:
-    name: Formato, analisis y pruebas
+  modulo:
+    name: Modulo (formato, codigo generado y analisis)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/tour_virtual
     steps:
       - uses: actions/checkout@v4
 
@@ -31,11 +35,13 @@ jobs:
         run: flutter pub get
 
       - name: Generar codigo
-        run: dart run build_runner build
+        run: |
+          dart run build_runner build
+          flutter gen-l10n
 
       # Los archivos generados estan versionados. Si alguien cambia un modelo o
       # un texto de lib/l10n y no regenera, esto lo detecta aqui y no en tiempo
-      # de ejecucion. Los de idiomas los regenera `flutter pub get`.
+      # de ejecucion.
       - name: Verificar que el codigo generado esta al dia
         run: git diff --exit-code -- '*.g.dart' '*.freezed.dart' 'lib/l10n/*.dart'
 
@@ -45,13 +51,43 @@ jobs:
       - name: Analisis estatico
         run: flutter analyze --fatal-infos
 
+  app:
+    name: App de demostracion (analisis y pruebas)
+    runs-on: ubuntu-latest
+    needs: modulo
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolver dependencias
+        run: flutter pub get
+
+      - name: Verificar formato
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analisis estatico
+        run: flutter analyze --fatal-infos
+
+      # Las pruebas del modulo viven aqui: una app que lo usa como dependencia
+      # pide sus recursos con el prefijo packages/tour_virtual/, igual que la
+      # UTB APP.
       - name: Pruebas
         run: flutter test
 
   compilar-android:
     name: APK de debug
     runs-on: ubuntu-latest
-    needs: verificar
+    needs: app
+    defaults:
+      run:
+        working-directory: apps/mobile
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +102,6 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: dart run build_runner build
       - run: flutter build apk --debug
 
       - uses: actions/upload-artifact@v4

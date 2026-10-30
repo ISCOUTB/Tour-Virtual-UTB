@@ -547,7 +547,7 @@ class _MapaAusente extends StatelessWidget {
               Textos.of(context).mapaNoCargo,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: 'Roboto',
+                fontFamily: familiaLetra,
                 fontSize: 15,
                 color: gris,
               ),
@@ -777,7 +777,7 @@ class _Marcador extends StatelessWidget {
                           '$numero',
                           textScaler: TextScaler.noScaling,
                           style: const TextStyle(
-                            fontFamily: 'Roboto',
+                            fontFamily: familiaLetra,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,

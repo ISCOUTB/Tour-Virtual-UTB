@@ -15,7 +15,7 @@ abstract final class FuenteMedio {
   /// `audios`, `subtitulos`) están declaradas en pubspec.yaml y vacías en el
   /// repositorio: el material es institucional y lo copia
   /// `scripts/preparar_apk_demo.py` antes de compilar.
-  static const carpeta = 'android/app/src/assets/demo';
+  static const carpeta = 'packages/tour_virtual/assets/demo';
 
   static const _esquema = 'asset:///';
 

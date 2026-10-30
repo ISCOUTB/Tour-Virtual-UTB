@@ -1,311 +1,153 @@
 # UTB Tour Virtual
 
-Recorrido virtual inmersivo del campus de la **Universidad Tecnológica de Bolívar (UTB)**, desarrollado para facilitar la exploración de sus espacios mediante una experiencia digital interactiva.
+Recorrido virtual inmersivo del Campus Tecnológico de Ternera de la **Universidad Tecnológica de Bolívar**. Incluye un mapa del campus, panorámicas 360°, narraciones en 11 idiomas con subtítulos y ajustes de accesibilidad (WCAG 2.2 AA).
 
-El proyecto está compuesto por una aplicación móvil desarrollada con **Flutter** y una API REST construida con **ASP.NET Core**, Entity Framework Core y SQL Server.
+El tour está diseñado como **un módulo de la app oficial UTB APP**, con su mismo lenguaje visual, y se puede incrustar en ella como un paquete Flutter. Mientras esa integración no ocurra, una app de demostración lo abre por su cuenta, con o sin servidor.
 
-## Tabla de contenidos
+## Las tres partes
 
-- [Características](#características)
-- [Tecnologías](#tecnologías)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Requisitos previos](#requisitos-previos)
-- [Instalación y ejecución](#instalación-y-ejecución)
-- [Configuración del backend](#configuración-del-backend)
-- [Migraciones de base de datos](#migraciones-de-base-de-datos)
-- [Documentación](#documentación)
-- [Seguridad](#seguridad)
-- [Flujo de trabajo con Git](#flujo-de-trabajo-con-git)
+| Parte | Carpeta | Tecnología | Qué hace |
+|---|---|---|---|
+| **Backend** | [`services/api/`](services/api) | ASP.NET Core (.NET 10), EF Core, PostgreSQL y Storage de Supabase | API de contenido para la app y API de administración para el panel. |
+| **Frontend móvil** | [`packages/tour_virtual/`](packages/tour_virtual) | Flutter, Riverpod, go_router | **El módulo**: todo el tour, listo para incrustarse en la UTB APP. |
+| | [`apps/mobile/`](apps/mobile) | Flutter | App de demostración que abre el módulo, genera el APK y corre las pruebas. |
+| **Frontend admin** | [`apps/admin/`](apps/admin) | Next.js 16, React 19 | Panel para editar lugares, escenas y medios. Hoy lista los POI. |
 
-## Características
+Además:
 
-- Recorrido virtual interactivo del campus universitario.
-- Aplicación móvil multiplataforma basada en Flutter.
-- API REST desarrollada con ASP.NET Core.
-- Acceso a datos mediante Entity Framework Core.
-- Persistencia de información mediante una base de datos relacional.
-- Configuración segura de credenciales mediante `dotnet user-secrets`.
-- Documentación técnica, requisitos y lineamientos de desarrollo centralizados.
-
-Consulta la documentación del proyecto para conocer el alcance funcional implementado y las funcionalidades pendientes.
-
-## Tecnologías
-
-| Componente | Tecnología |
+| Carpeta | Qué es |
 |---|---|
-| Aplicación móvil | Flutter / Dart |
-| Backend | ASP.NET Core |
-| Acceso a datos | Entity Framework Core 9 |
-| Base de datos | SQL Server |
-| Contratos de API | OpenAPI |
-| Almacenamiento de objetos | Supabase Storage mediante S3 |
-| Gestión de secretos | .NET User Secrets |
+| [`packages/contracts/`](packages/contracts) | Contrato OpenAPI de la API. |
+| [`scripts/`](scripts) | Plano del campus (OpenStreetMap), narraciones, carga de medios y APK de demostración. |
+| [`supabase/`](supabase) | Esquema y políticas RLS de la primera versión, que leía Supabase directamente. Es histórico: la API usa las migraciones de EF Core. |
+| [`docs/`](docs) | Documentación (ver abajo). |
 
-> **Nota:** El proyecto contiene referencias históricas a Supabase y PostgreSQL. Verifica la configuración vigente en la API y en `docs/GUIA_DESARROLLO.md` antes de configurar una base de datos nueva.
+## Integración con la UTB APP
 
-## Estructura del proyecto
+La UTB APP agrega el módulo como dependencia y lo abre como una pantalla más:
 
-```text
-.
-├── apps/
-│   └── mobile/              # Aplicación Flutter
-├── services/
-│   └── api/                 # API ASP.NET Core y EF Core
-├── packages/
-│   └── contracts/           # Contratos OpenAPI administrativos
-├── supabase/                # Esquema histórico y datos de referencia
-├── docs/
-│   ├── GUIA_DESARROLLO.md   # Guía principal de desarrollo
-│   ├── arquitectura.md      # Arquitectura, seguridad y cumplimiento
-│   └── utb-tour-inmersivo-mvp.md
-├── PRODUCT.md               # Definición y estado del producto
-└── README.md
+```yaml
+dependencies:
+  tour_virtual:
+    git:
+      url: https://github.com/ISCOUTB/Tour-Virtual-UTB
+      path: packages/tour_virtual
 ```
 
-## Requisitos previos
-
-Antes de ejecutar el proyecto, instala las siguientes herramientas:
-
-- [Git](https://git-scm.com/)
-- [.NET SDK](https://dotnet.microsoft.com/download)
-- [Flutter SDK](https://docs.flutter.dev/get-started/install)
-- [Visual Studio](https://visualstudio.microsoft.com/) o Visual Studio Code
-- SQL Server y un usuario con permisos sobre la base de datos.
-- [EF Core CLI](https://learn.microsoft.com/ef/core/cli/dotnet), para gestionar las migraciones.
-
-Verifica que las herramientas estén disponibles:
-
-```powershell
-git --version
-dotnet --version
-flutter --version
+```dart
+Navigator.of(context).push(MaterialPageRoute<void>(
+  builder: (context) => TourVirtual(
+    configuracion: ConfiguracionTour(
+      fuente: const ContenidoRemoto(urlApi: 'https://api.tour.utb.edu.co'),
+      alSalir: () => Navigator.of(context).pop(),
+    ),
+  ),
+));
 ```
 
-Para comprobar la configuración de Flutter:
+Ni la integración ni la decisión entre **datos en la nube** (`ContenidoRemoto`, la API de `services/api`) y **datos locales** (`ContenidoLocal`, sin servidor) dependen del equipo. Las dos vías están implementadas y se elige una con un solo parámetro. Requisitos, opciones y pendientes de la UTB: [`docs/integracion-utb-app.md`](docs/integracion-utb-app.md).
 
-```powershell
-flutter doctor
-```
+## Cómo ejecutar cada parte
 
-## Instalación y ejecución
+### Frontend móvil
 
-### 1. Clonar el repositorio
-
-Si todavía no tienes una copia local, clona el repositorio y entra en su directorio:
-
-```powershell
-git clone <URL_DEL_REPOSITORIO>
-cd <DIRECTORIO_DEL_PROYECTO>
-```
-
-Si ya tienes el proyecto descargado, omite este paso.
-
-### 2. Seleccionar la rama de trabajo
-
-```powershell
-git switch integration/backend-unification
-```
-
-Asegúrate de utilizar la rama indicada por el equipo para tu entorno de desarrollo.
-
-### 3. Ejecutar el backend
-
-Abre una terminal en la raíz del proyecto y ejecuta:
-
-```powershell
-cd services/api
-dotnet restore
-dotnet run --launch-profile http
-```
-
-La API estará disponible localmente en:
-
-`http://localhost:5209`
-
-Mantén esta terminal abierta mientras utilizas la aplicación.
-
-### 4. Ejecutar la aplicación Flutter
-
-Abre una segunda terminal desde la raíz del repositorio:
-
-```powershell
+```bash
 cd apps/mobile
 flutter pub get
-flutter run -d windows
+flutter run --dart-define=DATOS=demo        # sin servidor: contenido local, sin medios
+flutter run                                 # contra la API local (http://127.0.0.1:5209)
+flutter test
 ```
 
-Este comando ejecuta la aplicación para Windows. Para utilizar otro dispositivo, consulta los dispositivos disponibles:
+Desde un emulador Android la API local es `http://10.0.2.2:5209`; la app ya lo resuelve. Para un APK que funciona sin red y con medios: `python scripts/preparar_apk_demo.py` (necesita los medios institucionales, que no se versionan).
 
-```powershell
-flutter devices
+Para trabajar en el código del módulo (modelos, textos):
+
+```bash
+cd packages/tour_virtual
+flutter pub get
+dart run build_runner build   # tras cambiar un modelo
+flutter gen-l10n              # tras cambiar un .arb
 ```
 
-Selecciona el dispositivo deseado y sustituye `windows` por su identificador.
+### Backend
 
-### 5. Configurar la dirección de la API
-
-La configuración local documentada utiliza las siguientes direcciones:
-
-- **Backend:** `http://localhost:5209`
-- **Aplicación móvil Windows:** `http://127.0.0.1:5209`
-
-Ambas direcciones apuntan al equipo local cuando se ejecutan en la misma máquina.
-
-Si ejecutas la aplicación en un emulador o dispositivo físico, es posible que debas configurar la dirección IP del equipo donde se ejecuta el backend. Consulta `docs/GUIA_DESARROLLO.md` para conocer la configuración específica de la aplicación.
-
-## Configuración del backend
-
-El backend utiliza `dotnet user-secrets` para almacenar información sensible durante el desarrollo local, evitando que las credenciales se incluyan en el código fuente.
-
-### 1. Inicializar User Secrets
-
-Desde el directorio de la API:
+Requiere el SDK de .NET 10 y acceso a la base del proyecto en Supabase. Las credenciales se guardan con `dotnet user-secrets`, nunca en el repositorio:
 
 ```powershell
 cd services/api
 dotnet user-secrets init
-```
-
-Este comando inicializa el almacenamiento de secretos asociado al proyecto .NET.
-
-### 2. Configurar la cadena de conexión
-
-La base de datos es el Postgres de Supabase. Usa el **session pooler** (puerto `5432`); con el transaction pooler (puerto `6543`) la API se queda colgada al conectar. La conexión directa (`db.[PROYECTO].supabase.co`) solo funciona con IPv6, así que en la mayoría de redes no sirve.
-
-```powershell
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=aws-1-us-west-2.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.qjnusmpwznaegeburldo;Password=[CONTRASEÑA_DB];SSL Mode=Require"
-```
-
-La contraseña es la de la base de datos (Supabase → Project Settings → Database), no la de tu cuenta. Fíjate en que el usuario lleva el id del proyecto pegado (`postgres.qjnusmpwznaegeburldo`): con el pooler, `postgres` a secas no entra.
-
-### 3. Configurar Supabase Storage mediante S3
-
-Si el backend utiliza el almacenamiento S3 compatible de Supabase, configura sus credenciales:
-
-```powershell
 dotnet user-secrets set "SupabaseS3:ServiceUrl" "https://[PROYECTO].supabase.co/storage/v1/s3"
 dotnet user-secrets set "SupabaseS3:AccessKey" "[ACCESS_KEY]"
 dotnet user-secrets set "SupabaseS3:SecretKey" "[SECRET_KEY]"
-```
-
-Reemplaza los valores de ejemplo por las credenciales correspondientes a tu proyecto. No compartas las claves reales ni las incluyas en archivos versionados.
-
-**Importante:** los nombres de las claves deben coincidir exactamente con los que lee la configuración del backend. Si el proyecto utiliza otra base de datos o proveedor de almacenamiento, sigue la configuración definida en el código y en la guía de desarrollo.
-
-### 4. Configurar la clave de administración
-
-Los endpoints que escriben contenido (`/api/admin/*` y `POST /api/lugares/{id}/mapa`) piden la cabecera `X-Admin-Key`. Define la clave con:
-
-```powershell
 dotnet user-secrets set "Admin:ApiKey" "[UNA_CLAVE_LARGA_Y_ALEATORIA]"
+dotnet run --launch-profile http
 ```
 
-En Swagger, pulsa **Authorize** y pega la clave. Si no la configuras, en `Development` esos endpoints quedan abiertos (la API lo avisa en el log al arrancar) y en cualquier otro entorno responden `503`.
+- **Base de datos:** usa el *session pooler* (puerto `5432`). Con el *transaction pooler* (puerto `6543`) la API se queda colgada al conectar. La conexión directa (`db.[PROYECTO].supabase.co`) solo funciona con IPv6. La contraseña es la de la base (Supabase → Project Settings → Database), y el usuario lleva el id del proyecto pegado.
+- **Clave de administración:** los endpoints que escriben (`/api/admin/*`) piden la cabecera `X-Admin-Key`. Sin clave configurada, en `Development` quedan abiertos (la API lo avisa al arrancar) y en cualquier otro entorno responden `503`.
+- **Uso:** la API queda en `http://localhost:5209` y Swagger en `/swagger` (botón **Authorize** para la clave). `scripts/correr_api.ps1` la levanta y reenvía el puerto a un teléfono conectado por USB.
+- **Migraciones:** `dotnet ef database update`, solo contra la base prevista para tu entorno.
 
-### 5. Verificar los secretos configurados
+#### Subir contenido
 
-```powershell
-dotnet user-secrets list
+Todo se hace desde Swagger con la clave de administración.
+
+- **Videos, audios y fotos de un POI:** `POST /api/admin/pois/{poiId}/medios`. Sube el archivo y crea el medio en un solo paso.
+  - Elige `Tipo` (`video`, `audio` o `imagen`). Las imágenes piden `TextoAlt`.
+  - Para video usa MP4 (H.264 + AAC). El límite es 50 MB.
+  - Las fotos se reducen a 2048 px y pierden los metadatos EXIF.
+- **Panorámicas:**
+  1. Crea la escena con `POST /api/admin/escenas`, con `ImagenUrl` vacío.
+  2. Sube la imagen con `POST /api/admin/escenas/{id}/imagen`. El servidor la reduce a 4096×2048, genera la vista previa de 1024×512 y borra el EXIF.
+- **Carpeta** es opcional. Si se indica, debe ser `panoramas`, `mapas`, `medios`, `imagenes`, `videos` o `audios`.
+- **URL externa:** un medio también puede apuntar a una URL `https://...` creándolo con `POST /api/admin/medios`. Se entrega tal cual, sin firmar.
+
+Las tareas pendientes del backend están en [`docs/tareas-backend.md`](docs/tareas-backend.md) (issue #10).
+
+### Frontend admin
+
+Con la API corriendo en `http://localhost:5209`, que el panel alcanza mediante el proxy de `next.config.ts`:
+
+```bash
+cd apps/admin
+npm install
+npm run dev     # http://localhost:3000
 ```
 
-Este comando muestra los nombres y valores almacenados. Evita compartir su salida, ya que puede contener credenciales.
+## Ramas
 
-## Subir contenido
+- **`master`** contiene la última versión integrada de las tres partes.
+- Las ramas de trabajo salen de `master` y vuelven por pull request. Se nombran `<parte>/<tema>`, por ejemplo `movil/realidad-aumentada`, `backend/medios-idioma` o `admin/formulario-poi`.
+- Las ramas anteriores a la reorganización del 2026-10-29 están archivadas como etiquetas `archivo/<rama>`. Se recuperan con `git switch -c <rama> archivo/<rama>`.
 
-Todo se hace desde Swagger (`http://localhost:5209/swagger`) con la clave de administración.
+CI (GitHub Actions) verifica en cada pull request:
 
-- **Videos, audios y fotos de un POI:** `POST /api/admin/pois/{poiId}/medios`. Sube el archivo y crea el medio en un solo paso. Elige `Tipo` (`video`, `audio` o `imagen`); las imágenes piden `TextoAlt`. Para video usa MP4 (H.264 + AAC), que es lo que reproducen Android, iOS y web; el límite es 50 MB, el mismo que pone Supabase en el plan gratuito. Las fotos se reducen a 2048 px y pierden los metadatos EXIF.
-- **Panorámicas:** crea la escena con `POST /api/admin/escenas` dejando `ImagenUrl` vacío, y sube la imagen con `POST /api/admin/escenas/{id}/imagen`. El servidor la reduce a 4096x2048, genera la versión de 1024x512 y borra los metadatos EXIF; guarda las dos rutas.
-- **Carpeta** es opcional. Si la dejas vacía (o con el `string` que pone Swagger) se usa la carpeta por defecto; si la indicas debe ser una de `panoramas`, `mapas`, `medios`, `imagenes`, `videos` o `audios`.
-
-Un medio también puede apuntar a una URL externa (`https://...`) creándolo con `POST /api/admin/medios`; esa URL se entrega tal cual, sin firmar.
-
-## Migraciones de base de datos
-
-Antes de ejecutar las migraciones, verifica que:
-
-- La instancia de base de datos esté disponible.
-- La cadena de conexión sea correcta.
-- Las credenciales tengan los permisos necesarios.
-- El proveedor configurado en Entity Framework Core coincida con la base de datos.
-
-Si el proyecto utiliza migraciones de EF Core, ejecuta desde `services/api`:
-
-```powershell
-dotnet ef database update
-```
-
-Si la herramienta de EF Core no está instalada:
-
-```powershell
-dotnet tool install --global dotnet-ef
-```
-
-Si ya está instalada, puedes actualizarla cuando sea necesario:
-
-```powershell
-dotnet tool update --global dotnet-ef
-```
-
-> Ejecuta `database update` únicamente contra la base de datos prevista para tu entorno. No generes ni apliques migraciones sin revisar previamente el estado del esquema y las instrucciones del equipo.
+- el módulo: formato, código generado y análisis;
+- la app de demostración: pruebas y APK de depuración;
+- la API: compilación;
+- el contrato OpenAPI.
 
 ## Documentación
 
-La documentación técnica y operativa está centralizada en el directorio `docs/`.
-
-| Documento | Descripción |
+| Documento | Para qué |
 |---|---|
-| [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md) | Instalación, ejecución, configuración, contrato HTTP, pruebas, Git y continuidad del proyecto. |
-| [`docs/arquitectura.md`](docs/arquitectura.md) | Arquitectura del sistema, seguridad y cumplimiento. |
-| [`docs/utb-tour-inmersivo-mvp.md`](docs/utb-tour-inmersivo-mvp.md) | Alcance funcional y requisitos del producto mínimo viable. |
-| [`PRODUCT.md`](PRODUCT.md) | Usuarios, principios y estado actual del producto. |
-| `docs/SRSIEEE830TourVirtualUTBv3.1.pdf` | Especificación de requisitos de software. |
+| [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md) | Manual operativo: instalación, ejecución, contrato HTTP, pruebas y flujo Git. |
+| [`docs/integracion-utb-app.md`](docs/integracion-utb-app.md) | Cómo se incrusta el módulo en la UTB APP y qué falta del lado de la UTB. |
+| [`docs/tareas-backend.md`](docs/tareas-backend.md) | Lo que le falta al backend y al panel. |
+| [`docs/arquitectura.md`](docs/arquitectura.md) | Arquitectura, seguridad y cumplimiento de la Ley 1581 (sección 7). |
+| [`docs/ACCESIBILIDAD.md`](docs/ACCESIBILIDAD.md) | Idiomas, accesibilidad, formato de audios y subtítulos. |
+| [`docs/mapa-osm.md`](docs/mapa-osm.md) | El plano del campus: origen, correcciones y precisión de cada lugar. |
+| [`docs/plan-realidad-aumentada.md`](docs/plan-realidad-aumentada.md) | Plan para la navegación con realidad aumentada del SRS. |
+| [`docs/utb-tour-inmersivo-mvp.md`](docs/utb-tour-inmersivo-mvp.md) | Alcance original del MVP. |
+| [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md) | Producto y sistema visual. |
 
-Se recomienda leer primero `docs/GUIA_DESARROLLO.md`, ya que contiene las instrucciones operativas para trabajar con el proyecto.
+El SRS (`SRSIEEE830TourVirtualUTBv3.1.pdf`) es la autoridad sobre los requisitos. Como el resto del material institucional, no está en el repositorio: se pide al equipo.
 
-## Seguridad
+## Seguridad y material institucional
 
-Para proteger el código y la infraestructura:
-
-- No incluyas contraseñas, claves API ni credenciales en el repositorio.
-- Utiliza `dotnet user-secrets` para las credenciales de desarrollo local.
-- Mantén los archivos de configuración sensibles fuera del control de versiones.
-- No publiques documentos internos ni material institucional sin autorización.
-- No expongas credenciales de producción en ejemplos, capturas de pantalla o registros.
-- Verifica los permisos y la configuración de acceso de la API, la base de datos y el almacenamiento de objetos.
-
-## Flujo de trabajo con Git
-
-Antes de comenzar a trabajar, verifica la rama y el estado del repositorio:
-
-```powershell
-git branch --show-current
-git status
-```
-
-Actualiza tu rama siguiendo las instrucciones del equipo y evita sobrescribir cambios de otros colaboradores.
-
-Buenas prácticas:
-
-1. Trabaja en la rama asignada a tu tarea.
-2. Realiza cambios pequeños y con un propósito claro.
-3. Ejecuta las pruebas correspondientes antes de confirmar los cambios.
-4. Utiliza mensajes de commit descriptivos.
-5. Revisa los cambios antes de crear un commit o una solicitud de integración.
-
-Ejemplo:
-
-```powershell
-git diff
-git status
-git add .
-git commit -m "docs: mejorar README del proyecto"
-```
-
-## Estado del proyecto
-
-El alcance vigente, las funcionalidades implementadas y las tareas pendientes deben consultarse en [`PRODUCT.md`](PRODUCT.md) y en la documentación técnica del repositorio.
-
----
-
-**UTB Tour Virtual** — Proyecto de recorrido virtual inmersivo de la Universidad Tecnológica de Bolívar.
+- No se versionan credenciales, `.env`, keystores ni cadenas de conexión reales.
+- Panorámicas, audios, el mapa ilustrado y los documentos fuente son material de la universidad. Viven fuera del repositorio (`assets/`, ignorado).
+- Toda panorámica pasa por el difuminado de caras y la eliminación de EXIF antes de publicarse (Ley 1581; ver `docs/arquitectura.md`, sección 7).
+- Las capturas de la UTB APP muestran datos personales y no se suben.

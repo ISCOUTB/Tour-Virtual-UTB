@@ -86,13 +86,15 @@ class Preferencias {
   );
 }
 
+/// Con el prefijo del módulo: la UTB APP comparte el mismo almacén y una
+/// clave genérica como `idioma` podría pisar la suya.
 abstract final class _Claves {
-  static const idioma = 'pref.idioma';
-  static const tamanoTexto = 'pref.tamanoTexto';
-  static const altoContraste = 'pref.altoContraste';
-  static const reducirMovimiento = 'pref.reducirMovimiento';
-  static const movimientoTelefono = 'pref.movimientoTelefono';
-  static const subtitulos = 'pref.subtitulos';
+  static const idioma = 'tourVirtual.pref.idioma';
+  static const tamanoTexto = 'tourVirtual.pref.tamanoTexto';
+  static const altoContraste = 'tourVirtual.pref.altoContraste';
+  static const reducirMovimiento = 'tourVirtual.pref.reducirMovimiento';
+  static const movimientoTelefono = 'tourVirtual.pref.movimientoTelefono';
+  static const subtitulos = 'tourVirtual.pref.subtitulos';
 }
 
 /// Lee las preferencias guardadas. Se llama antes de `runApp` para que la

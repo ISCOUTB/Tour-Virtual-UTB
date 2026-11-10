@@ -1004,6 +1004,10 @@ export interface components {
             mapX?: number | null;
             /** Format: double */
             mapY?: number | null;
+            /** Format: double */
+            lat?: number | null;
+            /** Format: double */
+            lng?: number | null;
             audiencias?: string | null;
             activo?: boolean;
             /** Format: int32 */
@@ -1073,6 +1077,10 @@ export interface components {
             mapX?: number | null;
             /** Format: double */
             mapY?: number | null;
+            /** Format: double */
+            lat?: number | null;
+            /** Format: double */
+            lng?: number | null;
             audiencias?: string | null;
             activo?: boolean;
             /** Format: int32 */

@@ -7,6 +7,8 @@ public record CrearPoiRequest(
     string? Descripcion, 
     double? MapX, 
     double? MapY, 
+    double? Lat, 
+    double? Lng, 
     string Audiencias, 
     bool Activo,
     int? EscenaPrincipalId);
@@ -17,6 +19,8 @@ public record ActualizarPoiRequest(
     string? Descripcion, 
     double? MapX, 
     double? MapY, 
+    double? Lat, 
+    double? Lng, 
     string Audiencias, 
     bool Activo,
     int? EscenaPrincipalId);

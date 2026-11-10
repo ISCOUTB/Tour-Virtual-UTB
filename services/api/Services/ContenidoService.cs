@@ -11,10 +11,14 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         var audStr = audiencia.ToString();
         var pois = await db.Pois
             .AsNoTracking()
+            .Include(p => p.EscenaPrincipal)
             .Where(p => p.LugarId == lugarId && p.Activo &&
                         ("," + p.Audiencias + ",").Contains("," + audStr + ","))
             .OrderBy(p => p.Id)
             .ToListAsync();
+
+        foreach (var poi in pois)
+            OcultarEscenaSinImagen(poi);
 
         return pois.Select(Dto.Poi).ToList();
     }
@@ -64,10 +68,13 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
     {
         var audStr = audiencia.ToString();
         var poi = await db.Pois.AsNoTracking()
+            .Include(p => p.EscenaPrincipal)
             .FirstOrDefaultAsync(p => p.Id == poiId && p.Activo &&
                 ("," + p.Audiencias + ",").Contains("," + audStr + ","));
 
         if (poi is null) return null;
+
+        OcultarEscenaSinImagen(poi);
 
         var medios = await db.Medios.AsNoTracking()
             .Where(m => m.PoiId == poiId)
@@ -85,6 +92,15 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         }
 
         return new PoiDetalleDto(Dto.Poi(poi), medios.Select(Dto.Medio).ToList());
+    }
+
+    // Una escena sin panorámica no hace parada: la app trata como parada a todo
+    // POI con escena_principal_id y ofrecería un 360 que no abre. Solo cambia la
+    // respuesta (el POI viene sin seguimiento); en la base la escena sigue asignada.
+    private static void OcultarEscenaSinImagen(Poi poi)
+    {
+        if (string.IsNullOrEmpty(poi.EscenaPrincipal?.ImagenUrl))
+            poi.EscenaPrincipalId = null;
     }
 
     public async Task<RutaDto?> ObtenerRutaActivaAsync(int lugarId, Audiencia audiencia)

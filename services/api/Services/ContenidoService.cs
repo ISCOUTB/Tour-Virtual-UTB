@@ -121,6 +121,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
             Descripcion = request.Descripcion,
             MapX = request.MapX,
             MapY = request.MapY,
+            Lat = request.Lat,
+            Lng = request.Lng,
             Audiencias = request.Audiencias,
             Activo = request.Activo,
             EscenaPrincipalId = request.EscenaPrincipalId
@@ -142,6 +144,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         poi.Descripcion = request.Descripcion;
         poi.MapX = request.MapX;
         poi.MapY = request.MapY;
+        poi.Lat = request.Lat;
+        poi.Lng = request.Lng;
         poi.Audiencias = request.Audiencias;
         poi.Activo = request.Activo;
         poi.EscenaPrincipalId = request.EscenaPrincipalId;

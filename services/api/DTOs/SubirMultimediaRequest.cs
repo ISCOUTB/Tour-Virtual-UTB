@@ -24,4 +24,10 @@ public class SubirMedioRequest
 
     /// <summary>Opcional. Código BCP 47 ("es", "en", "pt-BR"...). Vacío significa español.</summary>
     public string? Idioma { get; set; }
+
+    /// <summary>
+    /// Opcional. Subtítulos WebVTT (.vtt) del audio o video, en el mismo idioma.
+    /// Se guardan en la carpeta subtitulos y su ruta va a SubtitulosUrl.
+    /// </summary>
+    public IFormFile? Subtitulos { get; set; }
 }

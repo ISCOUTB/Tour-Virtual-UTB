@@ -50,6 +50,9 @@ namespace TourVirtualUTB.Api.Migrations
                     b.Property<int?>("PoiId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("TextoAlt")
+                        .HasColumnType("text");
+
                     b.Property<double?>("VistaInicialPitch")
                         .HasColumnType("double precision");
 

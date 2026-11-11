@@ -193,7 +193,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
             EsEscenaPrincipal = request.EsEscenaPrincipal,
             Orden = request.Orden,
             VistaInicialYaw = request.VistaInicialYaw,
-            VistaInicialPitch = request.VistaInicialPitch
+            VistaInicialPitch = request.VistaInicialPitch,
+            TextoAlt = TextoONull(request.TextoAlt)
         };
 
         db.Escenas.Add(escena);
@@ -214,6 +215,7 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         escena.Orden = request.Orden;
         escena.VistaInicialYaw = request.VistaInicialYaw;
         escena.VistaInicialPitch = request.VistaInicialPitch;
+        escena.TextoAlt = TextoONull(request.TextoAlt);
 
         await db.SaveChangesAsync();
         return Dto.Escena(escena);
@@ -403,4 +405,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
     // como relleno; ninguno es una ruta real del bucket.
     private static string? RutaONull(string? ruta) =>
         string.IsNullOrWhiteSpace(ruta) || ruta.Trim() is "string" or "temp" ? null : ruta.Trim();
+
+    // Vacío y "string" (el valor de ejemplo de Swagger) cuentan como "sin texto".
+    private static string? TextoONull(string? texto) =>
+        string.IsNullOrWhiteSpace(texto) || texto.Trim() == "string" ? null : texto.Trim();
 }

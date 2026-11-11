@@ -12,6 +12,9 @@ public static class TiposArchivo
     // más grande fallaría tarde y con un error poco claro.
     public const long TamanoMaximoBytes = 50L * 1024 * 1024;
 
+    // Un WebVTT es texto: aun una narración larga pesa unos pocos KB.
+    public const long TamanoMaximoSubtitulosBytes = 1L * 1024 * 1024;
+
     private static readonly Dictionary<string, string> ContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         [".jpg"] = "image/jpeg",
@@ -27,6 +30,8 @@ public static class TiposArchivo
         [".aac"] = "audio/aac",
         [".ogg"] = "audio/ogg",
         [".wav"] = "audio/wav",
+        // Sin este tipo el reproductor no reconoce el archivo como subtítulos.
+        [".vtt"] = "text/vtt",
     };
 
     private static readonly Dictionary<TipoMedio, string[]> ExtensionesPorTipo = new()
@@ -43,8 +48,10 @@ public static class TiposArchivo
     // como JPEG antes de subirse.
     public static readonly string[] ExtensionesMapa = [".jpg", ".jpeg", ".png", ".webp"];
 
+    public static readonly string[] ExtensionesSubtitulos = [".vtt"];
+
     private static readonly string[] CarpetasPermitidas =
-        ["panoramas", "mapas", "medios", "imagenes", "videos", "audios"];
+        ["panoramas", "mapas", "medios", "imagenes", "videos", "audios", "subtitulos"];
 
     public static bool EsDeTipo(string nombreArchivo, TipoMedio tipo) =>
         ExtensionesPorTipo[tipo].Contains(Path.GetExtension(nombreArchivo), StringComparer.OrdinalIgnoreCase);

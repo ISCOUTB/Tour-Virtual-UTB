@@ -146,6 +146,10 @@ namespace TourVirtualUTB.Api.Migrations
                     b.Property<int?>("DuracionSeg")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Idioma")
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)");
+
                     b.Property<int>("Orden")
                         .HasColumnType("integer");
 

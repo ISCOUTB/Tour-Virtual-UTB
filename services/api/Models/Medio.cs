@@ -16,4 +16,12 @@ public class Medio
     public int? DuracionSeg { get; set; }
     public string? TextoAlt { get; set; }
     public string? SubtitulosUrl { get; set; }
+
+    /// <summary>
+    /// Código de idioma BCP 47 ("es", "en", "pt-BR"...). Nulo significa español.
+    /// Un POI puede tener un audio por idioma; la app elige el del idioma de la
+    /// interfaz y deja cambiarlo en «Escuchar en».
+    /// </summary>
+    [MaxLength(35)]
+    public string? Idioma { get; set; }
 }

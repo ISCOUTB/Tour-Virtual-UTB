@@ -15,7 +15,8 @@ public class AdminMediosController(
     TourDbContext db) : ControllerBase
 {
     // El cuerpo multipart lleva algo más que el archivo (campos y separadores).
-    private const long LimiteCuerpo = TiposArchivo.TamanoMaximoBytes + 1024 * 1024;
+    private const long LimiteCuerpo =
+        TiposArchivo.TamanoMaximoBytes + TiposArchivo.TamanoMaximoSubtitulosBytes + 1024 * 1024;
 
     [HttpPost]
     public async Task<ActionResult<MedioDto>> CrearMedio([FromBody] CrearMedioRequest request)
@@ -23,7 +24,10 @@ public class AdminMediosController(
         if (await db.Pois.FindAsync(request.PoiId) is null)
             return NotFound("El POI no existe.");
 
-        var medio = await contenidoService.CrearMedioAsync(request);
+        if (!Idiomas.TryNormalizar(request.Idioma, out var idioma))
+            return BadRequest(Idiomas.MensajeInvalido);
+
+        var medio = await contenidoService.CrearMedioAsync(request with { Idioma = idioma });
         return Ok(medio);
     }
 
@@ -43,12 +47,24 @@ public class AdminMediosController(
         if (request.Tipo == TipoMedio.imagen && string.IsNullOrWhiteSpace(request.TextoAlt))
             return BadRequest("Las imágenes necesitan TextoAlt (lo leen los lectores de pantalla).");
 
+        if (!Idiomas.TryNormalizar(request.Idioma, out var idioma))
+            return BadRequest(Idiomas.MensajeInvalido);
+
+        // Los subtítulos se revisan antes de subir nada, para no dejar el
+        // archivo principal huérfano en el bucket si el .vtt está mal.
+        var errorSubtitulos = await ValidarSubtitulosAsync(request.Subtitulos, request.Tipo);
+        if (errorSubtitulos is not null) return BadRequest(errorSubtitulos);
+
         var (rutaS3, error) = await GuardarArchivoAsync(request.Archivo, request.Tipo, request.Carpeta);
         if (error is not null) return BadRequest(error);
 
+        string? rutaSubtitulos = null;
+        if (request.Subtitulos is not null)
+            rutaSubtitulos = await almacenamientoService.SubirArchivoAsync(request.Subtitulos, "subtitulos");
+
         var medio = await contenidoService.CrearMedioAsync(new CrearMedioRequest(
             poiId, request.Tipo, rutaS3!, request.Orden, request.DuracionSeg,
-            string.IsNullOrWhiteSpace(request.TextoAlt) ? null : request.TextoAlt.Trim(), null));
+            string.IsNullOrWhiteSpace(request.TextoAlt) ? null : request.TextoAlt.Trim(), rutaSubtitulos, idioma));
 
         return Ok(medio);
     }
@@ -56,7 +72,10 @@ public class AdminMediosController(
     [HttpPut("{id:int}")]
     public async Task<ActionResult<MedioDto>> ActualizarMedio(int id, [FromBody] ActualizarMedioRequest request)
     {
-        var medio = await contenidoService.ActualizarMedioAsync(id, request);
+        if (!Idiomas.TryNormalizar(request.Idioma, out var idioma))
+            return BadRequest(Idiomas.MensajeInvalido);
+
+        var medio = await contenidoService.ActualizarMedioAsync(id, request with { Idioma = idioma });
         if (medio == null) return NotFound("El medio (multimedia) no existe.");
 
         return Ok(medio);
@@ -89,6 +108,35 @@ public class AdminMediosController(
         await db.SaveChangesAsync();
 
         return Ok(new { mensaje = "Archivo multimedia subido correctamente", rutaS3 });
+    }
+
+    /// <summary>
+    /// Devuelve un mensaje de error si los subtítulos no sirven, o null si están
+    /// bien o no se mandaron. Solo audios y videos llevan subtítulos.
+    /// </summary>
+    private static async Task<string?> ValidarSubtitulosAsync(IFormFile? subtitulos, TipoMedio tipo)
+    {
+        if (subtitulos is null) return null;
+
+        if (tipo == TipoMedio.imagen)
+            return "Las imágenes no llevan subtítulos; usa TextoAlt.";
+
+        if (subtitulos.Length == 0)
+            return "El archivo de subtítulos está vacío.";
+
+        if (subtitulos.Length > TiposArchivo.TamanoMaximoSubtitulosBytes)
+            return $"Los subtítulos pesan más de {TiposArchivo.TamanoMaximoSubtitulosBytes / (1024 * 1024)} MB.";
+
+        if (!TiposArchivo.TieneExtension(subtitulos.FileName, TiposArchivo.ExtensionesSubtitulos))
+            return "Los subtítulos deben ser un archivo WebVTT (.vtt).";
+
+        // Todo WebVTT empieza con la palabra WEBVTT (puede llevar BOM delante).
+        using var lector = new StreamReader(subtitulos.OpenReadStream());
+        var primeraLinea = await lector.ReadLineAsync();
+        if (primeraLinea is null || !primeraLinea.TrimStart('\uFEFF').StartsWith("WEBVTT", StringComparison.Ordinal))
+            return "El archivo .vtt no es un WebVTT válido: la primera línea debe empezar con WEBVTT.";
+
+        return null;
     }
 
     private async Task<(string? rutaS3, string? error)> GuardarArchivoAsync(IFormFile? archivo, TipoMedio tipo, string? carpetaPedida)

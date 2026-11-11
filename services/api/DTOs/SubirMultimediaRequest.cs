@@ -21,4 +21,7 @@ public class SubirMedioRequest
 
     /// <summary>Opcional. Si se deja vacía se usa imagenes, videos o audios según el tipo.</summary>
     public string? Carpeta { get; set; }
+
+    /// <summary>Opcional. Código BCP 47 ("es", "en", "pt-BR"...). Vacío significa español.</summary>
+    public string? Idioma { get; set; }
 }

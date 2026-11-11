@@ -17,7 +17,7 @@ internal static class Dto
         h.Pitch, h.Yaw, h.EscenaDestinoId, h.PoiId, h.Etiqueta);
 
     public static MedioDto Medio(Medio m) => new(m.Id, m.PoiId, m.Tipo, m.Url,
-        m.Orden, m.DuracionSeg, m.TextoAlt, m.SubtitulosUrl);
+        m.Orden, m.DuracionSeg, m.TextoAlt, m.SubtitulosUrl, m.Idioma);
 
     public static RutaDto Ruta(Ruta r) => new(r.Id, r.LugarId, r.Nombre,
         r.Descripcion, r.Audiencia, r.Activa);

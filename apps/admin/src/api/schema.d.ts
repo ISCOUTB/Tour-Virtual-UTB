@@ -995,6 +995,7 @@ export interface components {
             duracionSeg?: number | null;
             textoAlt?: string | null;
             subtitulosUrl?: string | null;
+            idioma?: string | null;
         };
         ActualizarPoiRequest: {
             nombre?: string | null;
@@ -1066,6 +1067,7 @@ export interface components {
             duracionSeg?: number | null;
             textoAlt?: string | null;
             subtitulosUrl?: string | null;
+            idioma?: string | null;
         };
         CrearPoiRequest: {
             /** Format: int32 */
@@ -1192,6 +1194,7 @@ export interface components {
             duracionSeg?: number | null;
             textoAlt?: string | null;
             subtitulosUrl?: string | null;
+            idioma?: string | null;
         };
         MedioDto: {
             /** Format: int32 */
@@ -1206,6 +1209,7 @@ export interface components {
             duracion_seg?: number | null;
             texto_alt?: string | null;
             subtitulos_url?: string | null;
+            idioma?: string | null;
         };
         Poi: {
             /** Format: int32 */

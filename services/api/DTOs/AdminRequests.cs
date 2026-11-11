@@ -40,8 +40,8 @@ public record CrearHotspotRequest(int EscenaId, Models.TipoHotspot Tipo, double 
 public record ActualizarHotspotRequest(Models.TipoHotspot Tipo, double Pitch, double Yaw, int? EscenaDestinoId, int? PoiId, string? Etiqueta);
 
 // --- DTOs de Medio ---
-public record CrearMedioRequest(int PoiId, Models.TipoMedio Tipo, string Url, int Orden, int? DuracionSeg, string? TextoAlt, string? SubtitulosUrl);
-public record ActualizarMedioRequest(Models.TipoMedio Tipo, string Url, int Orden, int? DuracionSeg, string? TextoAlt, string? SubtitulosUrl);
+public record CrearMedioRequest(int PoiId, Models.TipoMedio Tipo, string Url, int Orden, int? DuracionSeg, string? TextoAlt, string? SubtitulosUrl, string? Idioma);
+public record ActualizarMedioRequest(Models.TipoMedio Tipo, string Url, int Orden, int? DuracionSeg, string? TextoAlt, string? SubtitulosUrl, string? Idioma);
 
 // --- DTOs de Ruta ---
 public record CrearRutaRequest(int LugarId, string Nombre, string? Descripcion, Models.Audiencia Audiencia, bool Activa);

@@ -23,7 +23,10 @@ public class AdminMediosController(
         if (await db.Pois.FindAsync(request.PoiId) is null)
             return NotFound("El POI no existe.");
 
-        var medio = await contenidoService.CrearMedioAsync(request);
+        if (!Idiomas.TryNormalizar(request.Idioma, out var idioma))
+            return BadRequest(Idiomas.MensajeInvalido);
+
+        var medio = await contenidoService.CrearMedioAsync(request with { Idioma = idioma });
         return Ok(medio);
     }
 
@@ -43,12 +46,15 @@ public class AdminMediosController(
         if (request.Tipo == TipoMedio.imagen && string.IsNullOrWhiteSpace(request.TextoAlt))
             return BadRequest("Las imágenes necesitan TextoAlt (lo leen los lectores de pantalla).");
 
+        if (!Idiomas.TryNormalizar(request.Idioma, out var idioma))
+            return BadRequest(Idiomas.MensajeInvalido);
+
         var (rutaS3, error) = await GuardarArchivoAsync(request.Archivo, request.Tipo, request.Carpeta);
         if (error is not null) return BadRequest(error);
 
         var medio = await contenidoService.CrearMedioAsync(new CrearMedioRequest(
             poiId, request.Tipo, rutaS3!, request.Orden, request.DuracionSeg,
-            string.IsNullOrWhiteSpace(request.TextoAlt) ? null : request.TextoAlt.Trim(), null));
+            string.IsNullOrWhiteSpace(request.TextoAlt) ? null : request.TextoAlt.Trim(), null, idioma));
 
         return Ok(medio);
     }
@@ -56,7 +62,10 @@ public class AdminMediosController(
     [HttpPut("{id:int}")]
     public async Task<ActionResult<MedioDto>> ActualizarMedio(int id, [FromBody] ActualizarMedioRequest request)
     {
-        var medio = await contenidoService.ActualizarMedioAsync(id, request);
+        if (!Idiomas.TryNormalizar(request.Idioma, out var idioma))
+            return BadRequest(Idiomas.MensajeInvalido);
+
+        var medio = await contenidoService.ActualizarMedioAsync(id, request with { Idioma = idioma });
         if (medio == null) return NotFound("El medio (multimedia) no existe.");
 
         return Ok(medio);

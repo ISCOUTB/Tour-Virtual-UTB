@@ -240,7 +240,8 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
             Orden = request.Orden,
             DuracionSeg = request.DuracionSeg,
             TextoAlt = request.TextoAlt,
-            SubtitulosUrl = request.SubtitulosUrl
+            SubtitulosUrl = request.SubtitulosUrl,
+            Idioma = request.Idioma
         };
 
         db.Medios.Add(medio);
@@ -259,6 +260,7 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         medio.DuracionSeg = request.DuracionSeg;
         medio.TextoAlt = request.TextoAlt;
         medio.SubtitulosUrl = request.SubtitulosUrl;
+        medio.Idioma = request.Idioma;
 
         await db.SaveChangesAsync();
         return Dto.Medio(medio);

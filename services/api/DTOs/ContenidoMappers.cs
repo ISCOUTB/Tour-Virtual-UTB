@@ -11,7 +11,7 @@ internal static class Dto
 
     public static EscenaDto Escena(Escena e) => new(e.Id, e.LugarId, e.PoiId, e.Nombre,
         e.ImagenUrl, e.ImagenUrlBaja, e.EsEscenaPrincipal, e.Orden,
-        e.VistaInicialYaw, e.VistaInicialPitch);
+        e.VistaInicialYaw, e.VistaInicialPitch, e.TextoAlt);
 
     public static HotspotDto Hotspot(Hotspot h) => new(h.Id, h.EscenaId, h.Tipo,
         h.Pitch, h.Yaw, h.EscenaDestinoId, h.PoiId, h.Etiqueta);

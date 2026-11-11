@@ -969,6 +969,7 @@ export interface components {
             vistaInicialYaw?: number | null;
             /** Format: double */
             vistaInicialPitch?: number | null;
+            textoAlt?: string | null;
         };
         ActualizarHotspotRequest: {
             tipo?: components["schemas"]["TipoHotspot"];
@@ -1037,6 +1038,7 @@ export interface components {
             vistaInicialYaw?: number | null;
             /** Format: double */
             vistaInicialPitch?: number | null;
+            textoAlt?: string | null;
         };
         CrearHotspotRequest: {
             /** Format: int32 */
@@ -1115,6 +1117,7 @@ export interface components {
             vistaInicialYaw?: number | null;
             /** Format: double */
             vistaInicialPitch?: number | null;
+            textoAlt?: string | null;
             hotspots?: components["schemas"]["Hotspot"][] | null;
         };
         EscenaDto: {
@@ -1134,6 +1137,7 @@ export interface components {
             vista_inicial_yaw?: number | null;
             /** Format: double */
             vista_inicial_pitch?: number | null;
+            texto_alt?: string | null;
         };
         Hotspot: {
             /** Format: int32 */

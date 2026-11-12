@@ -1,426 +1,1514 @@
-openapi: 3.1.0
-
+# Archivo generado desde el Swagger de la API. No lo edites a mano:
+# cambia el codigo de services/api y ejecuta en apps/admin
+# `npm run generar:openapi` con la API corriendo.
+openapi: 3.0.4
 info:
-  title: UTB Tour Virtual API
-  version: 1.0.0
-  description: |
-    Contrato entre la API .NET, la aplicacion movil Flutter y el panel de
-    administracion. Es la fuente de verdad de la interfaz: los clientes de Dart
-    y TypeScript se generan a partir de este archivo.
-
-    Estado de los caminos:
-      - `/Escenas/lugar/{lugarId}` y `/Hotspots/escena/{escenaId}` ya estan
-        implementados y son los que consume `recorrido_screen.dart`.
-      - El resto corresponde a la Fase 1 y todavia no existe en el servidor.
-
-    Autenticacion: token JWT emitido por Supabase Auth. Los visitantes externos
-    usan una sesion anonima, que tambien produce un token valido, de modo que
-    todos los caminos requieren cabecera Authorization salvo indicacion
-    contraria.
-
-servers:
-  - url: http://localhost:5209/api
-    description: Desarrollo local. El puerto cambia entre maquinas.
-  - url: https://api.utbtour.example/api
-    description: Produccion (pendiente de aprovisionar)
-
-security:
-  - bearerAuth: []
-
-tags:
-  - name: Escenas
-    description: Escenas panoramicas 360 que componen el recorrido.
-  - name: Hotspots
-    description: Puntos tactiles sobre una escena, para navegar o abrir una ficha.
-  - name: POIs
-    description: Puntos de interes del campus y su contenido multimedia.
-  - name: Rutas
-    description: Recorridos curados segun el perfil del usuario.
-  - name: Perfil
-    description: Rol y datos del usuario autenticado.
-  - name: Analitica
-    description: Emision de eventos de uso para los KPI del MVP.
-
+  title: TourVirtualUTB.Api
+  version: '1.0'
 paths:
-  /Escenas/lugar/{lugarId}:
-    get:
-      tags: [Escenas]
-      summary: Escenas panoramicas de un lugar
-      description: |
-        Devuelve todas las escenas del lugar. El cliente inicia el recorrido en
-        la marcada con `esEscenaPrincipal`; la base de datos garantiza que solo
-        exista una por lugar.
-      operationId: obtenerEscenasPorLugar
-      parameters:
-        - $ref: '#/components/parameters/LugarId'
+  /api/admin/escenas:
+    post:
+      tags:
+        - AdminEscenas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearEscenaRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearEscenaRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearEscenaRequest'
       responses:
         '200':
-          description: Listado de escenas
+          description: OK
           content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/EscenaDto'
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/Escena' }
-        '401': { $ref: '#/components/responses/NoAutorizado' }
-        '404': { $ref: '#/components/responses/NoEncontrado' }
-
-  /Hotspots/escena/{escenaId}:
-    get:
-      tags: [Hotspots]
-      summary: Hotspots de una escena
-      operationId: obtenerHotspotsPorEscena
+                $ref: '#/components/schemas/EscenaDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/EscenaDto'
+  '/api/admin/escenas/{id}':
+    put:
+      tags:
+        - AdminEscenas
       parameters:
-        - name: escenaId
+        - name: id
           in: path
           required: true
-          schema: { type: integer, format: int64 }
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarEscenaRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarEscenaRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ActualizarEscenaRequest'
       responses:
         '200':
-          description: Listado de hotspots
+          description: OK
           content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/EscenaDto'
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/Hotspot' }
-        '401': { $ref: '#/components/responses/NoAutorizado' }
-        '404': { $ref: '#/components/responses/NoEncontrado' }
-
-  /Pois/lugar/{lugarId}:
-    get:
-      tags: [POIs]
-      summary: Puntos de interes de un lugar
-      description: |
-        El servidor filtra por la audiencia que corresponde al rol del token.
-        El cliente no debe intentar filtrar por su cuenta ni confiar en poder
-        solicitar contenido de otra audiencia.
-      operationId: obtenerPoisPorLugar
+                $ref: '#/components/schemas/EscenaDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/EscenaDto'
+    delete:
+      tags:
+        - AdminEscenas
       parameters:
-        - $ref: '#/components/parameters/LugarId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
       responses:
         '200':
-          description: Listado de POIs visibles para el solicitante
+          description: OK
+  '/api/admin/escenas/{id}/imagen':
+    post:
+      tags:
+        - AdminEscenas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                Archivo:
+                  type: string
+                  format: binary
+                Carpeta:
+                  type: string
+            encoding:
+              Archivo:
+                style: form
+              Carpeta:
+                style: form
+      responses:
+        '200':
+          description: OK
+  /api/admin/hotspots:
+    post:
+      tags:
+        - AdminHotspots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearHotspotRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearHotspotRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearHotspotRequest'
+      responses:
+        '200':
+          description: OK
           content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/HotspotDto'
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/Poi' }
-        '401': { $ref: '#/components/responses/NoAutorizado' }
-
-  /Pois/{poiId}:
-    get:
-      tags: [POIs]
-      summary: Detalle de un POI con su contenido multimedia
-      operationId: obtenerPoi
+                $ref: '#/components/schemas/HotspotDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/HotspotDto'
+  '/api/admin/hotspots/{id}':
+    put:
+      tags:
+        - AdminHotspots
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarHotspotRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarHotspotRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ActualizarHotspotRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/HotspotDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotspotDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/HotspotDto'
+    delete:
+      tags:
+        - AdminHotspots
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+  /api/admin/lugares:
+    post:
+      tags:
+        - AdminLugares
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearLugarRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearLugarRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearLugarRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/Lugar'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lugar'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/Lugar'
+  '/api/admin/lugares/{id}':
+    put:
+      tags:
+        - AdminLugares
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarLugarRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarLugarRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ActualizarLugarRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/Lugar'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lugar'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/Lugar'
+    delete:
+      tags:
+        - AdminLugares
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+  /api/admin/medios:
+    post:
+      tags:
+        - AdminMedios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearMedioRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearMedioRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearMedioRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/MedioDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedioDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/MedioDto'
+  '/api/admin/pois/{poiId}/medios':
+    post:
+      tags:
+        - AdminMedios
       parameters:
         - name: poiId
           in: path
           required: true
-          schema: { type: integer, format: int64 }
-      responses:
-        '200':
-          description: Detalle del POI
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/PoiDetalle' }
-        '401': { $ref: '#/components/responses/NoAutorizado' }
-        '404': { $ref: '#/components/responses/NoEncontrado' }
-
-  /Rutas/actual:
-    get:
-      tags: [Rutas]
-      summary: Recorrido curado para el perfil del solicitante
-      description: |
-        Devuelve la ruta correspondiente al rol del token: institucional para
-        externos, de servicios para estudiantes, academica para docentes.
-      operationId: obtenerRutaActual
-      responses:
-        '200':
-          description: Ruta asignada
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Ruta' }
-        '401': { $ref: '#/components/responses/NoAutorizado' }
-
-  /Perfil:
-    get:
-      tags: [Perfil]
-      summary: Perfil del usuario autenticado
-      operationId: obtenerPerfil
-      responses:
-        '200':
-          description: Perfil
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Perfil' }
-        '401': { $ref: '#/components/responses/NoAutorizado' }
-
-  /Perfil/declarar:
-    post:
-      tags: [Perfil]
-      summary: Autodeclaracion de perfil
-      description: |
-        Permite a un usuario con correo institucional declararse estudiante o
-        docente. El rol resultante queda con `verificado` en false hasta que un
-        administrador lo confirme. El rol `admin` no se puede obtener por esta
-        via.
-      operationId: declararPerfil
+          schema:
+            type: integer
+            format: int32
       requestBody:
-        required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
-              required: [rol]
               properties:
-                rol:
+                Archivo:
                   type: string
-                  enum: [estudiante, docente]
+                  format: binary
+                Tipo:
+                  $ref: '#/components/schemas/TipoMedio'
+                Orden:
+                  type: integer
+                  format: int32
+                DuracionSeg:
+                  type: integer
+                  format: int32
+                TextoAlt:
+                  type: string
+                Carpeta:
+                  type: string
+                Idioma:
+                  type: string
+                Subtitulos:
+                  type: string
+                  format: binary
+            encoding:
+              Archivo:
+                style: form
+              Tipo:
+                style: form
+              Orden:
+                style: form
+              DuracionSeg:
+                style: form
+              TextoAlt:
+                style: form
+              Carpeta:
+                style: form
+              Idioma:
+                style: form
+              Subtitulos:
+                style: form
       responses:
         '200':
-          description: Perfil actualizado
+          description: OK
           content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/MedioDto'
             application/json:
-              schema: { $ref: '#/components/schemas/Perfil' }
-        '401': { $ref: '#/components/responses/NoAutorizado' }
-        '403':
-          description: El solicitante no tiene correo institucional
-
-  /Eventos:
-    post:
-      tags: [Analitica]
-      summary: Registrar eventos de uso
-      description: |
-        Recibe eventos por lote para no penalizar la bateria ni la red. Solo se
-        aceptan si el usuario dio consentimiento de analitica; el cliente es
-        responsable de no emitirlos en caso contrario.
-      operationId: registrarEventos
+              schema:
+                $ref: '#/components/schemas/MedioDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/MedioDto'
+  '/api/admin/medios/{id}':
+    put:
+      tags:
+        - AdminMedios
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              type: array
-              maxItems: 100
-              items: { $ref: '#/components/schemas/Evento' }
+              $ref: '#/components/schemas/ActualizarMedioRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarMedioRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ActualizarMedioRequest'
       responses:
-        '202':
-          description: Eventos aceptados
-        '401': { $ref: '#/components/responses/NoAutorizado' }
-        '422':
-          description: El lote supera el maximo o algun evento es invalido
+        '200':
+          description: OK
           content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/MedioDto'
             application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-
+              schema:
+                $ref: '#/components/schemas/MedioDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/MedioDto'
+    delete:
+      tags:
+        - AdminMedios
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+  '/api/admin/medios/{id}/archivo':
+    post:
+      tags:
+        - AdminMedios
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                Archivo:
+                  type: string
+                  format: binary
+                Carpeta:
+                  type: string
+            encoding:
+              Archivo:
+                style: form
+              Carpeta:
+                style: form
+      responses:
+        '200':
+          description: OK
+  /api/admin/pois:
+    post:
+      tags:
+        - AdminPois
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+  '/api/admin/pois/{id}':
+    put:
+      tags:
+        - AdminPois
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarPoiRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarPoiRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ActualizarPoiRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+    delete:
+      tags:
+        - AdminPois
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+  /api/admin/rutas:
+    post:
+      tags:
+        - AdminRutas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearRutaRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearRutaRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearRutaRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+  '/api/admin/rutas/{id}':
+    put:
+      tags:
+        - AdminRutas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarRutaRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarRutaRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ActualizarRutaRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+    delete:
+      tags:
+        - AdminRutas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+  '/api/lugares/{lugarId}/pois':
+    get:
+      tags:
+        - Contenido
+      parameters:
+        - name: lugarId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PoiDto'
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PoiDto'
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PoiDto'
+  '/api/lugares/{lugarId}/recorrido':
+    get:
+      tags:
+        - Contenido
+      parameters:
+        - name: lugarId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RecorridoDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecorridoDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RecorridoDto'
+  '/api/pois/{poiId}':
+    get:
+      tags:
+        - Contenido
+      parameters:
+        - name: poiId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PoiDetalleDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoiDetalleDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/PoiDetalleDto'
+  '/api/lugares/{lugarId}/ruta':
+    get:
+      tags:
+        - Contenido
+      parameters:
+        - name: lugarId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/RutaDto'
+  '/api/lugares/{lugarId}/mapa':
+    post:
+      tags:
+        - Contenido
+      parameters:
+        - name: lugarId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                Archivo:
+                  type: string
+                  format: binary
+                Carpeta:
+                  type: string
+            encoding:
+              Archivo:
+                style: form
+              Carpeta:
+                style: form
+      responses:
+        '200':
+          description: OK
+    get:
+      tags:
+        - Contenido
+      parameters:
+        - name: lugarId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-  parameters:
-    LugarId:
-      name: lugarId
-      in: path
-      required: true
-      schema: { type: integer, format: int64 }
-
-  responses:
-    NoAutorizado:
-      description: Falta el token, esta vencido o no es valido
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/Error' }
-
-    NoEncontrado:
-      description: El recurso no existe o no es visible para el solicitante
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/Error' }
-
   schemas:
-    Error:
+    ActualizarEscenaRequest:
       type: object
-      required: [codigo, mensaje]
       properties:
-        codigo:  { type: string }
-        mensaje: { type: string }
-
-    Escena:
-      type: object
-      required: [id, lugarId, imagenUrl, esEscenaPrincipal]
-      properties:
-        id:       { type: integer, format: int64 }
-        lugarId:  { type: integer, format: int64 }
         poiId:
-          type: [integer, 'null']
-          format: int64
-        nombre:   { type: [string, 'null'] }
+          type: integer
+          format: int32
+          nullable: true
+        nombre:
+          type: string
+          nullable: true
         imagenUrl:
           type: string
-          format: uri
-          description: Panoramica equirectangular alojada en Cloudflare R2.
+          nullable: true
         imagenUrlBaja:
-          type: [string, 'null']
-          format: uri
-          description: Variante de menor resolucion para dispositivos de gama baja.
-        esEscenaPrincipal: { type: boolean }
-        orden: { type: integer }
-        textoAlt:
-          type: [string, 'null']
-          description: Descripcion de la panoramica para lectores de pantalla.
-
-    Hotspot:
-      type: object
-      required: [id, escenaId, tipo, pitch, yaw]
-      properties:
-        id:       { type: integer, format: int64 }
-        escenaId: { type: integer, format: int64 }
-        tipo:
           type: string
-          enum: [navegacion, info]
+          nullable: true
+        esEscenaPrincipal:
+          type: boolean
+        orden:
+          type: integer
+          format: int32
+        vistaInicialYaw:
+          type: number
+          format: double
+          nullable: true
+        vistaInicialPitch:
+          type: number
+          format: double
+          nullable: true
+      additionalProperties: false
+    ActualizarHotspotRequest:
+      type: object
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoHotspot'
         pitch:
           type: number
           format: double
-          minimum: -90
-          maximum: 90
-          description: Grados. El visor lo consume como Hotspot.latitude.
         yaw:
           type: number
           format: double
-          minimum: -180
-          maximum: 180
-          description: Grados. El visor lo consume como Hotspot.longitude.
         escenaDestinoId:
-          type: [integer, 'null']
-          format: int64
-          description: Obligatorio cuando tipo es 'navegacion'.
+          type: integer
+          format: int32
+          nullable: true
         poiId:
-          type: [integer, 'null']
-          format: int64
-          description: Obligatorio cuando tipo es 'info'.
-        etiqueta: { type: [string, 'null'] }
-
-    Poi:
+          type: integer
+          format: int32
+          nullable: true
+        etiqueta:
+          type: string
+          nullable: true
+      additionalProperties: false
+    ActualizarLugarRequest:
       type: object
-      required: [id, lugarId, nombre]
       properties:
-        id:       { type: integer, format: int64 }
-        lugarId:  { type: integer, format: int64 }
-        nombre:   { type: string }
-        categoria: { type: [string, 'null'] }
-        descripcion: { type: [string, 'null'] }
-        mapX:
-          type: [number, 'null']
-          format: double
-          minimum: 0
-          maximum: 1
-          description: Posicion normalizada del marcador sobre el render ilustrado.
-        mapY:
-          type: [number, 'null']
-          format: double
-          minimum: 0
-          maximum: 1
-        lat:
-          type: [number, 'null']
-          format: double
-          minimum: -90
-          maximum: 90
-          description: Latitud WGS84 del lugar, para el mapa de OpenStreetMap.
-        lng:
-          type: [number, 'null']
-          format: double
-          minimum: -180
-          maximum: 180
-          description: Longitud WGS84 del lugar, para el mapa de OpenStreetMap.
-        escenaPrincipalId:
-          type: [integer, 'null']
-          format: int64
-
-    PoiDetalle:
-      allOf:
-        - $ref: '#/components/schemas/Poi'
-        - type: object
-          properties:
-            medios:
-              type: array
-              items: { $ref: '#/components/schemas/Medio' }
-
-    Medio:
+        nombre:
+          type: string
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+      additionalProperties: false
+    ActualizarMedioRequest:
       type: object
-      required: [id, tipo, url]
       properties:
-        id:   { type: integer, format: int64 }
         tipo:
+          $ref: '#/components/schemas/TipoMedio'
+        url:
           type: string
-          enum: [imagen, video, audio]
-        url:  { type: string, format: uri }
-        orden: { type: integer }
-        duracionSeg: { type: [integer, 'null'] }
+          nullable: true
+        orden:
+          type: integer
+          format: int32
+        duracionSeg:
+          type: integer
+          format: int32
+          nullable: true
         textoAlt:
-          type: [string, 'null']
-          description: Requerido por accesibilidad para medios de tipo imagen.
-        subtitulosUrl:
-          type: [string, 'null']
-          format: uri
-          description: Requerido por accesibilidad para medios de tipo video.
-        idioma:
-          type: [string, 'null']
-          maxLength: 35
-          description: |
-            Etiqueta BCP 47 del idioma del audio o video (por ejemplo `en`,
-            `pt-BR`, `zh-Hans`). null significa espanol.
-
-    Ruta:
-      type: object
-      required: [id, nombre, audiencia, pois]
-      properties:
-        id:     { type: integer, format: int64 }
-        nombre: { type: string }
-        descripcion: { type: [string, 'null'] }
-        audiencia:
           type: string
-          enum: [externo, estudiante, docente]
+          nullable: true
+        subtitulosUrl:
+          type: string
+          nullable: true
+        idioma:
+          type: string
+          nullable: true
+      additionalProperties: false
+    ActualizarPoiRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          nullable: true
+        categoria:
+          type: string
+          nullable: true
+        descripcion:
+          type: string
+          nullable: true
+        mapX:
+          type: number
+          format: double
+          nullable: true
+        mapY:
+          type: number
+          format: double
+          nullable: true
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+        audiencias:
+          type: string
+          nullable: true
+        activo:
+          type: boolean
+        escenaPrincipalId:
+          type: integer
+          format: int32
+          nullable: true
+      additionalProperties: false
+    ActualizarRutaRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          nullable: true
+        descripcion:
+          type: string
+          nullable: true
+        audiencia:
+          $ref: '#/components/schemas/Audiencia'
+        activa:
+          type: boolean
+      additionalProperties: false
+    Audiencia:
+      enum:
+        - externo
+        - estudiante
+        - docente
+      type: string
+    CrearEscenaRequest:
+      type: object
+      properties:
+        lugarId:
+          type: integer
+          format: int32
+        poiId:
+          type: integer
+          format: int32
+          nullable: true
+        nombre:
+          type: string
+          nullable: true
+        imagenUrl:
+          type: string
+          nullable: true
+        imagenUrlBaja:
+          type: string
+          nullable: true
+        esEscenaPrincipal:
+          type: boolean
+        orden:
+          type: integer
+          format: int32
+        vistaInicialYaw:
+          type: number
+          format: double
+          nullable: true
+        vistaInicialPitch:
+          type: number
+          format: double
+          nullable: true
+      additionalProperties: false
+    CrearHotspotRequest:
+      type: object
+      properties:
+        escenaId:
+          type: integer
+          format: int32
+        tipo:
+          $ref: '#/components/schemas/TipoHotspot'
+        pitch:
+          type: number
+          format: double
+        yaw:
+          type: number
+          format: double
+        escenaDestinoId:
+          type: integer
+          format: int32
+          nullable: true
+        poiId:
+          type: integer
+          format: int32
+          nullable: true
+        etiqueta:
+          type: string
+          nullable: true
+      additionalProperties: false
+    CrearLugarRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+      additionalProperties: false
+    CrearMedioRequest:
+      type: object
+      properties:
+        poiId:
+          type: integer
+          format: int32
+        tipo:
+          $ref: '#/components/schemas/TipoMedio'
+        url:
+          type: string
+          nullable: true
+        orden:
+          type: integer
+          format: int32
+        duracionSeg:
+          type: integer
+          format: int32
+          nullable: true
+        textoAlt:
+          type: string
+          nullable: true
+        subtitulosUrl:
+          type: string
+          nullable: true
+        idioma:
+          type: string
+          nullable: true
+      additionalProperties: false
+    CrearPoiRequest:
+      type: object
+      properties:
+        lugarId:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+        categoria:
+          type: string
+          nullable: true
+        descripcion:
+          type: string
+          nullable: true
+        mapX:
+          type: number
+          format: double
+          nullable: true
+        mapY:
+          type: number
+          format: double
+          nullable: true
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+        audiencias:
+          type: string
+          nullable: true
+        activo:
+          type: boolean
+        escenaPrincipalId:
+          type: integer
+          format: int32
+          nullable: true
+      additionalProperties: false
+    CrearRutaRequest:
+      type: object
+      properties:
+        lugarId:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+        descripcion:
+          type: string
+          nullable: true
+        audiencia:
+          $ref: '#/components/schemas/Audiencia'
+        activa:
+          type: boolean
+      additionalProperties: false
+    Escena:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        lugarId:
+          type: integer
+          format: int32
+        lugar:
+          $ref: '#/components/schemas/Lugar'
+        poiId:
+          type: integer
+          format: int32
+          nullable: true
+        poi:
+          $ref: '#/components/schemas/Poi'
+        imagenUrl:
+          type: string
+          nullable: true
+        imagenUrlBaja:
+          type: string
+          nullable: true
+        nombre:
+          type: string
+          nullable: true
+        esEscenaPrincipal:
+          type: boolean
+        orden:
+          type: integer
+          format: int32
+        vistaInicialYaw:
+          type: number
+          format: double
+          nullable: true
+        vistaInicialPitch:
+          type: number
+          format: double
+          nullable: true
+        hotspots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hotspot'
+          nullable: true
+      additionalProperties: false
+    EscenaDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        lugar_id:
+          type: integer
+          format: int32
+        poi_id:
+          type: integer
+          format: int32
+          nullable: true
+        nombre:
+          type: string
+          nullable: true
+        imagen_url:
+          type: string
+          nullable: true
+        imagen_url_baja:
+          type: string
+          nullable: true
+        es_escena_principal:
+          type: boolean
+        orden:
+          type: integer
+          format: int32
+        vista_inicial_yaw:
+          type: number
+          format: double
+          nullable: true
+        vista_inicial_pitch:
+          type: number
+          format: double
+          nullable: true
+      additionalProperties: false
+    Hotspot:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        escenaId:
+          type: integer
+          format: int32
+        escena:
+          $ref: '#/components/schemas/Escena'
+        tipo:
+          $ref: '#/components/schemas/TipoHotspot'
+        pitch:
+          type: number
+          format: double
+        yaw:
+          type: number
+          format: double
+        escenaDestinoId:
+          type: integer
+          format: int32
+          nullable: true
+        escenaDestino:
+          $ref: '#/components/schemas/Escena'
+        poiId:
+          type: integer
+          format: int32
+          nullable: true
+        poi:
+          $ref: '#/components/schemas/Poi'
+        etiqueta:
+          type: string
+          nullable: true
+      additionalProperties: false
+    HotspotDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        escena_id:
+          type: integer
+          format: int32
+        tipo:
+          $ref: '#/components/schemas/TipoHotspot'
+        pitch:
+          type: number
+          format: double
+        yaw:
+          type: number
+          format: double
+        escena_destino_id:
+          type: integer
+          format: int32
+          nullable: true
+        poi_id:
+          type: integer
+          format: int32
+          nullable: true
+        etiqueta:
+          type: string
+          nullable: true
+      additionalProperties: false
+    Lugar:
+      required:
+        - nombre
+        - slug
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        nombre:
+          maxLength: 100
+          minLength: 1
+          type: string
+        slug:
+          maxLength: 120
+          minLength: 1
+          type: string
+        mapaUrl:
+          maxLength: 500
+          type: string
+          nullable: true
         pois:
           type: array
-          items: { $ref: '#/components/schemas/Poi' }
-
-    Perfil:
+          items:
+            $ref: '#/components/schemas/Poi'
+          nullable: true
+        escenas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Escena'
+          nullable: true
+        rutas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ruta'
+          nullable: true
+      additionalProperties: false
+    Medio:
+      required:
+        - url
       type: object
-      required: [userId, rol, verificado]
       properties:
-        userId: { type: string, format: uuid }
-        rol:
-          type: string
-          enum: [externo, estudiante, docente, admin]
-        verificado:
-          type: boolean
-          description: true solo cuando un administrador confirmo el rol.
-
-    Evento:
-      type: object
-      required: [sesionId, tipo, ts]
-      properties:
-        sesionId:
-          type: string
-          format: uuid
-          description: Generado en el cliente. Permite medir recorridos anonimos.
-        tipo:
-          type: string
-          enum:
-            - virtual_map_open
-            - scene_viewed
-            - hotspot_tapped
-            - poi_media_played
-            - tour_completed
+        id:
+          type: integer
+          format: int32
         poiId:
-          type: [integer, 'null']
-          format: int64
-        escenaId:
-          type: [integer, 'null']
-          format: int64
-        payload:
-          type: object
-          additionalProperties: true
-        ts: { type: string, format: date-time }
+          type: integer
+          format: int32
+        poi:
+          $ref: '#/components/schemas/Poi'
+        tipo:
+          $ref: '#/components/schemas/TipoMedio'
+        url:
+          minLength: 1
+          type: string
+        orden:
+          type: integer
+          format: int32
+        duracionSeg:
+          type: integer
+          format: int32
+          nullable: true
+        textoAlt:
+          type: string
+          nullable: true
+        subtitulosUrl:
+          type: string
+          nullable: true
+        idioma:
+          maxLength: 35
+          type: string
+          nullable: true
+      additionalProperties: false
+    MedioDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        poi_id:
+          type: integer
+          format: int32
+        tipo:
+          $ref: '#/components/schemas/TipoMedio'
+        url:
+          type: string
+          nullable: true
+        orden:
+          type: integer
+          format: int32
+        duracion_seg:
+          type: integer
+          format: int32
+          nullable: true
+        texto_alt:
+          type: string
+          nullable: true
+        subtitulos_url:
+          type: string
+          nullable: true
+        idioma:
+          type: string
+          nullable: true
+      additionalProperties: false
+    Poi:
+      required:
+        - audiencias
+        - nombre
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        lugarId:
+          type: integer
+          format: int32
+        lugar:
+          $ref: '#/components/schemas/Lugar'
+        nombre:
+          maxLength: 120
+          minLength: 1
+          type: string
+        categoria:
+          type: string
+          nullable: true
+        descripcion:
+          type: string
+          nullable: true
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+        mapX:
+          type: number
+          format: double
+          nullable: true
+        mapY:
+          type: number
+          format: double
+          nullable: true
+        audiencias:
+          minLength: 1
+          type: string
+        activo:
+          type: boolean
+        escenaPrincipalId:
+          type: integer
+          format: int32
+          nullable: true
+        escenaPrincipal:
+          $ref: '#/components/schemas/Escena'
+        escenas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Escena'
+          nullable: true
+        medios:
+          type: array
+          items:
+            $ref: '#/components/schemas/Medio'
+          nullable: true
+      additionalProperties: false
+    PoiDetalleDto:
+      type: object
+      properties:
+        poi:
+          $ref: '#/components/schemas/PoiDto'
+        medios:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedioDto'
+          nullable: true
+      additionalProperties: false
+    PoiDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        lugar_id:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+        categoria:
+          type: string
+          nullable: true
+        descripcion:
+          type: string
+          nullable: true
+        lat:
+          type: number
+          format: double
+          nullable: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+        map_x:
+          type: number
+          format: double
+          nullable: true
+        map_y:
+          type: number
+          format: double
+          nullable: true
+        escena_principal_id:
+          type: integer
+          format: int32
+          nullable: true
+        audiencias:
+          type: array
+          items:
+            $ref: '#/components/schemas/Audiencia'
+          nullable: true
+        activo:
+          type: boolean
+      additionalProperties: false
+    RecorridoDto:
+      type: object
+      properties:
+        escenas:
+          type: array
+          items:
+            $ref: '#/components/schemas/EscenaDto'
+          nullable: true
+        hotspots:
+          type: array
+          items:
+            $ref: '#/components/schemas/HotspotDto'
+          nullable: true
+      additionalProperties: false
+    Ruta:
+      required:
+        - nombre
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        lugarId:
+          type: integer
+          format: int32
+        lugar:
+          $ref: '#/components/schemas/Lugar'
+        nombre:
+          minLength: 1
+          type: string
+        descripcion:
+          type: string
+          nullable: true
+        audiencia:
+          $ref: '#/components/schemas/Audiencia'
+        activa:
+          type: boolean
+        pois:
+          type: array
+          items:
+            $ref: '#/components/schemas/RutaPoi'
+          nullable: true
+      additionalProperties: false
+    RutaDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        lugar_id:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+        descripcion:
+          type: string
+          nullable: true
+        audiencia:
+          $ref: '#/components/schemas/Audiencia'
+        activa:
+          type: boolean
+      additionalProperties: false
+    RutaPoi:
+      type: object
+      properties:
+        rutaId:
+          type: integer
+          format: int32
+        ruta:
+          $ref: '#/components/schemas/Ruta'
+        poiId:
+          type: integer
+          format: int32
+        poi:
+          $ref: '#/components/schemas/Poi'
+        orden:
+          type: integer
+          format: int32
+      additionalProperties: false
+    TipoHotspot:
+      enum:
+        - navegacion
+        - info
+      type: string
+    TipoMedio:
+      enum:
+        - imagen
+        - video
+        - audio
+      type: string
+  securitySchemes:
+    ClaveAdmin:
+      type: apiKey
+      description: Clave configurada en Admin:ApiKey. Necesaria para /api/admin/* y para subir mapas.
+      name: X-Admin-Key
+      in: header
+security:
+  - ClaveAdmin: [ ]
+tags:
+  - name: AdminEscenas
+  - name: AdminHotspots
+  - name: AdminLugares
+  - name: AdminMedios
+  - name: AdminPois
+  - name: AdminRutas
+  - name: Contenido

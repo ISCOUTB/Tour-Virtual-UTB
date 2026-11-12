@@ -267,6 +267,9 @@ components:
           description: Variante de menor resolucion para dispositivos de gama baja.
         esEscenaPrincipal: { type: boolean }
         orden: { type: integer }
+        textoAlt:
+          type: [string, 'null']
+          description: Descripcion de la panoramica para lectores de pantalla.
 
     Hotspot:
       type: object
@@ -319,6 +322,18 @@ components:
           format: double
           minimum: 0
           maximum: 1
+        lat:
+          type: [number, 'null']
+          format: double
+          minimum: -90
+          maximum: 90
+          description: Latitud WGS84 del lugar, para el mapa de OpenStreetMap.
+        lng:
+          type: [number, 'null']
+          format: double
+          minimum: -180
+          maximum: 180
+          description: Longitud WGS84 del lugar, para el mapa de OpenStreetMap.
         escenaPrincipalId:
           type: [integer, 'null']
           format: int64
@@ -350,6 +365,12 @@ components:
           type: [string, 'null']
           format: uri
           description: Requerido por accesibilidad para medios de tipo video.
+        idioma:
+          type: [string, 'null']
+          maxLength: 35
+          description: |
+            Etiqueta BCP 47 del idioma del audio o video (por ejemplo `en`,
+            `pt-BR`, `zh-Hans`). null significa espanol.
 
     Ruta:
       type: object

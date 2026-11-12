@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generar:api": "openapi-typescript http://localhost:5209/swagger/v1/swagger.json -o src/api/schema.d.ts"
   },
   "dependencies": {
     "next": "16.4.3",

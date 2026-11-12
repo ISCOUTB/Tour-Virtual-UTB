@@ -122,9 +122,7 @@ export interface paths {
         put?: never;
         post: {
             parameters: {
-                query?: {
-                    esBajaResolucion?: boolean;
-                };
+                query?: never;
                 header?: never;
                 path: {
                     id: number;
@@ -391,6 +389,62 @@ export interface paths {
                     "application/json": components["schemas"]["CrearMedioRequest"];
                     "text/json": components["schemas"]["CrearMedioRequest"];
                     "application/*+json": components["schemas"]["CrearMedioRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["MedioDto"];
+                        "application/json": components["schemas"]["MedioDto"];
+                        "text/json": components["schemas"]["MedioDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pois/{poiId}/medios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    poiId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "multipart/form-data": {
+                        /** Format: binary */
+                        Archivo?: string;
+                        Tipo?: components["schemas"]["TipoMedio"];
+                        /** Format: int32 */
+                        Orden?: number;
+                        /** Format: int32 */
+                        DuracionSeg?: number;
+                        TextoAlt?: string;
+                        Carpeta?: string;
+                        Idioma?: string;
+                        /** Format: binary */
+                        Subtitulos?: string;
+                    };
                 };
             };
             responses: {
@@ -1107,7 +1161,7 @@ export interface components {
             /** Format: int32 */
             poiId?: number | null;
             poi?: components["schemas"]["Poi"];
-            imagenUrl: string;
+            imagenUrl?: string | null;
             imagenUrlBaja?: string | null;
             nombre?: string | null;
             esEscenaPrincipal?: boolean;

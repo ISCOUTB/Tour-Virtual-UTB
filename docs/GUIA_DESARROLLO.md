@@ -442,11 +442,15 @@ dotnet restore
 dotnet build --configuration Release
 ```
 
-Contrato administrativo:
+Contrato de la API. `packages/contracts/openapi.yaml` y
+`apps/admin/src/api/schema.d.ts` se generan desde el Swagger, así que se
+regeneran cada vez que cambia un endpoint o un DTO. Con la API corriendo:
 
 ```powershell
+cd ..\..\apps\admin
+npm run generar:contratos
 cd ..\..
-npx --yes @redocly/cli@latest lint packages/contracts/openapi.yaml
+npx --yes @redocly/cli@2.64.0 lint packages/contracts/openapi.yaml
 ```
 
 Las pruebas del móvil no necesitan red: sobrescriben

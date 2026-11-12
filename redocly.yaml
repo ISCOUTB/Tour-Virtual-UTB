@@ -1,0 +1,11 @@
+# Reglas para `redocly lint packages/contracts/openapi.yaml`, que corre en CI
+# desde la raiz del repositorio.
+extends:
+  - recommended
+
+rules:
+  # El contrato se genera desde Swashbuckle: sin comentarios XML no trae
+  # resumen por operacion, y no declara servidores porque la direccion
+  # depende de donde corra la API.
+  operation-summary: warn
+  no-empty-servers: warn

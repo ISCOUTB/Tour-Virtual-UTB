@@ -36,7 +36,21 @@ builder.Services.AddSwaggerGen(options =>
     {
         [new OpenApiSecuritySchemeReference("ClaveAdmin", document)] = []
     });
+
+    // La otra forma de entrar: el token de Supabase Auth de un administrador.
+    options.AddSecurityDefinition("TokenSupabase", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Token de sesión de Supabase Auth (access_token) de un usuario con rol admin en perfiles."
+    });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("TokenSupabase", document)] = []
+    });
 });
+builder.Services.AgregarAutenticacionSupabase(builder.Configuration, builder.Environment);
 builder.Services.AddScoped<IAlmacenamientoService, AlmacenamientoService>();
 builder.Services.AddScoped<IContenidoService, ContenidoService>();
 
@@ -73,6 +87,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+if (!AutenticacionSupabase.EstaConfigurada(app.Configuration))
+    app.Logger.LogInformation("Supabase:Url no está configurada: el panel no puede entrar con login de Supabase, solo con X-Admin-Key.");
 
 if (string.IsNullOrEmpty(app.Configuration["Admin:ApiKey"]))
 {

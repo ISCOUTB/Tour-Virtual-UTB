@@ -87,6 +87,7 @@ dotnet run --launch-profile http
 
 - **Base de datos:** usa el *session pooler* (puerto `5432`). Con el *transaction pooler* (puerto `6543`) la API se queda colgada al conectar. La conexión directa (`db.[PROYECTO].supabase.co`) solo funciona con IPv6. La contraseña es la de la base (Supabase → Project Settings → Database), y el usuario lleva el id del proyecto pegado.
 - **Clave de administración:** los endpoints que escriben (`/api/admin/*`) piden la cabecera `X-Admin-Key`. Sin clave configurada, en `Development` quedan abiertos (la API lo avisa al arrancar) y en cualquier otro entorno responden `503`.
+- **Login de administradores (Supabase Auth):** el panel también puede entrar con el token de sesión de Supabase, en `Authorization: Bearer <access_token>`. La API comprueba el token con las claves públicas de `Supabase:Url` (en `appsettings.json`) y deja pasar solo a quien tenga `rol = 'admin'` en la tabla `perfiles` (`supabase/migrations/0002_perfiles_y_auth.sql`). Responde `401` sin token válido y `403` si la persona no es admin. Si el proyecto aún firma con el *JWT secret* antiguo, guárdalo con `dotnet user-secrets set "Supabase:JwtSecret" "..."`. `X-Admin-Key` sigue funcionando para Swagger y los scripts.
 - **Uso:** la API queda en `http://localhost:5209` y Swagger en `/swagger` (botón **Authorize** para la clave). `scripts/correr_api.ps1` la levanta y reenvía el puerto a un teléfono conectado por USB.
 - **Migraciones:** `dotnet ef database update`, solo contra la base prevista para tu entorno.
 

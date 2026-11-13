@@ -30,6 +30,14 @@ namespace TourVirtualUTB.Api.Services;
 public sealed class RequiereClaveAdminAttribute : Attribute, IAsyncAuthorizationFilter
 {
     public const string Cabecera = "X-Admin-Key";
+    private const string ClaveUsuario = "UsuarioAdmin";
+
+    /// <summary>
+    /// Id del administrador que entró con token. Null si entró con la clave
+    /// compartida (esa clave no dice quién es la persona).
+    /// </summary>
+    public static Guid? UsuarioDe(HttpContext http) =>
+        http.Items.TryGetValue(ClaveUsuario, out var valor) && valor is Guid id ? id : null;
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
@@ -80,6 +88,8 @@ public sealed class RequiereClaveAdminAttribute : Attribute, IAsyncAuthorization
             if (rol != "admin")
                 context.Result = new ObjectResult("Tu usuario no tiene rol de administrador.")
                     { StatusCode = StatusCodes.Status403Forbidden };
+            else
+                http.Items[ClaveUsuario] = usuario;
             return;
         }
 

@@ -24,6 +24,13 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    // Campos JSON libres (payload de eventos, antes/después de la actividad).
+    options.MapType<System.Text.Json.JsonElement>(() => new OpenApiSchema
+    {
+        Type = JsonSchemaType.Object,
+        Description = "Objeto JSON libre."
+    });
+
     // Botón "Authorize" en Swagger para mandar la clave de administración.
     options.AddSecurityDefinition("ClaveAdmin", new OpenApiSecurityScheme
     {
@@ -53,6 +60,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AgregarAutenticacionSupabase(builder.Configuration, builder.Environment);
 builder.Services.AddScoped<IAlmacenamientoService, AlmacenamientoService>();
 builder.Services.AddScoped<IContenidoService, ContenidoService>();
+builder.Services.AddScoped<PanelService>();
 
 // 3. Configurar CORS (Permitir peticiones desde Flutter)
 builder.Services.AddCors(options =>

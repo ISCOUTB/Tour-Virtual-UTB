@@ -437,6 +437,162 @@ paths:
       responses:
         '200':
           description: OK
+  '/api/admin/lugares/{lugarId}/pois':
+    get:
+      tags:
+        - AdminPanel
+      parameters:
+        - name: lugarId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PoiDto'
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PoiDto'
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PoiDto'
+  /api/admin/metricas:
+    get:
+      tags:
+        - AdminPanel
+      parameters:
+        - name: desde
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: hasta
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/MetricasDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricasDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/MetricasDto'
+  /api/admin/actividad:
+    get:
+      tags:
+        - AdminPanel
+      parameters:
+        - name: pagina
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: tamano
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: entidad
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ActividadPaginaDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActividadPaginaDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ActividadPaginaDto'
+  /api/admin/administradores:
+    get:
+      tags:
+        - AdminPanel
+      parameters:
+        - name: todos
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PerfilDto'
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PerfilDto'
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PerfilDto'
+  '/api/admin/administradores/{userId}':
+    put:
+      tags:
+        - AdminPanel
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambiarRolRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CambiarRolRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CambiarRolRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PerfilDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/PerfilDto'
   /api/admin/pois:
     post:
       tags:
@@ -734,8 +890,78 @@ paths:
       responses:
         '200':
           description: OK
+  /api/eventos:
+    post:
+      tags:
+        - Eventos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarEventoRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarEventoRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/RegistrarEventoRequest'
+      responses:
+        '200':
+          description: OK
 components:
   schemas:
+    ActividadDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        ts:
+          type: string
+          format: date-time
+        actor_id:
+          type: string
+          format: uuid
+          nullable: true
+        actor_correo:
+          type: string
+          nullable: true
+        accion:
+          type: string
+          nullable: true
+        entidad:
+          type: string
+          nullable: true
+        entidad_id:
+          type: string
+          nullable: true
+        antes:
+          type: object
+          description: Objeto JSON libre.
+          nullable: true
+        despues:
+          type: object
+          description: Objeto JSON libre.
+          nullable: true
+      additionalProperties: false
+    ActividadPaginaDto:
+      type: object
+      properties:
+        pagina:
+          type: integer
+          format: int32
+        tamano:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int32
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActividadDto'
+          nullable: true
+      additionalProperties: false
     ActualizarEscenaRequest:
       type: object
       properties:
@@ -764,6 +990,9 @@ components:
         vistaInicialPitch:
           type: number
           format: double
+          nullable: true
+        textoAlt:
+          type: string
           nullable: true
       additionalProperties: false
     ActualizarHotspotRequest:
@@ -882,6 +1111,23 @@ components:
         - estudiante
         - docente
       type: string
+    CambiarRolRequest:
+      type: object
+      properties:
+        rol:
+          type: string
+          nullable: true
+      additionalProperties: false
+    ConteoTipoDto:
+      type: object
+      properties:
+        tipo:
+          type: string
+          nullable: true
+        eventos:
+          type: integer
+          format: int32
+      additionalProperties: false
     CrearEscenaRequest:
       type: object
       properties:
@@ -913,6 +1159,9 @@ components:
         vistaInicialPitch:
           type: number
           format: double
+          nullable: true
+        textoAlt:
+          type: string
           nullable: true
       additionalProperties: false
     CrearHotspotRequest:
@@ -1076,6 +1325,9 @@ components:
           type: number
           format: double
           nullable: true
+        textoAlt:
+          type: string
+          nullable: true
         hotspots:
           type: array
           items:
@@ -1116,6 +1368,9 @@ components:
         vista_inicial_pitch:
           type: number
           format: double
+          nullable: true
+        texto_alt:
+          type: string
           nullable: true
       additionalProperties: false
     Hotspot:
@@ -1286,6 +1541,55 @@ components:
           type: string
           nullable: true
       additionalProperties: false
+    MetricasDto:
+      type: object
+      properties:
+        desde:
+          type: string
+          format: date
+        hasta:
+          type: string
+          format: date
+        visitas:
+          type: integer
+          format: int32
+        eventos:
+          type: integer
+          format: int32
+        por_tipo:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConteoTipoDto'
+          nullable: true
+        por_dia:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisitasDiaDto'
+          nullable: true
+        pois_mas_vistos:
+          type: array
+          items:
+            $ref: '#/components/schemas/PoiVistoDto'
+          nullable: true
+      additionalProperties: false
+    PerfilDto:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        correo:
+          type: string
+          nullable: true
+        rol:
+          type: string
+          nullable: true
+        verificado:
+          type: boolean
+        creado_en:
+          type: string
+          format: date-time
+      additionalProperties: false
     Poi:
       required:
         - audiencias
@@ -1405,6 +1709,22 @@ components:
         activo:
           type: boolean
       additionalProperties: false
+    PoiVistoDto:
+      type: object
+      properties:
+        poi_id:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+        visitas:
+          type: integer
+          format: int32
+        eventos:
+          type: integer
+          format: int32
+      additionalProperties: false
     RecorridoDto:
       type: object
       properties:
@@ -1417,6 +1737,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HotspotDto'
+          nullable: true
+      additionalProperties: false
+    RegistrarEventoRequest:
+      type: object
+      properties:
+        sesionId:
+          type: string
+          format: uuid
+        tipo:
+          type: string
+          nullable: true
+        poiId:
+          type: integer
+          format: int32
+          nullable: true
+        escenaId:
+          type: integer
+          format: int32
+          nullable: true
+        payload:
+          type: object
+          description: Objeto JSON libre.
           nullable: true
       additionalProperties: false
     Ruta:
@@ -1496,19 +1838,40 @@ components:
         - video
         - audio
       type: string
+    VisitasDiaDto:
+      type: object
+      properties:
+        dia:
+          type: string
+          format: date
+        visitas:
+          type: integer
+          format: int32
+        eventos:
+          type: integer
+          format: int32
+      additionalProperties: false
   securitySchemes:
     ClaveAdmin:
       type: apiKey
       description: Clave configurada en Admin:ApiKey. Necesaria para /api/admin/* y para subir mapas.
       name: X-Admin-Key
       in: header
+    TokenSupabase:
+      type: http
+      description: Token de sesión de Supabase Auth (access_token) de un usuario con rol admin en perfiles.
+      scheme: bearer
+      bearerFormat: JWT
 security:
   - ClaveAdmin: [ ]
+  - TokenSupabase: [ ]
 tags:
   - name: AdminEscenas
   - name: AdminHotspots
   - name: AdminLugares
   - name: AdminMedios
+  - name: AdminPanel
   - name: AdminPois
   - name: AdminRutas
   - name: Contenido
+  - name: Eventos

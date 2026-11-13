@@ -574,6 +574,210 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/lugares/{lugarId}/pois": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    lugarId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PoiDto"][];
+                        "application/json": components["schemas"]["PoiDto"][];
+                        "text/json": components["schemas"]["PoiDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/metricas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    desde?: string;
+                    hasta?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["MetricasDto"];
+                        "application/json": components["schemas"]["MetricasDto"];
+                        "text/json": components["schemas"]["MetricasDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/actividad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    pagina?: number;
+                    tamano?: number;
+                    entidad?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ActividadPaginaDto"];
+                        "application/json": components["schemas"]["ActividadPaginaDto"];
+                        "text/json": components["schemas"]["ActividadPaginaDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/administradores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    todos?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PerfilDto"][];
+                        "application/json": components["schemas"]["PerfilDto"][];
+                        "text/json": components["schemas"]["PerfilDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/administradores/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CambiarRolRequest"];
+                    "text/json": components["schemas"]["CambiarRolRequest"];
+                    "application/*+json": components["schemas"]["CambiarRolRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PerfilDto"];
+                        "application/json": components["schemas"]["PerfilDto"];
+                        "text/json": components["schemas"]["PerfilDto"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/pois": {
         parameters: {
             query?: never;
@@ -1006,10 +1210,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eventos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["RegistrarEventoRequest"];
+                    "text/json": components["schemas"]["RegistrarEventoRequest"];
+                    "application/*+json": components["schemas"]["RegistrarEventoRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ActividadDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            ts?: string;
+            /** Format: uuid */
+            actor_id?: string | null;
+            actor_correo?: string | null;
+            accion?: string | null;
+            entidad?: string | null;
+            entidad_id?: string | null;
+            /** @description Objeto JSON libre. */
+            antes?: Record<string, never> | null;
+            /** @description Objeto JSON libre. */
+            despues?: Record<string, never> | null;
+        };
+        ActividadPaginaDto: {
+            /** Format: int32 */
+            pagina?: number;
+            /** Format: int32 */
+            tamano?: number;
+            /** Format: int32 */
+            total?: number;
+            items?: components["schemas"]["ActividadDto"][] | null;
+        };
         ActualizarEscenaRequest: {
             /** Format: int32 */
             poiId?: number | null;
@@ -1077,6 +1345,14 @@ export interface components {
         };
         /** @enum {string} */
         Audiencia: "externo" | "estudiante" | "docente";
+        CambiarRolRequest: {
+            rol?: string | null;
+        };
+        ConteoTipoDto: {
+            tipo?: string | null;
+            /** Format: int32 */
+            eventos?: number;
+        };
         CrearEscenaRequest: {
             /** Format: int32 */
             lugarId?: number;
@@ -1269,6 +1545,28 @@ export interface components {
             subtitulos_url?: string | null;
             idioma?: string | null;
         };
+        MetricasDto: {
+            /** Format: date */
+            desde?: string;
+            /** Format: date */
+            hasta?: string;
+            /** Format: int32 */
+            visitas?: number;
+            /** Format: int32 */
+            eventos?: number;
+            por_tipo?: components["schemas"]["ConteoTipoDto"][] | null;
+            por_dia?: components["schemas"]["VisitasDiaDto"][] | null;
+            pois_mas_vistos?: components["schemas"]["PoiVistoDto"][] | null;
+        };
+        PerfilDto: {
+            /** Format: uuid */
+            user_id?: string;
+            correo?: string | null;
+            rol?: string | null;
+            verificado?: boolean;
+            /** Format: date-time */
+            creado_en?: string;
+        };
         Poi: {
             /** Format: int32 */
             id?: number;
@@ -1319,9 +1617,29 @@ export interface components {
             audiencias?: components["schemas"]["Audiencia"][] | null;
             activo?: boolean;
         };
+        PoiVistoDto: {
+            /** Format: int32 */
+            poi_id?: number;
+            nombre?: string | null;
+            /** Format: int32 */
+            visitas?: number;
+            /** Format: int32 */
+            eventos?: number;
+        };
         RecorridoDto: {
             escenas?: components["schemas"]["EscenaDto"][] | null;
             hotspots?: components["schemas"]["HotspotDto"][] | null;
+        };
+        RegistrarEventoRequest: {
+            /** Format: uuid */
+            sesionId?: string;
+            tipo?: string | null;
+            /** Format: int32 */
+            poiId?: number | null;
+            /** Format: int32 */
+            escenaId?: number | null;
+            /** @description Objeto JSON libre. */
+            payload?: Record<string, never> | null;
         };
         Ruta: {
             /** Format: int32 */
@@ -1359,6 +1677,14 @@ export interface components {
         TipoHotspot: "navegacion" | "info";
         /** @enum {string} */
         TipoMedio: "imagen" | "video" | "audio";
+        VisitasDiaDto: {
+            /** Format: date */
+            dia?: string;
+            /** Format: int32 */
+            visitas?: number;
+            /** Format: int32 */
+            eventos?: number;
+        };
     };
     responses: never;
     parameters: never;

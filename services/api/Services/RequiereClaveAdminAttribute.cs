@@ -14,7 +14,9 @@ namespace TourVirtualUTB.Api.Services;
 /// trae cualquiera de estas dos credenciales:
 ///
 /// 1. La clave compartida en la cabecera X-Admin-Key (Admin:ApiKey). Sirve
-///    para Swagger y para los scripts, como cargar_narraciones.py.
+///    para Swagger y para los scripts, como cargar_narraciones.py. Si la
+///    petición trae esta cabecera, se decide solo con ella y el token se
+///    ignora, aunque venga uno vencido o inválido.
 /// 2. Un token de Supabase Auth (Authorization: Bearer ...) de una persona
 ///    cuyo rol en la tabla perfiles es admin. Es lo que usa el panel. Solo
 ///    se revisa si está configurado Supabase:Url.
@@ -37,11 +39,24 @@ public sealed class RequiereClaveAdminAttribute : Attribute, IAsyncAuthorization
         var clave = configuracion["Admin:ApiKey"];
         var conSupabase = AutenticacionSupabase.EstaConfigurada(configuracion);
 
-        // 1. Clave compartida.
+        // 1. Clave compartida. Si viene la cabecera, manda ella y el token
+        //    no se mira.
         var enviada = http.Request.Headers[Cabecera].ToString();
-        if (!string.IsNullOrEmpty(clave) && enviada.Length > 0 &&
-            CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(enviada), Encoding.UTF8.GetBytes(clave)))
-            return;
+        if (enviada.Length > 0)
+        {
+            if (!string.IsNullOrEmpty(clave))
+            {
+                if (CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(enviada), Encoding.UTF8.GetBytes(clave)))
+                    return;
+
+                context.Result = new UnauthorizedObjectResult($"La cabecera {Cabecera} no es correcta.");
+                return;
+            }
+
+            // Sin clave configurada, en Development se deja pasar como antes.
+            if (servicios.GetRequiredService<IHostEnvironment>().IsDevelopment())
+                return;
+        }
 
         // 2. Token de Supabase.
         var traeToken = http.Request.Headers.Authorization.ToString()

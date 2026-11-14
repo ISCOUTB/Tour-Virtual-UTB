@@ -34,9 +34,13 @@ class HttpPoiRepository extends PoiRepository {
   Map<String, dynamic> _map(Object? data) =>
       (data as Map).cast<String, dynamic>();
 
+  /// Usa el endpoint de administración: trae también los POI inactivos y
+  /// los de cualquier audiencia. El público (/api/lugares/{id}/pois) los
+  /// oculta, y un POI desactivado desaparecería del panel.
   @override
   Future<List<Poi>> listar() async {
-    final data = await _api.get('/api/lugares/$_lugarId/pois') as List;
+    final data =
+        await _api.get('/api/admin/lugares/$_lugarId/pois') as List;
     return data.map((e) => Poi.fromJson(_map(e))).toList();
   }
 

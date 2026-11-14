@@ -1,57 +1,29 @@
-import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/api/api_client.dart';
 import '../../data/models/enums.dart';
+import '../../data/models/escena.dart';
+import '../../data/models/idiomas.dart';
+import '../../data/models/medio.dart';
 import '../../data/models/poi.dart';
 import '../../data/repositories/repositories.dart';
 import '../../domain/reglas.dart';
 import '../widgets/common.dart';
 
-enum _Estado { subiendo, completado, error }
-
-class _Archivo {
-  _Archivo({
-    required this.nombre,
-    required this.pestana,
-    required this.tamanoMb,
-    this.progreso = 0,
-    this.estado = _Estado.subiendo,
-  });
-
-  final String nombre;
-  final int pestana;
-  final double tamanoMb;
-  double progreso;
-  _Estado estado;
-}
-
-const List<String> _etiquetas = ['Foto 360°', 'Fotos', 'Video', 'Audio narrado'];
-const List<IconData> _iconos = [
-  Icons.threesixty,
-  Icons.photo_library_outlined,
-  Icons.videocam_outlined,
-  Icons.audiotrack_outlined,
-];
-const List<TipoMedio> _tipos = [
-  TipoMedio.imagen,
-  TipoMedio.imagen,
-  TipoMedio.video,
-  TipoMedio.audio,
-];
-const List<String> _formatos = [
-  'JPG o PNG · proporción 2:1',
-  'JPG o PNG',
-  'MP4',
-  'MP3',
-];
-
-/// D.1 Subir y previsualizar contenido.
+/// D.1 Subir contenido de un POI.
 ///
-/// En esta versión la subida es simulada (no se envía nada al servidor): sirve
-/// para ver el diseño. Al conectar el backend, cada archivo se envía con
-/// medioRepository.crear() + subirArchivo() (o escenaRepository para la 360°).
+/// Sube de verdad al backend:
+/// - Foto 360°: POST /api/admin/escenas/{id}/imagen. Si el POI no tiene
+///   escena, se crea y se marca como su escena principal.
+/// - Fotos, video y audio: POST /api/admin/pois/{poiId}/medios, con texto
+///   alternativo (imágenes), idioma y subtítulos .vtt (audio y video).
+/// Reglas del SRS: no hay imagen sin texto alternativo ni narración sin
+/// subtítulos.
 class MultimediaScreen extends StatefulWidget {
   const MultimediaScreen({super.key, this.poiIdInicial});
 
@@ -61,25 +33,74 @@ class MultimediaScreen extends StatefulWidget {
   State<MultimediaScreen> createState() => _MultimediaScreenState();
 }
 
+enum _Pestana {
+  panorama('Foto 360°', Icons.threesixty, ['jpg', 'jpeg', 'png', 'webp']),
+  fotos('Fotos', Icons.photo_library_outlined, ['jpg', 'jpeg', 'png', 'webp']),
+  video('Video', Icons.videocam_outlined, ['mp4', 'm4v', 'mov', 'webm']),
+  audio('Audio narrado', Icons.audiotrack_outlined,
+      ['mp3', 'm4a', 'aac', 'ogg', 'wav']);
+
+  const _Pestana(this.etiqueta, this.icono, this.extensiones);
+
+  final String etiqueta;
+  final IconData icono;
+  final List<String> extensiones;
+
+  TipoMedio get tipo => switch (this) {
+        _Pestana.video => TipoMedio.video,
+        _Pestana.audio => TipoMedio.audio,
+        _ => TipoMedio.imagen,
+      };
+
+  /// La panorámica la reduce el servidor, así que admite hasta 50 MB.
+  int get maxBytes =>
+      this == _Pestana.panorama ? 50 * 1024 * 1024 : maxBytesPara(tipo);
+
+  bool get llevaSubtitulos => tipo != TipoMedio.imagen;
+  bool get llevaTextoAlt => tipo == TipoMedio.imagen;
+}
+
+/// Archivo elegido, ya leído en memoria (en web no hay ruta de disco).
+class _Elegido {
+  const _Elegido(this.name, this.bytes);
+
+  final String name;
+  final Uint8List bytes;
+
+  int get size => bytes.length;
+}
+
+/// Abre el selector (file_picker 13) y lee el archivo. Null si se cancela.
+Future<_Elegido?> _elegir(List<String> extensiones) async {
+  final f = await FilePicker.pickFile(
+    type: FileType.custom,
+    allowedExtensions: extensiones,
+  );
+  if (f == null) return null;
+  return _Elegido(f.name, await f.readAsBytes());
+}
+
 class _MultimediaScreenState extends State<MultimediaScreen> {
   late Future<List<Poi>> _futuroPois;
   int? _poiId;
-  int _pestana = 0;
-  bool _publicado = false;
-  _Archivo? _seleccionado;
-  final List<Timer> _timers = [];
-  int _contador = 0;
+  _Pestana _pestana = _Pestana.panorama;
 
-  // Empieza vacía: no se muestran archivos inventados. Los medios reales de
-  // cada POI se leerán de GET /api/pois/{id} al conectar el backend.
-  final List<_Archivo> _archivos = [];
+  // Contenido actual del POI elegido.
+  Future<(PoiDetalle, Escena?)>? _futuroContenido;
+
+  // Formulario de subida.
+  _Elegido? _archivo;
+  _Elegido? _vtt;
+  final _textoAlt = TextEditingController();
+  String _idioma = idiomaOriginal;
+  bool _subiendo = false;
 
   @override
   void initState() {
     super.initState();
     _poiId = widget.poiIdInicial;
     _futuroPois = poiRepository.listar();
-    _seleccionado = _archivos.isEmpty ? null : _archivos.first;
+    if (_poiId != null) _cargarContenido();
   }
 
   @override
@@ -87,94 +108,192 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.poiIdInicial != widget.poiIdInicial &&
         widget.poiIdInicial != null) {
-      setState(() => _poiId = widget.poiIdInicial);
+      setState(() {
+        _poiId = widget.poiIdInicial;
+        _cargarContenido();
+      });
     }
   }
 
   @override
   void dispose() {
-    for (final t in _timers) {
-      t.cancel();
-    }
+    _textoAlt.dispose();
     super.dispose();
   }
 
-  void _simularSubida(_Archivo archivo) {
-    archivo.estado = _Estado.subiendo;
-    archivo.progreso = 0;
-    late Timer timer;
-    timer = Timer.periodic(const Duration(milliseconds: 220), (_) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        archivo.progreso += 0.1;
-        if (archivo.progreso >= 1) {
-          archivo.progreso = 1;
-          archivo.estado = _Estado.completado;
-          timer.cancel();
-        }
-      });
-    });
-    _timers.add(timer);
-  }
-
-  void _agregarArchivo() {
-    final tipo = _tipos[_pestana];
-    const extensiones = ['jpg', 'jpg', 'mp4', 'mp3'];
-    _contador++;
-    final nombre = 'archivo_simulado_$_contador.${extensiones[_pestana]}';
-    final tamano = switch (tipo) {
-      TipoMedio.imagen => 3.0,
-      TipoMedio.video => 40.0,
-      TipoMedio.audio => 4.0,
-    };
-    final error = validarTamano(tipo, (tamano * 1024 * 1024).round());
-    if (error != null) {
-      showToast(context, error, error: true);
+  void _cargarContenido() {
+    final id = _poiId;
+    if (id == null) {
+      _futuroContenido = null;
       return;
     }
-    final archivo = _Archivo(
-      nombre: nombre,
-      pestana: _pestana,
-      tamanoMb: tamano,
-    );
-    setState(() {
-      _archivos.add(archivo);
-      _seleccionado = archivo;
-      _publicado = false;
-    });
-    _simularSubida(archivo);
+    _futuroContenido = () async {
+      final detalle = await poiRepository.detalle(id);
+      Escena? escena;
+      final escenaId = detalle.poi.escenaPrincipalId;
+      if (escenaId != null) {
+        final escenas = await escenaRepository.listar();
+        escena = escenas.where((e) => e.id == escenaId).firstOrNull;
+      }
+      return (detalle, escena);
+    }();
   }
 
-  Future<void> _descartar() async {
-    final ok = await confirmDialog(
-      context,
-      title: '¿Descartar los archivos en borrador?',
-      message: 'Se eliminarán los archivos subidos que aún no se han publicado.',
-      confirmLabel: 'Descartar',
-      danger: true,
-    );
-    if (!ok || !mounted) return;
-    setState(() {
-      _archivos.clear();
-      _seleccionado = null;
-    });
-    showToast(context, 'Borrador descartado');
+  void _limpiarFormulario() {
+    _archivo = null;
+    _vtt = null;
+    _textoAlt.clear();
+    _idioma = idiomaOriginal;
   }
 
-  void _publicar() {
-    final hayCompletos =
-        _archivos.any((a) => a.estado == _Estado.completado);
-    if (!hayCompletos) {
-      showToast(context, 'No hay archivos completados para publicar.',
+  // ---------------------------------------------------------------- archivos
+
+  Future<void> _elegirArchivo() async {
+    if (_poiId == null) {
+      showToast(context, 'Selecciona un POI destino antes de subir.',
           error: true);
       return;
     }
-    setState(() => _publicado = true);
-    showToast(context, 'Contenido publicado');
+    final f = await _elegir(_pestana.extensiones);
+    if (f == null || !mounted) return;
+    if (f.size > _pestana.maxBytes) {
+      showToast(
+        context,
+        'El archivo pesa ${(f.size / 1048576).toStringAsFixed(1)} MB; el '
+        'máximo para ${_pestana.etiqueta.toLowerCase()} es '
+        '${_pestana.maxBytes ~/ 1048576} MB.',
+        error: true,
+      );
+      return;
+    }
+    setState(() => _archivo = f);
   }
+
+  Future<void> _elegirVtt() async {
+    final f = await _elegir(const ['vtt']);
+    if (f == null || !mounted) return;
+    final inicio = String.fromCharCodes(f.bytes.take(16))
+        .replaceFirst('﻿', '')
+        .replaceFirst('ï»¿', '');
+    if (!inicio.startsWith('WEBVTT')) {
+      showToast(context,
+          'Ese archivo no es WebVTT: la primera línea debe ser WEBVTT.',
+          error: true);
+      return;
+    }
+    setState(() => _vtt = f);
+  }
+
+  /// Mensaje de lo que falta para poder subir, o null si está completo.
+  String? _faltante(List<Medio> medios) {
+    if (_archivo == null) return 'Elige un archivo';
+    if (_pestana.llevaTextoAlt && _textoAlt.text.trim().isEmpty) {
+      return 'Escribe el texto alternativo';
+    }
+    if (_pestana.llevaSubtitulos && _vtt == null) {
+      return 'Adjunta los subtítulos (.vtt)';
+    }
+    if (_pestana == _Pestana.audio &&
+        medios.any((m) =>
+            m.tipo == TipoMedio.audio &&
+            (m.idioma ?? idiomaOriginal) == _idioma)) {
+      return 'Ya hay una narración en ${nombreDeIdioma(_idioma)}';
+    }
+    return null;
+  }
+
+  // ------------------------------------------------------------------ subir
+
+  Future<void> _subir(PoiDetalle detalle, Escena? escena) async {
+    final archivo =
+        ArchivoSubida('Archivo', _archivo!.bytes, _archivo!.name);
+    setState(() => _subiendo = true);
+    try {
+      if (_pestana == _Pestana.panorama) {
+        await _subirPanorama(detalle.poi, escena, archivo);
+      } else {
+        final mismos =
+            detalle.medios.where((m) => m.tipo == _pestana.tipo).length;
+        await medioRepository.subir(
+          poiId: detalle.poi.id,
+          tipo: _pestana.tipo,
+          archivo: archivo,
+          orden: mismos,
+          textoAlt: _pestana.llevaTextoAlt ? _textoAlt.text : null,
+          idioma: _pestana.llevaSubtitulos ? _idioma : null,
+          subtitulos: _vtt == null
+              ? null
+              : ArchivoSubida('Subtitulos', _vtt!.bytes, _vtt!.name),
+        );
+      }
+      if (!mounted) return;
+      showToast(context, '${_pestana.etiqueta} subido correctamente');
+      setState(() {
+        _limpiarFormulario();
+        _futuroPois = poiRepository.listar();
+        _cargarContenido();
+      });
+    } on ApiException catch (e) {
+      if (mounted) showToast(context, e.message, error: true);
+    } finally {
+      if (mounted) setState(() => _subiendo = false);
+    }
+  }
+
+  Future<void> _subirPanorama(
+      Poi poi, Escena? escena, ArchivoSubida archivo) async {
+    final alt = _textoAlt.text.trim();
+    var destino = escena;
+    if (destino == null) {
+      destino = await escenaRepository.crear(Escena(
+        id: 0,
+        lugarId: AppConfig.lugarId,
+        poiId: poi.id,
+        nombre: poi.nombre,
+        esEscenaPrincipal: true,
+        textoAlt: alt,
+      ));
+      await poiRepository.actualizar(
+          poi.copyWith(escenaPrincipalId: destino.id));
+    } else if (destino.textoAlt != alt) {
+      destino = await escenaRepository.actualizar(Escena(
+        id: destino.id,
+        lugarId: destino.lugarId,
+        poiId: destino.poiId,
+        nombre: destino.nombre,
+        imagenUrl: destino.imagenUrl,
+        imagenUrlBaja: destino.imagenUrlBaja,
+        esEscenaPrincipal: destino.esEscenaPrincipal,
+        orden: destino.orden,
+        vistaInicialYaw: destino.vistaInicialYaw,
+        vistaInicialPitch: destino.vistaInicialPitch,
+        textoAlt: alt,
+      ));
+    }
+    await escenaRepository.subirImagen(destino.id,
+        bytes: archivo.bytes, filename: archivo.nombre);
+  }
+
+  Future<void> _eliminar(Medio m) async {
+    final ok = await confirmDialog(
+      context,
+      title: '¿Eliminar este archivo?',
+      message: 'Se quitará del POI y dejará de verse en la app.',
+      confirmLabel: 'Eliminar',
+      danger: true,
+    );
+    if (!ok || !mounted) return;
+    try {
+      await medioRepository.eliminar(m.id);
+      if (!mounted) return;
+      showToast(context, 'Archivo eliminado');
+      setState(_cargarContenido);
+    } on ApiException catch (e) {
+      if (mounted) showToast(context, e.message, error: true);
+    }
+  }
+
+  // --------------------------------------------------------------------- UI
 
   @override
   Widget build(BuildContext context) {
@@ -185,63 +304,64 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
           const PageHeader(
             icon: Icons.cloud_upload_outlined,
             title: 'Subir Multimedia',
-            subtitle: 'Carga el contenido de cada POI y revisa cómo se verá',
+            subtitle: 'Carga el contenido de cada POI',
           ),
-          const SizedBox(height: 20),
-          const SampleDataBanner(
-            'Vista de diseño: la subida es simulada. No se envía nada al servidor.',
-          ),
+          if (AppConfig.useMockData) ...[
+            const SizedBox(height: 20),
+            const SampleDataBanner(
+                'Modo maqueta: los archivos no se envían al servidor.'),
+          ],
           const SizedBox(height: 20),
           FutureBuilder<List<Poi>>(
             future: _futuroPois,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const SkeletonBox(height: 52);
-              }
-              if (snapshot.hasError) {
+            builder: (context, snap) {
+              if (snap.hasError) {
                 return ErrorCard(
-                  message: '${snapshot.error}',
+                  message: '${snap.error}',
                   onRetry: () => setState(() {
                     _futuroPois = poiRepository.listar();
                   }),
                 );
               }
-              return _selectorPoi(snapshot.data ?? const []);
+              if (!snap.hasData) return const SkeletonBox(height: 52);
+              return _selectorPoi(snap.data!);
             },
           ),
           const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final izquierda = _panelSubida();
-              final derecha = _panelPrevia();
-              if (constraints.maxWidth >= 1000) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 3, child: izquierda),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 2, child: derecha),
-                  ],
-                );
-              }
-              return Column(
-                children: [izquierda, const SizedBox(height: 16), derecha],
-              );
-            },
-          ),
-          const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Wrap(
-              spacing: 12,
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                OutlinedButton(
-                  onPressed: _archivos.isEmpty ? null : _descartar,
-                  child: const Text('Descartar'),
+                UnderlineTabs(
+                  labels: [for (final p in _Pestana.values) p.etiqueta],
+                  selected: _pestana.index,
+                  onSelected: (i) => setState(() {
+                    _pestana = _Pestana.values[i];
+                    _limpiarFormulario();
+                  }),
                 ),
-                ElevatedButton(
-                  onPressed: _archivos.isEmpty ? null : _publicar,
-                  child: const Text('Publicar contenido'),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: _futuroContenido == null
+                      ? const EmptyState(
+                          message: 'Selecciona un POI destino para empezar')
+                      : FutureBuilder<(PoiDetalle, Escena?)>(
+                          future: _futuroContenido,
+                          builder: (context, snap) {
+                            if (snap.hasError) {
+                              return ErrorCard(
+                                message: '${snap.error}',
+                                onRetry: () => setState(_cargarContenido),
+                              );
+                            }
+                            if (!snap.hasData) {
+                              return const SkeletonBox(height: 200);
+                            }
+                            final (detalle, escena) = snap.data!;
+                            return _contenido(detalle, escena);
+                          },
+                        ),
                 ),
               ],
             ),
@@ -255,7 +375,8 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     final valido = pois.any((p) => p.id == _poiId);
     return Row(
       children: [
-        const Text('POI destino', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text('POI destino',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(width: 16),
         SelectBox<int>(
           width: 320,
@@ -266,291 +387,264 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
           },
           onChanged: (v) => setState(() {
             _poiId = v == -1 ? null : v;
+            _limpiarFormulario();
+            _cargarContenido();
           }),
         ),
       ],
     );
   }
 
-  Widget _panelSubida() {
-    final habilitado = _poiId != null;
-    final tipo = _tipos[_pestana];
-    final maxMb = maxBytesPara(tipo) ~/ (1024 * 1024);
-    final lista = _archivos.where((a) => a.pestana == _pestana).toList();
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
+  Widget _contenido(PoiDetalle detalle, Escena? escena) {
+    final actuales = _pestana == _Pestana.panorama
+        ? <Widget>[_estadoPanorama(escena)]
+        : [
+            for (final m in detalle.medios.where((m) => m.tipo == _pestana.tipo))
+              _filaMedio(m),
+          ];
+    return LayoutBuilder(builder: (context, constraints) {
+      final formulario = _formulario(detalle, escena);
+      final lista = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UnderlineTabs(
-            labels: _etiquetas,
-            selected: _pestana,
-            onSelected: (i) => setState(() => _pestana = i),
+          const Text('Ya cargado',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          if (actuales.isEmpty)
+            const Text('Aún no hay archivos de este tipo.',
+                style: TextStyle(color: AppColors.textSecondary))
+          else
+            ...actuales,
+        ],
+      );
+      if (constraints.maxWidth >= 900) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 3, child: formulario),
+            const SizedBox(width: 24),
+            Expanded(flex: 2, child: lista),
+          ],
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [formulario, const SizedBox(height: 24), lista],
+      );
+    });
+  }
+
+  Widget _formulario(PoiDetalle detalle, Escena? escena) {
+    final faltante = _faltante(detalle.medios);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _subiendo ? null : _elegirArchivo,
+          child: DashedBox(
+            color: AppColors.primary,
+            child: Container(
+              height: 130,
+              width: double.infinity,
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_pestana.icono, size: 34, color: AppColors.primary),
+                  const SizedBox(height: 10),
+                  Text(
+                    _archivo == null
+                        ? 'Haz clic para elegir el archivo'
+                        : '${_archivo!.name} · '
+                            '${(_archivo!.size / 1048576).toStringAsFixed(1)} MB',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_pestana.extensiones.map((e) => e.toUpperCase()).join(', ')}'
+                    ' · máx. ${_pestana.maxBytes ~/ 1048576} MB'
+                    '${_pestana == _Pestana.panorama ? ' · proporción 2:1' : ''}',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(20),
+        ),
+        const SizedBox(height: 16),
+        if (_pestana.llevaTextoAlt)
+          TextField(
+            controller: _textoAlt,
+            maxLines: 2,
+            maxLength: 300,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'Texto alternativo (obligatorio)',
+              hintText: _pestana == _Pestana.panorama
+                  ? 'Describe lo que se ve en la panorámica'
+                  : 'Describe lo que muestra la foto',
+            ),
+          ),
+        if (_pestana.llevaSubtitulos) ...[
+          Row(
+            children: [
+              const Text('Idioma hablado',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(width: 16),
+              SelectBox<String>(
+                width: 280,
+                value: _idioma,
+                items: {
+                  for (final e in idiomasContenido.entries)
+                    if (e.key != 'csn' || _pestana == _Pestana.video)
+                      e.key: e.value,
+                },
+                onChanged: (v) => setState(() => _idioma = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _subiendo ? null : _elegirVtt,
+                icon: const Icon(Icons.subtitles_outlined, size: 18),
+                label: const Text('Adjuntar subtítulos (.vtt)'),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _vtt?.name ?? 'Obligatorio, en el mismo idioma del audio',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _vtt == null
+                        ? AppColors.textSecondary
+                        : AppColors.success,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _subiendo || faltante != null
+                  ? null
+                  : () => _subir(detalle, escena),
+              icon: _subiendo
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_upload_outlined, size: 18),
+              label: Text(_subiendo ? 'Subiendo…' : 'Subir y publicar'),
+            ),
+            const SizedBox(width: 12),
+            if (faltante != null && _archivo != null)
+              Expanded(
+                child: Text(faltante,
+                    style: const TextStyle(color: AppColors.warning)),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _estadoPanorama(Escena? escena) {
+    final tiene = escena?.imagenUrl?.isNotEmpty ?? false;
+    final alt = escena?.textoAlt?.trim() ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            StatusBadge(
+              escena == null
+                  ? 'Sin escena 360°'
+                  : tiene
+                      ? 'Panorámica cargada'
+                      : 'Escena sin panorámica',
+              color: tiene ? AppColors.success : AppColors.warning,
+            ),
+            if (escena != null)
+              StatusBadge(
+                alt.isEmpty ? 'Falta texto alternativo' : 'Texto alternativo',
+                color: alt.isEmpty ? AppColors.danger : AppColors.success,
+              ),
+          ],
+        ),
+        if (alt.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(alt,
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.textSecondary)),
+        ],
+        const SizedBox(height: 8),
+        Text(
+          tiene
+              ? 'Subir otra imagen reemplaza la panorámica actual.'
+              : 'Al subirla, el lugar aparece numerado en el recorrido.',
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _filaMedio(Medio m) {
+    final nombre = (m.url ?? '').split('/').last.split('?').first;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(_pestana.icono, color: AppColors.textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: habilitado
-                      ? _agregarArchivo
-                      : () => showToast(
-                            context,
-                            'Selecciona un POI destino antes de subir.',
-                            error: true,
-                          ),
-                  child: DashedBox(
-                    color: habilitado
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                    child: Container(
-                      height: 150,
-                      width: double.infinity,
-                      alignment: Alignment.center,
-                      child: Opacity(
-                        opacity: habilitado ? 1 : 0.5,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(_iconos[_pestana],
-                                size: 36, color: AppColors.primary),
-                            const SizedBox(height: 10),
-                            Text(
-                              habilitado
-                                  ? 'Arrastra archivos o haz clic para '
-                                      'seleccionar'
-                                  : 'Selecciona un POI destino para subir',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_formatos[_pestana]} · máx. $maxMb MB',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                Text(
+                  m.tipo == TipoMedio.imagen
+                      ? (m.textoAlt ?? nombre)
+                      : nombreDeIdioma(m.idioma),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 16),
-                if (lista.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      'Aún no hay archivos de este tipo.',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  )
-                else
-                  for (final archivo in lista) _filaArchivo(archivo),
+                Text(nombre,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary)),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filaArchivo(_Archivo a) {
-    final seleccionado = identical(a, _seleccionado);
-    final Color color;
-    final String etiqueta;
-    switch (a.estado) {
-      case _Estado.completado:
-        color = AppColors.success;
-        etiqueta = 'Completado';
-      case _Estado.subiendo:
-        color = AppColors.primary;
-        etiqueta = '${(a.progreso * 100).round()}%';
-      case _Estado.error:
-        color = AppColors.danger;
-        etiqueta = 'Error';
-    }
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: seleccionado ? AppColors.primary.withValues(alpha: 0.08) : null,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: seleccionado ? AppColors.primary : AppColors.border,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: () => setState(() => _seleccionado = a),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Icon(_iconos[a.pestana], color: AppColors.textSecondary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      a.nombre,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: a.progreso,
-                        minHeight: 6,
-                        backgroundColor: AppColors.border,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                etiqueta,
-                style: TextStyle(color: color, fontWeight: FontWeight.w700),
-              ),
-              if (a.estado == _Estado.error) ...[
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () => _simularSubida(a),
-                  child: const Text('Reintentar'),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _panelPrevia() {
-    final a = _seleccionado;
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Previsualización',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            height: 190,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
+          if (m.tipo != TipoMedio.imagen) ...[
+            const SizedBox(width: 8),
+            StatusBadge(
+              m.subtitulosUrl == null ? 'Sin subtítulos' : 'Con subtítulos',
+              color: m.subtitulosUrl == null
+                  ? AppColors.warning
+                  : AppColors.success,
             ),
-            child: a == null ? _previaVacia() : _previaArchivo(a),
-          ),
-          const SizedBox(height: 14),
-          StatusBadge(
-            _publicado ? 'Publicado' : 'Contenido en preparación',
-            color: _publicado ? AppColors.success : AppColors.warning,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _previaVacia() => const Center(
-        child: Text(
-          'Selecciona un archivo',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
-
-  Widget _previaArchivo(_Archivo a) {
-    switch (_tipos[a.pestana]) {
-      case TipoMedio.audio:
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.play_circle_fill,
-                  size: 48, color: AppColors.primary),
-              const SizedBox(height: 14),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: const LinearProgressIndicator(
-                  value: 0.25,
-                  minHeight: 6,
-                  backgroundColor: AppColors.border,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '0:34 / 2:15',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      case TipoMedio.video:
-        return const Center(
-          child: Icon(Icons.play_circle_outline,
-              size: 56, color: AppColors.textSecondary),
-        );
-      case TipoMedio.imagen:
-        final es360 = a.pestana == 0;
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.35),
-                      AppColors.purple.withValues(alpha: 0.35),
-                    ],
-                  ),
-                ),
-                child: Icon(
-                  es360 ? Icons.threesixty : Icons.image_outlined,
-                  size: 52,
-                  color: Colors.white70,
-                ),
-              ),
-            ),
-            if (es360)
-              const Positioned(
-                left: 10,
-                top: 10,
-                child: StatusBadge('360°', color: Colors.white),
-              ),
-            if (es360)
-              const Positioned(
-                left: 0,
-                right: 0,
-                bottom: 10,
-                child: Center(
-                  child: Text(
-                    'Desliza para mirar',
-                    style: TextStyle(fontSize: 12, color: Colors.white70),
-                  ),
-                ),
-              ),
           ],
-        );
-    }
+          IconButton(
+            tooltip: 'Eliminar',
+            onPressed: () => _eliminar(m),
+            icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+          ),
+        ],
+      ),
+    );
   }
 }

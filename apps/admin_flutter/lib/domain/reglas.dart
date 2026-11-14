@@ -10,15 +10,16 @@ bool puedeDesactivar(List<Poi> pois, Poi poi) {
   return activos > 1;
 }
 
-/// RN-03: límite de tamaño por tipo de archivo (imagen 5 MB, video 100 MB,
-/// audio 10 MB).
+/// RN-03: límite de tamaño por tipo de archivo (imagen 5 MB, audio 10 MB,
+/// video 50 MB). El SRS pedía 100 MB para video, pero Supabase (plan gratis)
+/// no acepta archivos de más de 50 MB y la API rechaza lo que pase de ahí.
 int maxBytesPara(TipoMedio tipo) {
   const mb = 1024 * 1024;
   switch (tipo) {
     case TipoMedio.imagen:
       return 5 * mb;
     case TipoMedio.video:
-      return 100 * mb;
+      return 50 * mb;
     case TipoMedio.audio:
       return 10 * mb;
   }

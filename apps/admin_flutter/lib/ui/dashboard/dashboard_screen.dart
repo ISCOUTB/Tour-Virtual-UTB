@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/poi.dart';
 import '../../data/repositories/repositories.dart';
@@ -18,18 +17,29 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late Future<List<Poi>> _future;
+  late Future<Metricas?> _metricas;
+  late Future<List<Actividad>?> _actividad;
 
   @override
   void initState() {
     super.initState();
-    _future = poiRepository.listar();
+    _cargar();
   }
 
-  void _reload() {
-    setState(() {
-      _future = poiRepository.listar();
-    });
+  /// Métricas y actividad no deben tumbar el inicio si fallan: en error
+  /// devuelven null y su tarjeta lo dice.
+  void _cargar() {
+    _future = poiRepository.listar();
+    final hoy = DateTime.now();
+    _metricas = panelRepository
+        .metricas(desde: hoy.subtract(const Duration(days: 6)), hasta: hoy)
+        .then<Metricas?>((m) => m, onError: (_) => null);
+    _actividad = panelRepository
+        .actividad(tamano: 6)
+        .then<List<Actividad>?>((a) => a, onError: (_) => null);
   }
+
+  void _reload() => setState(_cargar);
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +65,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onRetry: _reload,
                 );
               }
-              return _DashboardContent(pois: snapshot.data ?? const []);
+              return _DashboardContent(
+                pois: snapshot.data ?? const [],
+                metricas: _metricas,
+                actividad: _actividad,
+              );
             },
           ),
         ],
@@ -90,9 +104,15 @@ class _DashboardSkeleton extends StatelessWidget {
 }
 
 class _DashboardContent extends StatelessWidget {
-  const _DashboardContent({required this.pois});
+  const _DashboardContent({
+    required this.pois,
+    required this.metricas,
+    required this.actividad,
+  });
 
   final List<Poi> pois;
+  final Future<Metricas?> metricas;
+  final Future<List<Actividad>?> actividad;
 
   String _faltante(Poi poi) {
     final partes = <String>[];
@@ -121,13 +141,24 @@ class _DashboardContent extends StatelessWidget {
         progress: total == 0 ? 0.0 : activos / total,
         onTap: () => context.go('/pois?estado=activos'),
       ),
-      _MetricCard(
-        icon: Icons.trending_up,
-        color: AppColors.success,
-        title: 'Visitas esta semana',
-        value: '—',
-        subtitle: 'Sin datos: falta el servicio de analítica',
-        onTap: () => context.go('/metricas'),
+      FutureBuilder<Metricas?>(
+        future: metricas,
+        builder: (context, snap) {
+          final m = snap.data;
+          final cargando = snap.connectionState != ConnectionState.done;
+          return _MetricCard(
+            icon: Icons.trending_up,
+            color: AppColors.success,
+            title: 'Visitas esta semana',
+            value: cargando || m == null ? '—' : '${m.visitas}',
+            subtitle: cargando
+                ? 'Cargando…'
+                : m == null
+                    ? 'No se pudieron leer las métricas'
+                    : '${m.eventos} eventos en 7 días',
+            onTap: () => context.go('/metricas'),
+          );
+        },
       ),
       _MetricCard(
         icon: Icons.threesixty,
@@ -169,7 +200,7 @@ class _DashboardContent extends StatelessWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final acciones = _QuickActionsCard();
-            final actividad = const _ActivityCard();
+            final actividad = _ActivityCard(futuro: this.actividad);
             if (constraints.maxWidth >= 900) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,24 +348,84 @@ class _QuickActionsCard extends StatelessWidget {
   }
 }
 
-class _ActivityItem {
-  const _ActivityItem(this.icon, this.texto, this.detalle, this.tiempo);
-
-  final IconData icon;
-  final String texto;
-  final String detalle;
-  final String tiempo;
-}
-
+/// Últimos cambios de la tabla auditoria (GET /api/admin/actividad).
 class _ActivityCard extends StatelessWidget {
-  const _ActivityCard();
+  const _ActivityCard({required this.futuro});
 
-  // La API actual no tiene registro de auditoría (la tabla `auditoria` existe
-  // en Supabase pero ningún endpoint la expone). Hasta entonces no se muestra
-  // actividad inventada.
+  final Future<List<Actividad>?> futuro;
+
+  static const Map<String, String> _entidades = {
+    'pois': 'POI',
+    'escenas': 'escena',
+    'hotspots': 'hotspot',
+    'medios': 'medio',
+    'rutas': 'ruta',
+    'perfiles': 'perfil',
+  };
+
+  static (IconData, String) _accion(String accion) => switch (accion) {
+        'insert' => (Icons.add_circle_outline, 'Creó'),
+        'delete' => (Icons.delete_outline, 'Eliminó'),
+        _ => (Icons.edit_outlined, 'Editó'),
+      };
+
+  static String _hace(DateTime fecha) {
+    final d = DateTime.now().difference(fecha);
+    if (d.inMinutes < 1) return 'ahora';
+    if (d.inMinutes < 60) return 'hace ${d.inMinutes} min';
+    if (d.inHours < 24) return 'hace ${d.inHours} h';
+    if (d.inDays < 30) return 'hace ${d.inDays} d';
+    return '${fecha.day}/${fecha.month}/${fecha.year}';
+  }
+
+  Widget _item(Actividad a) {
+    final (icono, verbo) = _accion(a.accion);
+    final entidad = _entidades[a.entidad.toLowerCase()] ?? a.entidad;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icono, size: 18, color: AppColors.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$verbo $entidad${a.entidadId == null ? '' : ' #${a.entidadId}'}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  a.actorCorreo ?? 'Sistema o clave de administración',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            _hace(a.fecha),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    const items = <_ActivityItem>[];
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,51 +440,23 @@ class _ActivityCard extends StatelessWidget {
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
-          if (items.isEmpty)
-            const EmptyState(
-              message: 'Sin actividad: el registro de cambios aún no está disponible')
-          else
-            for (final item in items)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(item.icon, size: 18, color: AppColors.primary),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.texto,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600)),
-                          Text(
-                            item.detalle,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      item.tiempo,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          FutureBuilder<List<Actividad>?>(
+            future: futuro,
+            builder: (context, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const SkeletonBox(height: 120);
+              }
+              final items = snap.data;
+              if (items == null) {
+                return const EmptyState(
+                    message: 'No se pudo leer el registro de cambios');
+              }
+              if (items.isEmpty) {
+                return const EmptyState(message: 'Sin cambios registrados');
+              }
+              return Column(children: [for (final a in items) _item(a)]);
+            },
+          ),
         ],
       ),
     );

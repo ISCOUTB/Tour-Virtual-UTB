@@ -15,6 +15,16 @@ class ApiException implements Exception {
   String toString() => statusCode == null ? message : '$statusCode: $message';
 }
 
+/// Un archivo para mandar en un formulario multipart.
+class ArchivoSubida {
+  const ArchivoSubida(this.campo, this.bytes, this.nombre);
+
+  /// Nombre del campo en el formulario (p. ej. `Archivo`, `Subtitulos`).
+  final String campo;
+  final Uint8List bytes;
+  final String nombre;
+}
+
 /// Devuelve el token de sesión (por ejemplo de Firebase Auth) o null.
 typedef TokenProvider = Future<String?> Function();
 
@@ -90,6 +100,25 @@ class ApiClient {
     await _send(
         () async => _client.delete(_uri(path), headers: await _headers()));
   }
+
+  /// POST multipart/form-data con varios campos y archivos. Devuelve el JSON
+  /// de la respuesta (o null si viene vacía).
+  Future<dynamic> postMultipart(
+    String path, {
+    Map<String, String> fields = const {},
+    List<ArchivoSubida> files = const [],
+  }) =>
+      _send(() async {
+        final req = http.MultipartRequest('POST', _uri(path));
+        req.headers.addAll(await _headers(json: false));
+        req.fields.addAll(fields);
+        for (final f in files) {
+          req.files.add(
+            http.MultipartFile.fromBytes(f.campo, f.bytes, filename: f.nombre),
+          );
+        }
+        return http.Response.fromStream(await _client.send(req));
+      });
 
   /// Sube un archivo como multipart/form-data con los campos que define la
   /// API: `Archivo` (binario) y `Carpeta` (opcional).

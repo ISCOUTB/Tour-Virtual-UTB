@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_state.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/api/api_client.dart';
+import '../../data/repositories/repositories.dart';
 import '../widgets/common.dart';
 
 const List<String> _pestanas = [
@@ -356,15 +358,10 @@ const TextStyle _tituloTarjeta =
 // F.2 Administradores
 // ---------------------------------------------------------------------------
 
-class _Admin {
-  _Admin(this.nombre, this.correo, this.rol, {this.esActual = false});
-
-  final String nombre;
-  final String correo;
-  String rol; // Hoy solo existe el rol `admin` en el panel
-  final bool esActual;
-}
-
+/// Lista las personas con rol admin en `perfiles` (GET /api/admin/administradores)
+/// y da o quita el rol (PUT /api/admin/administradores/{userId}). Las cuentas
+/// se crean en Supabase (Authentication > Users); aquí solo se cambia el rol.
+/// La API impide quitarse el rol a uno mismo y quitar el último admin.
 class AdministradoresTab extends StatefulWidget {
   const AdministradoresTab({super.key});
 
@@ -373,56 +370,112 @@ class AdministradoresTab extends StatefulWidget {
 }
 
 class _AdministradoresTabState extends State<AdministradoresTab> {
-  late final List<_Admin> _admins;
+  late Future<List<Perfil>> _futuro;
 
   @override
   void initState() {
     super.initState();
-    // La API no tiene endpoint para listar administradores (viven en la tabla
-    // `perfiles` de Supabase con rol `admin`). Solo se muestra la sesión
-    // actual; no se inventan otras cuentas.
-    _admins = [
-      _Admin(authState.nombre, authState.correo, 'Administrador',
-          esActual: true),
-    ];
+    _futuro = panelRepository.administradores();
   }
 
-  int get _cuentaAdmins => _admins.where((a) => a.rol == 'Administrador').length;
+  void _recargar() =>
+      setState(() => _futuro = panelRepository.administradores());
 
-  Future<void> _invitar() async {
-    final nuevo = await showDialog<_Admin>(
+  Future<void> _darAcceso() async {
+    final correo = await showDialog<String>(
       context: context,
       builder: (context) => const _InvitarDialog(),
     );
-    if (nuevo == null || !mounted) return;
-    if (_admins.any((a) => a.correo == nuevo.correo)) {
-      showToast(context, 'Ese correo ya tiene acceso.', error: true);
-      return;
+    if (correo == null || !mounted) return;
+    try {
+      final perfiles = await panelRepository.administradores(todos: true);
+      final perfil =
+          perfiles.where((p) => p.correo?.toLowerCase() == correo).firstOrNull;
+      if (!mounted) return;
+      if (perfil == null) {
+        showToast(
+          context,
+          'Esa persona aún no tiene cuenta. Créala primero en Supabase '
+          '(Authentication > Users) y vuelve a intentarlo.',
+          error: true,
+        );
+        return;
+      }
+      if (perfil.rol == 'admin') {
+        showToast(context, 'Ese correo ya tiene acceso.', error: true);
+        return;
+      }
+      await panelRepository.cambiarRol(perfil.userId, 'admin');
+      if (!mounted) return;
+      showToast(context, 'Acceso de administrador otorgado');
+      _recargar();
+    } on ApiException catch (e) {
+      if (mounted) showToast(context, e.message, error: true);
     }
-    setState(() => _admins.add(nuevo));
-    showToast(context, 'Invitación registrada');
   }
 
-  Future<void> _quitar(_Admin admin) async {
-    if (admin.esActual) {
-      showToast(context, 'No puedes quitar tu propio acceso.', error: true);
-      return;
-    }
-    if (admin.rol == 'Administrador' && _cuentaAdmins <= 1) {
-      showToast(context, 'Debe existir al menos un administrador activo.',
-          error: true);
-      return;
-    }
+  Future<void> _quitar(Perfil admin) async {
     final ok = await confirmDialog(
       context,
-      title: '¿Quitar el acceso a ${admin.nombre}?',
+      title: '¿Quitar el acceso a ${admin.correo ?? 'esta persona'}?',
       message: 'Esta persona ya no podrá entrar al panel.',
       confirmLabel: 'Quitar acceso',
       danger: true,
     );
     if (!ok || !mounted) return;
-    setState(() => _admins.remove(admin));
-    showToast(context, 'Acceso revocado');
+    try {
+      // Vuelve al rol por defecto de la app (visitante externo).
+      await panelRepository.cambiarRol(admin.userId, 'externo');
+      if (!mounted) return;
+      showToast(context, 'Acceso revocado');
+      _recargar();
+    } on ApiException catch (e) {
+      // 409: es uno mismo o el último admin (el mensaje lo da la API).
+      if (mounted) showToast(context, e.message, error: true);
+    }
+  }
+
+  Widget _fila(Perfil a) {
+    final correo = a.correo ?? '(sin correo)';
+    final esActual = correo.toLowerCase() == authState.correo.toLowerCase();
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: AppColors.primary,
+            child: Text(correo.substring(0, 1).toUpperCase()),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              esActual ? '$correo (tú)' : correo,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          StatusBadge(
+            a.verificado ? 'Verificado' : 'Sin verificar',
+            color: a.verificado ? AppColors.success : AppColors.warning,
+          ),
+          const SizedBox(width: 8),
+          const StatusBadge('Administrador', color: AppColors.primary),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.danger),
+              foregroundColor: AppColors.danger,
+            ),
+            onPressed: esActual ? null : () => _quitar(a),
+            child: const Text('Quitar acceso'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -450,66 +503,33 @@ class _AdministradoresTabState extends State<AdministradoresTab> {
                       ),
                     ),
                     ElevatedButton.icon(
-                      onPressed: _invitar,
+                      onPressed: _darAcceso,
                       icon: const Icon(Icons.person_add_alt, size: 18),
-                      label: const Text('Invitar administrador'),
+                      label: const Text('Dar acceso'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                for (final a in _admins)
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: const BoxDecoration(
-                      border: Border(top: BorderSide(color: AppColors.border)),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: AppColors.primary,
-                          child: Text(
-                            a.nombre.isEmpty
-                                ? '?'
-                                : a.nombre.substring(0, 1).toUpperCase(),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            a.esActual ? '${a.nombre} (tú)' : a.nombre,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            a.correo,
-                            overflow: TextOverflow.ellipsis,
-                            style:
-                                const TextStyle(color: AppColors.textSecondary),
-                          ),
-                        ),
-                        StatusBadge(
-                          a.rol,
-                          color: a.rol == 'Administrador'
-                              ? AppColors.primary
-                              : AppColors.warning,
-                        ),
-                        const SizedBox(width: 12),
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.danger),
-                            foregroundColor: AppColors.danger,
-                          ),
-                          onPressed: () => _quitar(a),
-                          child: const Text('Quitar acceso'),
-                        ),
-                      ],
-                    ),
-                  ),
+                FutureBuilder<List<Perfil>>(
+                  future: _futuro,
+                  builder: (context, snap) {
+                    if (snap.hasError) {
+                      return ErrorCard(
+                        message: 'No se pudo cargar la lista: ${snap.error}',
+                        onRetry: _recargar,
+                      );
+                    }
+                    if (!snap.hasData) return const SkeletonBox(height: 160);
+                    final admins = snap.data!;
+                    if (admins.isEmpty) {
+                      return const EmptyState(
+                        message: 'Sin administradores para mostrar '
+                            '(en modo maqueta la lista está vacía).',
+                      );
+                    }
+                    return Column(children: [for (final a in admins) _fila(a)]);
+                  },
+                ),
               ],
             ),
           );
@@ -521,8 +541,9 @@ class _AdministradoresTabState extends State<AdministradoresTab> {
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'La autenticación se gestiona con las cuentas '
-                    'institucionales de la UTB.',
+                    'Las cuentas se crean en Supabase (Authentication > '
+                    'Users). Aquí solo se da o se quita el rol de '
+                    'administrador.',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
@@ -549,6 +570,7 @@ class _AdministradoresTabState extends State<AdministradoresTab> {
   }
 }
 
+/// Pide el correo institucional; devuelve el correo en minúsculas.
 class _InvitarDialog extends StatefulWidget {
   const _InvitarDialog();
 
@@ -559,7 +581,6 @@ class _InvitarDialog extends StatefulWidget {
 class _InvitarDialogState extends State<_InvitarDialog> {
   final _formKey = GlobalKey<FormState>();
   final _correo = TextEditingController();
-  String _rol = 'Administrador';
 
   @override
   void dispose() {
@@ -570,42 +591,27 @@ class _InvitarDialogState extends State<_InvitarDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Invitar administrador'),
+      title: const Text('Dar acceso de administrador'),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _correo,
-                keyboardType: TextInputType.emailAddress,
-                validator: (v) {
-                  final t = (v ?? '').trim().toLowerCase();
-                  if (t.isEmpty) return 'El correo es obligatorio';
-                  if (!t.endsWith(AuthState.dominio)) {
-                    return 'Usa un correo ${AuthState.dominio}';
-                  }
-                  return null;
-                },
-                decoration: const InputDecoration(
-                  labelText: 'Correo institucional',
-                  hintText: 'nombre@utb.edu.co',
-                ),
-              ),
-              const SizedBox(height: 14),
-              SelectBox<String>(
-                width: 380,
-                prefix: 'Rol',
-                value: _rol,
-                items: const {
-                  'Administrador': 'Administrador',
-                },
-                onChanged: (v) => setState(() => _rol = v),
-              ),
-            ],
+          child: TextFormField(
+            controller: _correo,
+            keyboardType: TextInputType.emailAddress,
+            validator: (v) {
+              final t = (v ?? '').trim().toLowerCase();
+              if (t.isEmpty) return 'El correo es obligatorio';
+              if (!t.endsWith(AuthState.dominio)) {
+                return 'Usa un correo ${AuthState.dominio}';
+              }
+              return null;
+            },
+            decoration: const InputDecoration(
+              labelText: 'Correo institucional',
+              hintText: 'nombre@utb.edu.co',
+              helperText: 'La persona ya debe tener cuenta en Supabase.',
+            ),
           ),
         ),
       ),
@@ -617,14 +623,9 @@ class _InvitarDialogState extends State<_InvitarDialog> {
         ElevatedButton(
           onPressed: () {
             if (!_formKey.currentState!.validate()) return;
-            final correo = _correo.text.trim().toLowerCase();
-            final usuario = correo.split('@').first;
-            final nombre = usuario.isEmpty
-                ? correo
-                : usuario[0].toUpperCase() + usuario.substring(1);
-            Navigator.of(context).pop(_Admin(nombre, correo, _rol));
+            Navigator.of(context).pop(_correo.text.trim().toLowerCase());
           },
-          child: const Text('Invitar'),
+          child: const Text('Dar acceso'),
         ),
       ],
     );

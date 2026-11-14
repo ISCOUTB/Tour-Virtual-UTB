@@ -560,11 +560,8 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
       ),
     );
     if (ok != true || !mounted) return;
-    showToast(
-      context,
-      'La carga del audio en ${nombreDeIdioma(elegido)} se activa al '
-      'conectar el servicio de archivos.',
-    );
+    // La subida (audio + .vtt + idioma) se hace en Subir Multimedia.
+    context.go('/multimedia?poi=${widget.poiId}');
   }
 
   Widget _tarjetaContenido() {
@@ -675,8 +672,8 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
           const SizedBox(height: 10),
           const Text(
             'Una narración no se publica sin sus subtítulos (.vtt), ni una '
-            'escena sin texto alternativo (WCAG 2.2 AA). El backend aún no '
-            'guarda idioma, subtítulos ni texto alternativo.',
+            'escena sin texto alternativo (WCAG 2.2 AA). Los archivos se '
+            'suben en Subir Multimedia.',
             style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],

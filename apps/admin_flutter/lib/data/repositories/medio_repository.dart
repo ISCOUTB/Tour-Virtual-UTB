@@ -1,9 +1,23 @@
 import 'dart:typed_data';
 
 import '../api/api_client.dart';
+import '../models/enums.dart';
 import '../models/medio.dart';
 
 abstract class MedioRepository {
+  /// Sube el archivo y crea el medio en un solo paso
+  /// (POST /api/admin/pois/{poiId}/medios). Las imágenes exigen [textoAlt];
+  /// audio y video pueden llevar [idioma] (BCP 47) y subtítulos .vtt.
+  Future<Medio> subir({
+    required int poiId,
+    required TipoMedio tipo,
+    required ArchivoSubida archivo,
+    int orden = 0,
+    String? textoAlt,
+    String? idioma,
+    ArchivoSubida? subtitulos,
+  });
+
   /// Crea el registro del medio. Después se sube el archivo con [subirArchivo].
   Future<Medio> crear(Medio medio);
 
@@ -27,6 +41,28 @@ class HttpMedioRepository implements MedioRepository {
 
   Medio _fromJson(Object? data) =>
       Medio.fromJson((data as Map).cast<String, dynamic>());
+
+  @override
+  Future<Medio> subir({
+    required int poiId,
+    required TipoMedio tipo,
+    required ArchivoSubida archivo,
+    int orden = 0,
+    String? textoAlt,
+    String? idioma,
+    ArchivoSubida? subtitulos,
+  }) async =>
+      _fromJson(await _api.postMultipart(
+        '/api/admin/pois/$poiId/medios',
+        fields: {
+          'Tipo': tipo.name,
+          'Orden': '$orden',
+          if (textoAlt != null && textoAlt.trim().isNotEmpty)
+            'TextoAlt': textoAlt.trim(),
+          if (idioma != null && idioma.isNotEmpty) 'Idioma': idioma,
+        },
+        files: [archivo, if (subtitulos != null) subtitulos],
+      ));
 
   @override
   Future<Medio> crear(Medio medio) async =>
@@ -61,6 +97,27 @@ class MockMedioRepository implements MedioRepository {
 
   Future<void> _delay() =>
       Future<void>.delayed(const Duration(milliseconds: 350));
+
+  @override
+  Future<Medio> subir({
+    required int poiId,
+    required TipoMedio tipo,
+    required ArchivoSubida archivo,
+    int orden = 0,
+    String? textoAlt,
+    String? idioma,
+    ArchivoSubida? subtitulos,
+  }) =>
+      crear(Medio(
+        id: 0,
+        poiId: poiId,
+        tipo: tipo,
+        url: archivo.nombre,
+        orden: orden,
+        textoAlt: textoAlt,
+        idioma: idioma,
+        subtitulosUrl: subtitulos?.nombre,
+      ));
 
   @override
   Future<Medio> crear(Medio medio) async {

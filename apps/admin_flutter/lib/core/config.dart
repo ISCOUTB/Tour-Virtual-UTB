@@ -19,15 +19,30 @@ class AppConfig {
     defaultValue: true,
   );
 
-  /// El backend ya acepta lat/lng (y idioma, subtítulos y texto alternativo)
-  /// al escribir. Mientras sea false, el panel los muestra pero no los edita
-  /// contra la API real. Se activa con `--dart-define=BACKEND_CAMPOS_NUEVOS=true`
-  /// cuando backend termine las tareas 1, 4 y 5 de docs/tareas-backend.md.
+  /// El backend ya acepta lat/lng, idioma, subtítulos y texto alternativo
+  /// (tareas 1, 4 y 5 de docs/tareas-backend.md, en master desde el
+  /// 12/11/2026). Se puede apagar con `--dart-define=BACKEND_CAMPOS_NUEVOS=false`
+  /// para probar contra un backend viejo.
   static const bool backendCamposNuevos = bool.fromEnvironment(
     'BACKEND_CAMPOS_NUEVOS',
-    defaultValue: false,
+    defaultValue: true,
   );
 
   /// Lugar (campus) que administra el panel. El panel de Next.js usa el 1.
   static const int lugarId = int.fromEnvironment('LUGAR_ID', defaultValue: 1);
+
+  /// Proyecto de Supabase del equipo (el mismo de services/api).
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://qjnusmpwznaegeburldo.supabase.co',
+  );
+
+  /// Clave pública (publishable / anon) de Supabase. No es secreta, pero se
+  /// pasa al ejecutar para no dejarla en el repo:
+  ///   --dart-define=SUPABASE_ANON_KEY=sb_publishable_...
+  static const String supabaseAnonKey =
+      String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  /// Login real con Supabase: solo contra el backend real y con clave.
+  static bool get loginReal => !useMockData && supabaseAnonKey.isNotEmpty;
 }

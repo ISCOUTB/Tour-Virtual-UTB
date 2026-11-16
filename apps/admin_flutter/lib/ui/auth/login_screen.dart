@@ -4,7 +4,7 @@ import '../../core/auth/auth_state.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 
-/// A.1 Inicio de sesión (simulado).
+/// A.1 Inicio de sesión: Supabase Auth, o simulado si no hay clave.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -121,49 +121,53 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        FilledButton(
-                          onPressed: _cargando ? null : _ingresarConGoogle,
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircleAvatar(
-                                radius: 11,
-                                backgroundColor: Colors.white,
-                                child: Text(
-                                  'G',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 13,
+                        // El ingreso con Google no está configurado en Supabase:
+                        // solo se muestra en la maqueta.
+                        if (!AppConfig.loginReal) ...[
+                          FilledButton(
+                            onPressed: _cargando ? null : _ingresarConGoogle,
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircleAvatar(
+                                  radius: 11,
+                                  backgroundColor: Colors.white,
+                                  child: Text(
+                                    'G',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(width: 10),
-                              Flexible(
+                                SizedBox(width: 10),
+                                Flexible(
+                                  child: Text(
+                                    'Iniciar sesión con cuenta institucional',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          const Row(
+                            children: [
+                              Expanded(child: Divider()),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
                                 child: Text(
-                                  'Iniciar sesión con cuenta institucional',
-                                  overflow: TextOverflow.ellipsis,
+                                  'o',
+                                  style:
+                                      TextStyle(color: AppColors.textSecondary),
                                 ),
                               ),
+                              Expanded(child: Divider()),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Row(
-                          children: [
-                            Expanded(child: Divider()),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                'o',
-                                style:
-                                    TextStyle(color: AppColors.textSecondary),
-                              ),
-                            ),
-                            Expanded(child: Divider()),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 20),
+                        ],
                         TextFormField(
                           controller: _correo,
                           keyboardType: TextInputType.emailAddress,
@@ -237,10 +241,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontSize: 12,
                           ),
                         ),
-                        if (AppConfig.useMockData) ...[
+                        if (!AppConfig.loginReal) ...[
                           const SizedBox(height: 10),
                           const Text(
-                            'Modo maqueta: usa cualquier correo @utb.edu.co '
+                            'Modo de prueba: usa cualquier correo @utb.edu.co '
                             'y cualquier contraseña.',
                             textAlign: TextAlign.center,
                             style: TextStyle(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_state.dart';
+import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/api/api_client.dart';
 import '../../data/repositories/repositories.dart';
@@ -10,13 +11,11 @@ import '../widgets/common.dart';
 const List<String> _pestanas = [
   'Cuenta',
   'Administradores',
-  'Apariencia del tour',
   'Seguridad',
 ];
 const List<String> _rutas = [
   '/configuracion/cuenta',
   '/configuracion/administradores',
-  '/configuracion/apariencia',
   '/configuracion/seguridad',
 ];
 
@@ -61,292 +60,122 @@ class ConfigShell extends StatelessWidget {
 // F.1 Cuenta
 // ---------------------------------------------------------------------------
 
-class CuentaTab extends StatefulWidget {
+/// Datos de la sesión actual. El perfil vive en Supabase (auth + perfiles);
+/// aquí solo se muestra. La contraseña se cambia en la pestaña Seguridad.
+class CuentaTab extends StatelessWidget {
   const CuentaTab({super.key});
-
-  @override
-  State<CuentaTab> createState() => _CuentaTabState();
-}
-
-class _CuentaTabState extends State<CuentaTab> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nombre;
-  final _cargo = TextEditingController();
-  final _telefono = TextEditingController();
-  String _idioma = 'es';
-  String _formatoFecha = 'dmy';
-  bool _avisos = true;
-  bool _modificado = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _nombre = TextEditingController(text: authState.nombre);
-    for (final c in [_nombre, _cargo, _telefono]) {
-      c.addListener(_marcar);
-    }
-  }
-
-  @override
-  void dispose() {
-    for (final c in [_nombre, _cargo, _telefono]) {
-      c.removeListener(_marcar);
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  void _marcar() {
-    if (!_modificado) setState(() => _modificado = true);
-  }
-
-  void _descartar() {
-    _nombre.text = authState.nombre;
-    _cargo.clear();
-    _telefono.clear();
-    setState(() {
-      _idioma = 'es';
-      _formatoFecha = 'dmy';
-      _avisos = true;
-      _modificado = false;
-    });
-  }
-
-  void _guardar() {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _modificado = false);
-    showToast(context, 'Cambios guardados');
-  }
 
   @override
   Widget build(BuildContext context) {
     final iniciales = authState.nombre.isEmpty
         ? '?'
         : authState.nombre.substring(0, 1).toUpperCase();
-    return Column(
-      children: [
-        Expanded(
-          child: ScrollPage(
-            child: Form(
-              key: _formKey,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final perfil = AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Perfil', style: _tituloTarjeta),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundColor: AppColors.primary,
-                              child: Text(
-                                iniciales,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            OutlinedButton(
-                              onPressed: () => showToast(
-                                context,
-                                'La carga de foto se activa al conectar la cuenta.',
-                              ),
-                              child: const Text('Cambiar foto'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _nombre,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          validator: (v) {
-                            final t = (v ?? '').trim();
-                            if (t.length < 3 || t.length > 80) {
-                              return 'Entre 3 y 80 caracteres';
-                            }
-                            return null;
-                          },
-                          decoration:
-                              const InputDecoration(labelText: 'Nombre completo'),
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                          initialValue: authState.correo,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Correo institucional',
-                            prefixIcon: Icon(Icons.lock_outline),
-                            helperText:
-                                'Gestionado por la cuenta institucional UTB',
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                          controller: _cargo,
-                          maxLength: 80,
-                          decoration: const InputDecoration(
-                            labelText: 'Cargo / Dependencia (opcional)',
-                            counterText: '',
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                          controller: _telefono,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: 'Teléfono (opcional)',
-                            hintText: '+57 300 0000000',
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
 
-                  final preferencias = AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Preferencias', style: _tituloTarjeta),
-                        const SizedBox(height: 16),
-                        const Text('Idioma',
-                            style: TextStyle(color: AppColors.textSecondary)),
-                        const SizedBox(height: 6),
-                        SelectBox<String>(
-                          width: double.infinity,
-                          value: _idioma,
-                          items: const {'es': 'Español', 'en': 'English'},
-                          onChanged: (v) => setState(() {
-                            _idioma = v;
-                            _modificado = true;
-                          }),
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                          initialValue: 'America/Bogota',
-                          readOnly: true,
-                          decoration:
-                              const InputDecoration(labelText: 'Zona horaria'),
-                        ),
-                        const SizedBox(height: 14),
-                        const Text('Formato de fecha',
-                            style: TextStyle(color: AppColors.textSecondary)),
-                        const SizedBox(height: 6),
-                        SelectBox<String>(
-                          width: double.infinity,
-                          value: _formatoFecha,
-                          items: const {
-                            'dmy': 'DD/MM/YYYY',
-                            'ymd': 'YYYY-MM-DD',
-                          },
-                          onChanged: (v) => setState(() {
-                            _formatoFecha = v;
-                            _modificado = true;
-                          }),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Switch(
-                              value: _avisos,
-                              onChanged: (v) => setState(() {
-                                _avisos = v;
-                                _modificado = true;
-                              }),
-                            ),
-                            const SizedBox(width: 10),
-                            const Expanded(
-                              child: Text(
-                                'Recibir avisos por correo cuando un POI '
-                                'quede sin contenido',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+    final perfil = AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Perfil', style: _tituloTarjeta),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: AppColors.primary,
+                child: Text(
+                  iniciales,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      authState.nombre,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w600),
                     ),
-                  );
-
-                  final rol = AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Rol y permisos', style: _tituloTarjeta),
-                        const SizedBox(height: 12),
-                        const StatusBadge('Administrador',
-                            color: AppColors.primary),
-                        const SizedBox(height: 12),
-                        for (final p in const [
-                          'Gestionar POIs',
-                          'Subir multimedia',
-                          'Ver métricas',
-                          'Administrar usuarios',
-                        ])
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.check_circle,
-                                    size: 18, color: AppColors.success),
-                                const SizedBox(width: 8),
-                                Text(p),
-                              ],
-                            ),
-                          ),
-                      ],
+                    const SizedBox(height: 2),
+                    Text(
+                      authState.correo,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.textSecondary),
                     ),
-                  );
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Row(
+            children: [
+              Icon(Icons.lock_outline,
+                  size: 16, color: AppColors.textSecondary),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Cuenta institucional UTB. Para cambiar tu contraseña ve a '
+                  'la pestaña Seguridad.',
+                  style:
+                      TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
 
-                  if (constraints.maxWidth >= 1000) {
-                    return Column(
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: perfil),
-                            const SizedBox(width: 16),
-                            Expanded(child: preferencias),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: SizedBox(width: 420, child: rol),
-                        ),
-                      ],
-                    );
-                  }
-                  return Column(
-                    children: [
-                      perfil,
-                      const SizedBox(height: 16),
-                      preferencias,
-                      const SizedBox(height: 16),
-                      rol,
-                    ],
-                  );
-                },
+    final rol = AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Rol y permisos', style: _tituloTarjeta),
+          const SizedBox(height: 12),
+          const StatusBadge('Administrador', color: AppColors.primary),
+          const SizedBox(height: 12),
+          for (final p in const [
+            'Gestionar POIs',
+            'Subir multimedia',
+            'Ver métricas',
+            'Administrar usuarios',
+          ])
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle,
+                      size: 18, color: AppColors.success),
+                  const SizedBox(width: 8),
+                  Text(p),
+                ],
               ),
             ),
-          ),
-        ),
-        SaveBar(
-          children: [
-            OutlinedButton(
-              onPressed: _modificado ? _descartar : null,
-              child: const Text('Descartar cambios'),
-            ),
-            ElevatedButton(
-              onPressed: _modificado ? _guardar : null,
-              child: const Text('Guardar cambios'),
-            ),
-          ],
-        ),
-      ],
+        ],
+      ),
+    );
+
+    return ScrollPage(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 1000) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: perfil),
+                const SizedBox(width: 16),
+                Expanded(child: rol),
+              ],
+            );
+          }
+          return Column(
+            children: [perfil, const SizedBox(height: 16), rol],
+          );
+        },
+      ),
     );
   }
 }
@@ -634,6 +463,10 @@ class _InvitarDialogState extends State<_InvitarDialog> {
 
 // ---------------------------------------------------------------------------
 // F.3 Apariencia del tour
+//
+// FUERA DEL PANEL (15/11/2026): no hay backend que guarde esta configuración
+// ni la app móvil la lee. Se deja el diseño por si se conecta más adelante;
+// para volver a mostrarla, agregarla a _pestanas/_rutas y a app_router.dart.
 // ---------------------------------------------------------------------------
 
 class AparienciaTab extends StatefulWidget {
@@ -1116,6 +949,9 @@ class _AparienciaTabState extends State<AparienciaTab> {
 // F.4 Seguridad
 // ---------------------------------------------------------------------------
 
+/// Todo lo de esta pestaña es real: la contraseña y las sesiones van contra
+/// Supabase Auth, y el registro sale de la tabla auditoria
+/// (GET /api/admin/actividad). Dar o quitar accesos está en Administradores.
 class SeguridadTab extends StatefulWidget {
   const SeguridadTab({super.key});
 
@@ -1124,66 +960,184 @@ class SeguridadTab extends StatefulWidget {
 }
 
 class _SeguridadTabState extends State<SeguridadTab> {
-  bool _dosPasos = false;
+  final _formKey = GlobalKey<FormState>();
+  final _nueva = TextEditingController();
+  final _repetir = TextEditingController();
+  bool _guardando = false;
+  late Future<List<Actividad>> _registro;
 
-  Future<void> _accionRiesgo(String titulo, String mensaje) async {
+  @override
+  void initState() {
+    super.initState();
+    _registro = panelRepository.actividad(tamano: 15);
+  }
+
+  @override
+  void dispose() {
+    _nueva.dispose();
+    _repetir.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cambiarClave() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _guardando = true);
+    final error = await authState.cambiarClave(_nueva.text);
+    if (!mounted) return;
+    setState(() => _guardando = false);
+    if (error != null) {
+      showToast(context, error, error: true);
+      return;
+    }
+    _nueva.clear();
+    _repetir.clear();
+    showToast(context, 'Contraseña actualizada');
+  }
+
+  Future<void> _cerrarTodas() async {
     final ok = await confirmDialog(
       context,
-      title: titulo,
-      message: mensaje,
-      confirmLabel: 'Confirmar',
+      title: '¿Cerrar sesión en todos los dispositivos?',
+      message: 'Todas tus sesiones, incluida esta, se cerrarán.',
+      confirmLabel: 'Cerrar sesiones',
       danger: true,
     );
-    if (!ok || !mounted) return;
-    showToast(context, 'Acción registrada (maqueta)');
+    if (!ok) return;
+    await authState.cerrarSesionGlobal();
+  }
+
+  static String _fechaHora(DateTime f) {
+    String d(int n) => n.toString().padLeft(2, '0');
+    return '${d(f.day)}/${d(f.month)}/${f.year} ${d(f.hour)}:${d(f.minute)}';
+  }
+
+  Widget _filaRegistro(Actividad a) {
+    final (icono, verbo) = switch (a.accion) {
+      'insert' => (Icons.add_circle_outline, 'Creó'),
+      'delete' => (Icons.delete_outline, 'Eliminó'),
+      _ => (Icons.edit_outlined, 'Editó'),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          Icon(icono, size: 18, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              '$verbo ${a.entidad}'
+              '${a.entidadId == null ? '' : ' #${a.entidadId}'}',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              a.actorCorreo ?? 'Sistema o clave de administración',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          Text(
+            _fechaHora(a.fecha),
+            style:
+                const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final real = AppConfig.loginReal;
     return ScrollPage(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SampleDataBanner(
-            'Vista de diseño: la API actual no tiene sesiones, auditoría ni '
-            'control de acceso. El diseño queda listo para conectarlos.',
-          ),
-          const SizedBox(height: 16),
+          if (!real) ...[
+            const SampleDataBanner(
+              'Sin inicio de sesión real: la contraseña y las sesiones se '
+              'activan al correr el panel con SUPABASE_ANON_KEY.',
+            ),
+            const SizedBox(height: 16),
+          ],
           AppCard(
             child: Row(
               children: [
                 const Icon(Icons.verified_user_outlined,
                     color: AppColors.success),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Autenticación', style: _tituloTarjeta),
-                      SizedBox(height: 2),
+                      const Text('Autenticación', style: _tituloTarjeta),
+                      const SizedBox(height: 2),
                       Text(
-                        'Conectado con Firebase Auth · cuenta institucional UTB',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        real
+                            ? 'Supabase Auth · ${authState.correo}'
+                            : 'Modo de prueba · ${authState.correo}',
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
-                const StatusBadge('Verificado', color: AppColors.success),
-                const SizedBox(width: 20),
-                Switch(
-                  value: _dosPasos,
-                  onChanged: (v) => setState(() => _dosPasos = v),
-                ),
-                const Text('Verificación en dos pasos'),
-                const SizedBox(width: 12),
-                OutlinedButton(
-                  onPressed: () => showToast(
-                    context,
-                    'La configuración de 2FA depende del proveedor de autenticación.',
+                if (real)
+                  const StatusBadge('Sesión verificada',
+                      color: AppColors.success),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          AppCard(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Cambiar contraseña', style: _tituloTarjeta),
+                  const SizedBox(height: 14),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _nueva,
+                          obscureText: true,
+                          enabled: real,
+                          validator: (v) => (v ?? '').length < 8
+                              ? 'Mínimo 8 caracteres'
+                              : null,
+                          decoration: const InputDecoration(
+                              labelText: 'Nueva contraseña'),
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _repetir,
+                          obscureText: true,
+                          enabled: real,
+                          validator: (v) => v != _nueva.text
+                              ? 'Las contraseñas no coinciden'
+                              : null,
+                          decoration: const InputDecoration(
+                              labelText: 'Repetir contraseña'),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Text('Configurar'),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: real && !_guardando ? _cambiarClave : null,
+                    child:
+                        Text(_guardando ? 'Guardando…' : 'Cambiar contraseña'),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -1191,51 +1145,36 @@ class _SeguridadTabState extends State<SeguridadTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text('Sesiones activas', style: _tituloTarjeta),
-                    ),
-                    OutlinedButton(
-                      onPressed: () => showToast(
-                        context,
-                        'Se cerrarán las demás sesiones al conectar la autenticación.',
-                      ),
-                      child: const Text('Cerrar todas las otras sesiones'),
-                    ),
-                  ],
+                const Text('Registro de actividad', style: _tituloTarjeta),
+                const SizedBox(height: 2),
+                const Text(
+                  'Últimos cambios hechos desde el panel',
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 12),
-                _filaSesion('Esta sesión', 'Navegador actual', 'Ahora',
-                    esActual: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child:
-                          Text('Registro de actividad', style: _tituloTarjeta),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => showToast(
-                        context,
-                        'La exportación se activa al conectar la auditoría.',
-                      ),
-                      icon: const Icon(Icons.download_outlined, size: 18),
-                      label: const Text('Exportar registro'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const EmptyState(
-                  message:
-                      'Sin registros: la tabla de auditoría existe en la base, pero la API aún no la expone',
+                FutureBuilder<List<Actividad>>(
+                  future: _registro,
+                  builder: (context, snap) {
+                    if (snap.hasError) {
+                      return ErrorCard(
+                        message:
+                            'No se pudo cargar el registro: ${snap.error}',
+                        onRetry: () => setState(() {
+                          _registro = panelRepository.actividad(tamano: 15);
+                        }),
+                      );
+                    }
+                    if (!snap.hasData) return const SkeletonBox(height: 160);
+                    if (snap.data!.isEmpty) {
+                      return const EmptyState(
+                          message: 'Sin cambios registrados');
+                    }
+                    return Column(
+                      children: [
+                        for (final a in snap.data!) _filaRegistro(a),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -1254,99 +1193,24 @@ class _SeguridadTabState extends State<SeguridadTab> {
                     color: AppColors.danger,
                   ),
                 ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Para quitarle el acceso a otra persona, usa la pestaña '
+                  'Administradores.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.danger),
-                        foregroundColor: AppColors.danger,
-                      ),
-                      onPressed: () => _accionRiesgo(
-                        '¿Revocar accesos de un administrador?',
-                        'Se te pedirá elegir a la persona antes de confirmar.',
-                      ),
-                      child: const Text('Revocar accesos de un administrador'),
-                    ),
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.danger),
-                        foregroundColor: AppColors.danger,
-                      ),
-                      onPressed: () => _accionRiesgo(
-                        '¿Cerrar sesión en todos los dispositivos?',
-                        'Todas las sesiones, incluida esta, se cerrarán.',
-                      ),
-                      child: const Text('Cerrar sesión en todos los dispositivos'),
-                    ),
-                  ],
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.danger),
+                    foregroundColor: AppColors.danger,
+                  ),
+                  onPressed: real ? _cerrarTodas : null,
+                  child: const Text('Cerrar sesión en todos los dispositivos'),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filaSesion(String dispositivo, String ubicacion, String acceso,
-      {bool esActual = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.computer_outlined, color: AppColors.textSecondary),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(dispositivo, overflow: TextOverflow.ellipsis),
-                ),
-                if (esActual) ...[
-                  const SizedBox(width: 8),
-                  const StatusBadge('Esta sesión', color: AppColors.success),
-                ],
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(ubicacion,
-                style: const TextStyle(color: AppColors.textSecondary)),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(acceso,
-                style: const TextStyle(color: AppColors.textSecondary)),
-          ),
-          if (!esActual)
-            OutlinedButton(
-              onPressed: () => showToast(context, 'Sesión cerrada (maqueta)'),
-              child: const Text('Cerrar sesión'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _evento(IconData icono, String texto, String hora) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icono, size: 18, color: AppColors.primary),
-          const SizedBox(width: 12),
-          Expanded(child: Text(texto)),
-          Text(hora,
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 12)),
         ],
       ),
     );

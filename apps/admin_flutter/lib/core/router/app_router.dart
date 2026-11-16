@@ -69,15 +69,17 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) =>
               const ConfigShell(activa: 1, child: AdministradoresTab()),
         ),
+        // «Apariencia del tour» (AparienciaTab) queda fuera del panel: no
+        // hay backend que la guarde ni la app la lee. Decisión del equipo
+        // (15/11/2026). El código sigue en settings_screens.dart.
         GoRoute(
           path: '/configuracion/apariencia',
-          builder: (context, state) =>
-              const ConfigShell(activa: 2, child: AparienciaTab()),
+          redirect: (context, state) => '/configuracion/cuenta',
         ),
         GoRoute(
           path: '/configuracion/seguridad',
           builder: (context, state) =>
-              const ConfigShell(activa: 3, child: SeguridadTab()),
+              const ConfigShell(activa: 2, child: SeguridadTab()),
         ),
       ],
     ),

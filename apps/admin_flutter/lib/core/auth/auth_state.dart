@@ -116,6 +116,41 @@ class AuthState extends ChangeNotifier {
     if (AppConfig.loginReal) unawaited(_auth.signOut());
   }
 
+  /// Cierra la sesión en todos los dispositivos (revoca los tokens de
+  /// renovación en Supabase), incluida esta.
+  Future<void> cerrarSesionGlobal() async {
+    if (AppConfig.loginReal) {
+      try {
+        await _auth.signOut(scope: SignOutScope.global);
+      } catch (_) {
+        // Sin red igual se cierra la sesión local.
+      }
+    }
+    _signedIn = false;
+    notifyListeners();
+  }
+
+  /// Cambia la contraseña de la cuenta actual. Devuelve un mensaje de error,
+  /// o null si se cambió.
+  Future<String?> cambiarClave(String nueva) async {
+    if (!AppConfig.loginReal) return 'No disponible sin inicio de sesión real';
+    try {
+      await _auth.updateUser(UserAttributes(password: nueva));
+      return null;
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('different from the old')) {
+        return 'La nueva contraseña debe ser distinta de la actual';
+      }
+      if (msg.contains('weak') || msg.contains('at least')) {
+        return 'Contraseña muy débil: ${e.message}';
+      }
+      return 'No se pudo cambiar la contraseña: ${e.message}';
+    } catch (_) {
+      return 'No se pudo conectar con Supabase. Revisa tu conexión.';
+    }
+  }
+
   void _entrar(String correo) {
     final usuario = correo.split('@').first;
     _correo = correo;

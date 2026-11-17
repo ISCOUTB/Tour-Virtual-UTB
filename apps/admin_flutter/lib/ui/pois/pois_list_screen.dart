@@ -4,11 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/models/enums.dart';
+import '../../data/models/escena.dart';
+import '../../data/models/medio.dart';
 import '../../data/models/poi.dart';
 import '../../data/repositories/repositories.dart';
 import '../../domain/reglas.dart';
 import '../widgets/common.dart';
+import '../widgets/imagen_red.dart';
 import 'delete_poi_dialog.dart';
+import 'poi_contenido.dart';
 
 enum _Orden { recientes, antiguos, nombre }
 
@@ -28,7 +33,9 @@ class _PoisListScreenState extends State<PoisListScreen> {
   static const double _anchoMinimo = 1040;
 
   List<Poi> _pois = const [];
-  Map<int, String> _miniaturas = const {};
+  List<Escena> _escenas = const [];
+  // Medios de cada POI (id -> medios), cargados en segundo plano.
+  final Map<int, List<Medio>> _medios = {};
   bool _cargando = true;
   String? _error;
 
@@ -74,28 +81,47 @@ class _PoisListScreenState extends State<PoisListScreen> {
     });
     try {
       final pois = await poiRepository.listar();
-      final miniaturas = <int, String>{};
+      var escenas = <Escena>[];
       try {
-        final escenas = await escenaRepository.listar();
-        for (final e in escenas) {
-          final url = e.imagenUrlBaja ?? e.imagenUrl;
-          if (url != null && url.isNotEmpty) miniaturas[e.id] = url;
-        }
+        escenas = await escenaRepository.listar();
       } catch (_) {
-        // Las miniaturas son opcionales: si fallan, se muestra un marcador.
+        // Las imágenes son opcionales: si fallan, se muestra un marcador.
       }
       if (!mounted) return;
       setState(() {
         _pois = pois;
-        _miniaturas = miniaturas;
+        _escenas = escenas;
+        _medios.clear();
         _cargando = false;
       });
+      unawaited(_cargarMedios(pois));
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = '$e';
         _cargando = false;
       });
+    }
+  }
+
+  /// Trae los medios de cada POI de a cuatro, para que la lista muestre sus
+  /// fotos y su información sin bloquear la carga inicial. Si un POI no se
+  /// puede leer (p. ej. está inactivo y el detalle público no lo devuelve),
+  /// se queda sin esos datos.
+  Future<void> _cargarMedios(List<Poi> pois) async {
+    for (var i = 0; i < pois.length; i += 4) {
+      final lote = pois.skip(i).take(4);
+      await Future.wait([
+        for (final p in lote)
+          () async {
+            try {
+              final d = await poiRepository.detalle(p.id);
+              if (!mounted) return;
+              setState(() => _medios[p.id] = d.medios);
+            } catch (_) {}
+          }(),
+      ]);
+      if (!mounted) return;
     }
   }
 
@@ -354,7 +380,11 @@ class _PoisListScreenState extends State<PoisListScreen> {
                       for (final poi in visibles)
                         _FilaPoi(
                           poi: poi,
-                          miniatura: _miniaturas[poi.escenaPrincipalId],
+                          contenido: ContenidoPoi(
+                            escena: escenaDePoi(poi, _escenas),
+                            medios: _medios[poi.id] ?? const [],
+                          ),
+                          cargado: _medios.containsKey(poi.id),
                           onEditar: () => context.go('/pois/${poi.id}/editar'),
                           onEliminar: () => _eliminar(poi),
                           onEstado: (v) => _cambiarEstado(poi, v),
@@ -491,14 +521,18 @@ class _EncabezadoTabla extends StatelessWidget {
 class _FilaPoi extends StatelessWidget {
   const _FilaPoi({
     required this.poi,
-    required this.miniatura,
+    required this.contenido,
+    required this.cargado,
     required this.onEditar,
     required this.onEliminar,
     required this.onEstado,
   });
 
   final Poi poi;
-  final String? miniatura;
+  final ContenidoPoi contenido;
+
+  /// Ya se leyeron los medios del POI (evita mostrar «0» mientras cargan).
+  final bool cargado;
   final VoidCallback onEditar;
   final VoidCallback onEliminar;
   final ValueChanged<bool> onEstado;
@@ -514,6 +548,44 @@ class _FilaPoi extends StatelessWidget {
     return '—';
   }
 
+  static String _plural(int n, String uno, String varios) =>
+      '$n ${n == 1 ? uno : varios}';
+
+  static String _nombreAudiencia(Audiencia a) => switch (a) {
+        Audiencia.externo => 'Externos',
+        Audiencia.estudiante => 'Estudiantes',
+        Audiencia.docente => 'Docentes',
+      };
+
+  /// Información adicional: qué contenido tiene el lugar y para quién es.
+  Widget _indicadores() {
+    final fotos = contenido.fotos.length;
+    final videos = contenido.videos.length;
+    final audios = contenido.audios.length;
+    final sinContenido =
+        cargado && !contenido.tiene360 && fotos + videos + audios == 0;
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (contenido.tiene360) const _Dato(Icons.threesixty, '360°'),
+        if (fotos > 0)
+          _Dato(Icons.photo_library_outlined, _plural(fotos, 'foto', 'fotos')),
+        if (videos > 0)
+          _Dato(Icons.videocam_outlined, _plural(videos, 'video', 'videos')),
+        if (audios > 0)
+          _Dato(Icons.graphic_eq, _plural(audios, 'audio', 'audios')),
+        if (sinContenido)
+          const _Dato(Icons.hourglass_empty, 'Sin multimedia',
+              color: AppColors.warning),
+        if (poi.audiencias.isNotEmpty)
+          _Dato(Icons.groups_outlined,
+              poi.audiencias.map(_nombreAudiencia).join(', ')),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = AppColors.categoria(poi.categoria);
@@ -521,7 +593,7 @@ class _FilaPoi extends StatelessWidget {
       onTap: onEditar,
       hoverColor: AppColors.primary.withValues(alpha: 0.06),
       child: Container(
-        height: 80,
+        height: 96,
         decoration: const BoxDecoration(
           border: Border(bottom: BorderSide(color: AppColors.border)),
         ),
@@ -533,8 +605,10 @@ class _FilaPoi extends StatelessWidget {
             SizedBox(
               width: 128,
               child: _Miniatura(
-                url: miniatura,
-                tiene360: poi.escenaPrincipalId != null,
+                url: contenido.imagenPortada,
+                tiene360: contenido.tiene360,
+                tieneEscena:
+                    poi.escenaPrincipalId != null || contenido.escena != null,
               ),
             ),
             Expanded(
@@ -561,11 +635,19 @@ class _FilaPoi extends StatelessWidget {
               flex: 4,
               child: Padding(
                 padding: const EdgeInsets.only(right: 12),
-                child: Text(
-                  poi.descripcion ?? '—',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.textSecondary),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      poi.descripcion ?? '—',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    _indicadores(),
+                  ],
                 ),
               ),
             ),
@@ -627,16 +709,21 @@ class _FilaPoi extends StatelessWidget {
 }
 
 class _Miniatura extends StatelessWidget {
-  const _Miniatura({required this.url, required this.tiene360});
+  const _Miniatura({
+    required this.url,
+    required this.tiene360,
+    required this.tieneEscena,
+  });
 
   final String? url;
   final bool tiene360;
+  final bool tieneEscena;
 
   Widget _marcador() => Container(
         color: AppColors.border,
         alignment: Alignment.center,
         child: Icon(
-          tiene360 ? Icons.threesixty : Icons.image_not_supported_outlined,
+          tieneEscena ? Icons.threesixty : Icons.image_not_supported_outlined,
           color: AppColors.textSecondary,
         ),
       );
@@ -647,21 +734,14 @@ class _Miniatura extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: SizedBox(
-        width: 104,
-        height: 56,
+        width: 112,
+        height: 64,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (u != null && u.startsWith('http'))
-                Image.network(
-                  u,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stack) => _marcador(),
-                )
-              else
-                _marcador(),
+              ImagenRed(url: u, alternativo: _marcador()),
               if (tiene360)
                 Positioned(
                   left: 4,
@@ -683,6 +763,27 @@ class _Miniatura extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Dato pequeño con icono para la columna de información adicional.
+class _Dato extends StatelessWidget {
+  const _Dato(this.icono, this.texto, {this.color = AppColors.textSecondary});
+
+  final IconData icono;
+  final String texto;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icono, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(texto, style: TextStyle(fontSize: 12, color: color)),
+      ],
     );
   }
 }

@@ -12,6 +12,9 @@ import '../../data/repositories/repositories.dart';
 import '../../domain/reglas.dart';
 import '../mapa/mapa_campus.dart';
 import '../widgets/common.dart';
+import '../widgets/imagen_red.dart';
+import 'poi_contenido.dart';
+import 'poi_vista_previa.dart';
 
 /// C.2 Crear / editar POI: formulario, ubicación en el mapa y vista previa
 /// en la app móvil. La foto 360° y demás multimedia se suben en el área D.
@@ -37,6 +40,7 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
   List<Poi> _todos = const [];
   List<Medio> _medios = const [];
   Escena? _escena;
+  List<Escena> _escenas = const [];
   Poi? _original;
   String? _categoria;
   String? _errorCategoria;
@@ -98,14 +102,14 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
       _original = original;
       if (original != null) {
         // El contenido es opcional: si falla, el formulario sigue funcionando.
+        // Cada lectura va aparte: un POI inactivo no tiene detalle público,
+        // pero su escena sí debe verse.
         try {
           _medios = (await poiRepository.detalle(original.id)).medios;
-          final id = original.escenaPrincipalId;
-          if (id != null) {
-            for (final e in await escenaRepository.listar()) {
-              if (e.id == id) _escena = e;
-            }
-          }
+        } catch (_) {}
+        try {
+          _escenas = await escenaRepository.listar();
+          _escena = escenaDePoi(original, _escenas);
         } catch (_) {}
       }
       if (!mounted) return;
@@ -580,7 +584,7 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
           const Text('Escena 360°',
               style: TextStyle(color: AppColors.textSecondary)),
           const SizedBox(height: 6),
-          if (_original?.escenaPrincipalId == null)
+          if (escena == null && _original?.escenaPrincipalId == null)
             const Text(
               'Sin escena: el lugar se ve en el mapa y en «Más lugares», sin '
               'número, hasta que tenga su panorámica.',
@@ -596,6 +600,27 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
               '${escena.vistaInicialPitch?.toStringAsFixed(0) ?? '—'}°',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
+            if (escena.imagenUrlBaja != null || escena.imagenUrl != null) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  height: 120,
+                  width: double.infinity,
+                  child: ImagenRed(
+                    url: (escena.imagenUrlBaja?.isNotEmpty ?? false)
+                        ? escena.imagenUrlBaja
+                        : escena.imagenUrl,
+                    alternativo: Container(
+                      color: AppColors.border,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.threesixty,
+                          color: AppColors.textSecondary),
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 6),
             Wrap(
               spacing: 8,
@@ -624,6 +649,11 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
               ),
             ],
           ],
+          const SizedBox(height: 16),
+          const Text('Fotos y videos',
+              style: TextStyle(color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          _galeria(),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -681,10 +711,63 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
     );
   }
 
+  /// Fotos y videos ya guardados del lugar.
+  Widget _galeria() {
+    final contenido = ContenidoPoi(escena: _escena, medios: _medios);
+    final items = [...contenido.fotos, ...contenido.videos];
+    if (items.isEmpty) {
+      return const Text('Sin fotos ni videos todavía.',
+          style: TextStyle(fontSize: 13));
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final m in items)
+          Tooltip(
+            message: (m.textoAlt?.isNotEmpty ?? false)
+                ? m.textoAlt!
+                : (m.tipo == TipoMedio.video ? 'Video' : 'Foto'),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 96,
+                height: 68,
+                child: m.tipo == TipoMedio.video
+                    ? Container(
+                        color: AppColors.border,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.play_circle_outline),
+                      )
+                    : ImagenRed(
+                        url: m.url,
+                        alternativo: Container(
+                          color: AppColors.border,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.image_outlined,
+                              color: AppColors.textSecondary),
+                        ),
+                      ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Posición del lugar en el recorrido: «Parada N de M», como en la app.
+  (int?, int?) _parada() {
+    final lista = _escenas.where((e) => e.poiId != null).toList()
+      ..sort((a, b) => a.orden.compareTo(b.orden));
+    if (lista.isEmpty) return (null, null);
+    final actual = _escena;
+    if (actual == null) return (null, lista.length);
+    final i = lista.indexWhere((e) => e.id == actual.id);
+    return (i < 0 ? null : i + 1, lista.length);
+  }
+
   Widget _tarjetaVistaPrevia() {
-    final nombre = _nombre.text.trim();
-    final descripcion = _descripcion.text.trim();
-    final color = AppColors.categoria(_categoria);
+    final (parada, total) = _parada();
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -693,83 +776,28 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
             'Vista previa en la app móvil',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 4),
+          const Text(
+            'Así se ve el lugar en el teléfono, con lo que está registrado '
+            'y lo que escribes en el formulario.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 16),
           Center(
-            child: PhoneFrame(
-              child: ListView(
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                children: [
-                  Container(
-                    height: 150,
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                    child: const Stack(
-                      children: [
-                        Center(child: Icon(Icons.threesixty, size: 44)),
-                        Positioned(
-                          left: 10,
-                          bottom: 10,
-                          child: StatusBadge('360°', color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          nombre.isEmpty ? 'Nombre del POI' : nombre,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        if (_categoria != null)
-                          StatusBadge(_categoria!, color: color),
-                        const SizedBox(height: 10),
-                        Text(
-                          descripcion.isEmpty
-                              ? 'La descripción aparecerá aquí.'
-                              : descripcion,
-                          maxLines: 5,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Row(
-                          children: [
-                            Icon(Icons.place_outlined,
-                                size: 14, color: AppColors.textSecondary),
-                            SizedBox(width: 4),
-                            Text(
-                              'Ver en el mapa',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        StatusBadge(
-                          _activo ? 'Activo' : 'Inactivo',
-                          color: _activo
-                              ? AppColors.success
-                              : AppColors.textSecondary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            child: PoiVistaPreviaMovil(
+              nombre: _nombre.text,
+              descripcion: _descripcion.text,
+              categoria: _categoria,
+              contenido: ContenidoPoi(escena: _escena, medios: _medios),
+              parada: parada,
+              totalParadas: total,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: StatusBadge(
+              _activo ? 'Activo' : 'Inactivo',
+              color: _activo ? AppColors.success : AppColors.textSecondary,
             ),
           ),
         ],

@@ -72,6 +72,10 @@ paths:
     delete:
       tags:
         - AdminEscenas
+      summary: Elimina una escena
+      description: |
+        Si la escena es destino de hotspots de otras escenas, responde 409
+        en lugar de fallar con 500 por la restricción FK.
       parameters:
         - name: id
           in: path
@@ -80,8 +84,22 @@ paths:
             type: integer
             format: int32
       responses:
-        '200':
-          description: OK
+        '204':
+          description: Escena eliminada
+        '404':
+          description: La escena no existe
+        '409':
+          description: Escena enlazada como destino desde otros hotspots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                  codigo:
+                    type: string
+                    example: escena_en_uso
   '/api/admin/escenas/{id}/imagen':
     post:
       tags:
@@ -622,6 +640,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/PoiDto'
   '/api/admin/pois/{id}':
+    get:
+      tags:
+        - AdminPois
+      summary: Detalle de un POI (activo o inactivo) con medios y escenas
+      description: |
+        A diferencia de GET /api/pois/{poiId}, este endpoint no filtra por
+        activo ni por audiencia e incluye las escenas del POI.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoiDetalleAdminDto'
+        '404':
+          description: El punto de interés no existe
     put:
       tags:
         - AdminPois
@@ -1650,6 +1691,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Medio'
+          nullable: true
+      additionalProperties: false
+    PoiDetalleAdminDto:
+      type: object
+      description: Detalle de POI para el panel (incluye inactivos, medios y escenas).
+      properties:
+        poi:
+          $ref: '#/components/schemas/PoiDto'
+        medios:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedioDto'
+          nullable: true
+        escenas:
+          type: array
+          items:
+            $ref: '#/components/schemas/EscenaDto'
           nullable: true
       additionalProperties: false
     PoiDetalleDto:

@@ -21,10 +21,7 @@ final GoRouter appRouter = GoRouter(
     return null;
   },
   routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     ShellRoute(
       builder: (context, state, child) =>
           AdminLayout(location: state.uri.path, child: child),
@@ -53,6 +50,7 @@ final GoRouter appRouter = GoRouter(
           path: '/multimedia',
           builder: (context, state) => MultimediaScreen(
             poiIdInicial: int.tryParse(state.uri.queryParameters['poi'] ?? ''),
+            tipoInicial: state.uri.queryParameters['tipo'],
           ),
         ),
         GoRoute(

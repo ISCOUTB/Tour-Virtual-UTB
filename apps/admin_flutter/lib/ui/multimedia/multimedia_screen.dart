@@ -25,9 +25,12 @@ import '../widgets/common.dart';
 /// Reglas del SRS: no hay imagen sin texto alternativo ni narración sin
 /// subtítulos.
 class MultimediaScreen extends StatefulWidget {
-  const MultimediaScreen({super.key, this.poiIdInicial});
+  const MultimediaScreen({super.key, this.poiIdInicial, this.tipoInicial});
 
   final int? poiIdInicial;
+
+  /// Pestaña con la que abre: panorama, fotos, video o audio.
+  final String? tipoInicial;
 
   @override
   State<MultimediaScreen> createState() => _MultimediaScreenState();
@@ -37,8 +40,13 @@ enum _Pestana {
   panorama('Foto 360°', Icons.threesixty, ['jpg', 'jpeg', 'png', 'webp']),
   fotos('Fotos', Icons.photo_library_outlined, ['jpg', 'jpeg', 'png', 'webp']),
   video('Video', Icons.videocam_outlined, ['mp4', 'm4v', 'mov', 'webm']),
-  audio('Audio narrado', Icons.audiotrack_outlined,
-      ['mp3', 'm4a', 'aac', 'ogg', 'wav']);
+  audio('Audio narrado', Icons.audiotrack_outlined, [
+    'mp3',
+    'm4a',
+    'aac',
+    'ogg',
+    'wav',
+  ]);
 
   const _Pestana(this.etiqueta, this.icono, this.extensiones);
 
@@ -47,10 +55,10 @@ enum _Pestana {
   final List<String> extensiones;
 
   TipoMedio get tipo => switch (this) {
-        _Pestana.video => TipoMedio.video,
-        _Pestana.audio => TipoMedio.audio,
-        _ => TipoMedio.imagen,
-      };
+    _Pestana.video => TipoMedio.video,
+    _Pestana.audio => TipoMedio.audio,
+    _ => TipoMedio.imagen,
+  };
 
   /// La panorámica la reduce el servidor, así que admite hasta 50 MB.
   int get maxBytes =>
@@ -99,6 +107,8 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
   void initState() {
     super.initState();
     _poiId = widget.poiIdInicial;
+    final inicial = _Pestana.values.asNameMap()[widget.tipoInicial];
+    if (inicial != null) _pestana = inicial;
     _futuroPois = poiRepository.listar();
     if (_poiId != null) _cargarContenido();
   }
@@ -150,8 +160,11 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
 
   Future<void> _elegirArchivo() async {
     if (_poiId == null) {
-      showToast(context, 'Selecciona un POI destino antes de subir.',
-          error: true);
+      showToast(
+        context,
+        'Selecciona un POI destino antes de subir.',
+        error: true,
+      );
       return;
     }
     final f = await _elegir(_pestana.extensiones);
@@ -172,13 +185,15 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
   Future<void> _elegirVtt() async {
     final f = await _elegir(const ['vtt']);
     if (f == null || !mounted) return;
-    final inicio = String.fromCharCodes(f.bytes.take(16))
-        .replaceFirst('﻿', '')
-        .replaceFirst('ï»¿', '');
+    final inicio = String.fromCharCodes(
+      f.bytes.take(16),
+    ).replaceFirst('﻿', '').replaceFirst('ï»¿', '');
     if (!inicio.startsWith('WEBVTT')) {
-      showToast(context,
-          'Ese archivo no es WebVTT: la primera línea debe ser WEBVTT.',
-          error: true);
+      showToast(
+        context,
+        'Ese archivo no es WebVTT: la primera línea debe ser WEBVTT.',
+        error: true,
+      );
       return;
     }
     setState(() => _vtt = f);
@@ -194,9 +209,11 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
       return 'Adjunta los subtítulos (.vtt)';
     }
     if (_pestana == _Pestana.audio &&
-        medios.any((m) =>
-            m.tipo == TipoMedio.audio &&
-            (m.idioma ?? idiomaOriginal) == _idioma)) {
+        medios.any(
+          (m) =>
+              m.tipo == TipoMedio.audio &&
+              (m.idioma ?? idiomaOriginal) == _idioma,
+        )) {
       return 'Ya hay una narración en ${nombreDeIdioma(_idioma)}';
     }
     return null;
@@ -205,15 +222,15 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
   // ------------------------------------------------------------------ subir
 
   Future<void> _subir(PoiDetalle detalle, Escena? escena) async {
-    final archivo =
-        ArchivoSubida('Archivo', _archivo!.bytes, _archivo!.name);
+    final archivo = ArchivoSubida('Archivo', _archivo!.bytes, _archivo!.name);
     setState(() => _subiendo = true);
     try {
       if (_pestana == _Pestana.panorama) {
         await _subirPanorama(detalle.poi, escena, archivo);
       } else {
-        final mismos =
-            detalle.medios.where((m) => m.tipo == _pestana.tipo).length;
+        final mismos = detalle.medios
+            .where((m) => m.tipo == _pestana.tipo)
+            .length;
         await medioRepository.subir(
           poiId: detalle.poi.id,
           tipo: _pestana.tipo,
@@ -241,37 +258,48 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
   }
 
   Future<void> _subirPanorama(
-      Poi poi, Escena? escena, ArchivoSubida archivo) async {
+    Poi poi,
+    Escena? escena,
+    ArchivoSubida archivo,
+  ) async {
     final alt = _textoAlt.text.trim();
     var destino = escena;
     if (destino == null) {
-      destino = await escenaRepository.crear(Escena(
-        id: 0,
-        lugarId: AppConfig.lugarId,
-        poiId: poi.id,
-        nombre: poi.nombre,
-        esEscenaPrincipal: true,
-        textoAlt: alt,
-      ));
+      destino = await escenaRepository.crear(
+        Escena(
+          id: 0,
+          lugarId: AppConfig.lugarId,
+          poiId: poi.id,
+          nombre: poi.nombre,
+          esEscenaPrincipal: true,
+          textoAlt: alt,
+        ),
+      );
       await poiRepository.actualizar(
-          poi.copyWith(escenaPrincipalId: destino.id));
+        poi.copyWith(escenaPrincipalId: destino.id),
+      );
     } else if (destino.textoAlt != alt) {
-      destino = await escenaRepository.actualizar(Escena(
-        id: destino.id,
-        lugarId: destino.lugarId,
-        poiId: destino.poiId,
-        nombre: destino.nombre,
-        imagenUrl: destino.imagenUrl,
-        imagenUrlBaja: destino.imagenUrlBaja,
-        esEscenaPrincipal: destino.esEscenaPrincipal,
-        orden: destino.orden,
-        vistaInicialYaw: destino.vistaInicialYaw,
-        vistaInicialPitch: destino.vistaInicialPitch,
-        textoAlt: alt,
-      ));
+      destino = await escenaRepository.actualizar(
+        Escena(
+          id: destino.id,
+          lugarId: destino.lugarId,
+          poiId: destino.poiId,
+          nombre: destino.nombre,
+          imagenUrl: destino.imagenUrl,
+          imagenUrlBaja: destino.imagenUrlBaja,
+          esEscenaPrincipal: destino.esEscenaPrincipal,
+          orden: destino.orden,
+          vistaInicialYaw: destino.vistaInicialYaw,
+          vistaInicialPitch: destino.vistaInicialPitch,
+          textoAlt: alt,
+        ),
+      );
     }
-    await escenaRepository.subirImagen(destino.id,
-        bytes: archivo.bytes, filename: archivo.nombre);
+    await escenaRepository.subirImagen(
+      destino.id,
+      bytes: archivo.bytes,
+      filename: archivo.nombre,
+    );
   }
 
   Future<void> _eliminar(Medio m) async {
@@ -309,7 +337,8 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
           if (AppConfig.useMockData) ...[
             const SizedBox(height: 20),
             const SampleDataBanner(
-                'Modo maqueta: los archivos no se envían al servidor.'),
+              'Modo maqueta: los archivos no se envían al servidor.',
+            ),
           ],
           const SizedBox(height: 20),
           FutureBuilder<List<Poi>>(
@@ -345,7 +374,8 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
                   padding: const EdgeInsets.all(20),
                   child: _futuroContenido == null
                       ? const EmptyState(
-                          message: 'Selecciona un POI destino para empezar')
+                          message: 'Selecciona un POI destino para empezar',
+                        )
                       : FutureBuilder<(PoiDetalle, Escena?)>(
                           future: _futuroContenido,
                           builder: (context, snap) {
@@ -375,8 +405,10 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     final valido = pois.any((p) => p.id == _poiId);
     return Row(
       children: [
-        const Text('POI destino',
-            style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text(
+          'POI destino',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(width: 16),
         SelectBox<int>(
           width: 320,
@@ -399,39 +431,47 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     final actuales = _pestana == _Pestana.panorama
         ? <Widget>[_estadoPanorama(escena)]
         : [
-            for (final m in detalle.medios.where((m) => m.tipo == _pestana.tipo))
+            for (final m in detalle.medios.where(
+              (m) => m.tipo == _pestana.tipo,
+            ))
               _filaMedio(m),
           ];
-    return LayoutBuilder(builder: (context, constraints) {
-      final formulario = _formulario(detalle, escena);
-      final lista = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Ya cargado',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          if (actuales.isEmpty)
-            const Text('Aún no hay archivos de este tipo.',
-                style: TextStyle(color: AppColors.textSecondary))
-          else
-            ...actuales,
-        ],
-      );
-      if (constraints.maxWidth >= 900) {
-        return Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final formulario = _formulario(detalle, escena);
+        final lista = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(flex: 3, child: formulario),
-            const SizedBox(width: 24),
-            Expanded(flex: 2, child: lista),
+            const Text(
+              'Ya cargado',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            if (actuales.isEmpty)
+              const Text(
+                'Aún no hay archivos de este tipo.',
+                style: TextStyle(color: AppColors.textSecondary),
+              )
+            else
+              ...actuales,
           ],
         );
-      }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [formulario, const SizedBox(height: 24), lista],
-      );
-    });
+        if (constraints.maxWidth >= 900) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 3, child: formulario),
+              const SizedBox(width: 24),
+              Expanded(flex: 2, child: lista),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [formulario, const SizedBox(height: 24), lista],
+        );
+      },
+    );
   }
 
   Widget _formulario(PoiDetalle detalle, Escena? escena) {
@@ -457,7 +497,7 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
                     _archivo == null
                         ? 'Haz clic para elegir el archivo'
                         : '${_archivo!.name} · '
-                            '${(_archivo!.size / 1048576).toStringAsFixed(1)} MB',
+                              '${(_archivo!.size / 1048576).toStringAsFixed(1)} MB',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
@@ -466,7 +506,9 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
                     ' · máx. ${_pestana.maxBytes ~/ 1048576} MB'
                     '${_pestana == _Pestana.panorama ? ' · proporción 2:1' : ''}',
                     style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 12),
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -490,8 +532,10 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
         if (_pestana.llevaSubtitulos) ...[
           Row(
             children: [
-              const Text('Idioma hablado',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                'Idioma hablado',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(width: 16),
               SelectBox<String>(
                 width: 280,
@@ -547,8 +591,10 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
             const SizedBox(width: 12),
             if (faltante != null && _archivo != null)
               Expanded(
-                child: Text(faltante,
-                    style: const TextStyle(color: AppColors.warning)),
+                child: Text(
+                  faltante,
+                  style: const TextStyle(color: AppColors.warning),
+                ),
               ),
           ],
         ),
@@ -570,8 +616,8 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
               escena == null
                   ? 'Sin escena 360°'
                   : tiene
-                      ? 'Panorámica cargada'
-                      : 'Escena sin panorámica',
+                  ? 'Panorámica cargada'
+                  : 'Escena sin panorámica',
               color: tiene ? AppColors.success : AppColors.warning,
             ),
             if (escena != null)
@@ -583,9 +629,13 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
         ),
         if (alt.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text(alt,
-              style: const TextStyle(
-                  fontSize: 12, color: AppColors.textSecondary)),
+          Text(
+            alt,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
         const SizedBox(height: 8),
         Text(
@@ -622,10 +672,14 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                Text(nombre,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  nombre,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),

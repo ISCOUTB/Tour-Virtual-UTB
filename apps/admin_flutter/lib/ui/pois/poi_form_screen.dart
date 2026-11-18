@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/api/api_client.dart';
 import '../../data/models/enums.dart';
 import '../../data/models/escena.dart';
 import '../../data/models/idiomas.dart';
@@ -13,6 +14,7 @@ import '../../domain/reglas.dart';
 import '../mapa/mapa_campus.dart';
 import '../widgets/common.dart';
 import '../widgets/imagen_red.dart';
+import 'contenido_edicion.dart';
 import 'poi_contenido.dart';
 import 'poi_vista_previa.dart';
 
@@ -41,6 +43,26 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
   List<Medio> _medios = const [];
   Escena? _escena;
   List<Escena> _escenas = const [];
+
+  // Modo edición de «Contenido del lugar».
+  bool _editandoContenido = false;
+  bool _escenaBorrada = false;
+  // Eliminaciones pendientes: se aplican recién al pulsar «Guardar cambios».
+  final Set<int> _mediosPorEliminar = {};
+  bool _escenaPorEliminar = false;
+
+  bool get _hayEliminaciones =>
+      _mediosPorEliminar.isNotEmpty || _escenaPorEliminar;
+
+  /// Lo que quedará del lugar si se guarda ahora (sin lo marcado).
+  ContenidoPoi get _contenidoFinal => ContenidoPoi(
+    escena: _escenaPorEliminar ? null : _escena,
+    medios: [
+      for (final m in _medios)
+        if (!_mediosPorEliminar.contains(m.id)) m,
+    ],
+  );
+
   Poi? _original;
   String? _categoria;
   String? _errorCategoria;
@@ -193,15 +215,36 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
         original.activo &&
         !_activo &&
         !puedeDesactivar(_todos, original)) {
-      showToast(context, 'No se puede desactivar el último POI activo.',
-          error: true);
+      showToast(
+        context,
+        'No se puede desactivar el último POI activo.',
+        error: true,
+      );
       return;
+    }
+
+    if (_hayEliminaciones) {
+      final n = _mediosPorEliminar.length;
+      final partes = [
+        if (n > 0) '$n ${n == 1 ? 'archivo' : 'archivos'}',
+        if (_escenaPorEliminar) 'la escena 360°',
+      ].join(' y ');
+      final seguir = await confirmDialog(
+        context,
+        title: 'Se eliminará contenido',
+        message:
+            'Al guardar se borrarán definitivamente $partes. '
+            'Esto no se puede deshacer.',
+        confirmLabel: 'Guardar y eliminar',
+        danger: true,
+      );
+      if (!seguir || !mounted) return;
     }
 
     setState(() => _guardando = true);
     try {
-      final base = original ??
-          Poi(id: 0, lugarId: AppConfig.lugarId, nombre: '');
+      final base =
+          original ?? Poi(id: 0, lugarId: AppConfig.lugarId, nombre: '');
       final poi = base.copyWith(
         nombre: _nombre.text.trim(),
         categoria: _categoria,
@@ -215,7 +258,17 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
       } else {
         await poiRepository.actualizar(poi);
       }
+      final errores = await _aplicarEliminaciones();
       if (!mounted) return;
+      if (errores.isNotEmpty) {
+        setState(() => _guardando = false);
+        showToast(
+          context,
+          'El POI se guardó, pero no se pudo eliminar todo: ${errores.first}',
+          error: true,
+        );
+        return;
+      }
       showToast(context, 'Cambios guardados');
       context.go('/pois');
     } catch (e) {
@@ -258,8 +311,11 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
                       onPressed: _cancelar,
                       child: const Text('Gestión de POIs'),
                     ),
-                    const Icon(Icons.chevron_right,
-                        size: 18, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
@@ -304,7 +360,11 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
                       );
                     }
                     return Column(
-                      children: [formulario, const SizedBox(height: 16), lateral],
+                      children: [
+                        formulario,
+                        const SizedBox(height: 16),
+                        lateral,
+                      ],
                     );
                   },
                 ),
@@ -402,8 +462,7 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
                     validator: (v) => _validarCoordenada(v, -90, 90),
                     decoration: InputDecoration(
                       labelText: 'Latitud',
-                      helperText:
-                          _coordenadasEditables ? null : 'Solo lectura',
+                      helperText: _coordenadasEditables ? null : 'Solo lectura',
                     ),
                   ),
                 ),
@@ -415,8 +474,7 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
                     validator: (v) => _validarCoordenada(v, -180, 180),
                     decoration: InputDecoration(
                       labelText: 'Longitud',
-                      helperText:
-                          _coordenadasEditables ? null : 'Solo lectura',
+                      helperText: _coordenadasEditables ? null : 'Solo lectura',
                     ),
                   ),
                 ),
@@ -436,8 +494,9 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
                 Text(
                   _activo ? 'Activo' : 'Inactivo',
                   style: TextStyle(
-                    color:
-                        _activo ? AppColors.success : AppColors.textSecondary,
+                    color: _activo
+                        ? AppColors.success
+                        : AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -470,11 +529,13 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
           Text(
             _coordenadasEditables
                 ? 'Haz clic o arrastra sobre el plano para colocar el pin. '
-                    'Los demás lugares del campus aparecen como puntos.'
+                      'Los demás lugares del campus aparecen como puntos.'
                 : 'Posición actual del lugar. La API aún no permite editar '
-                    'lat/lng (pendiente en el backend).',
+                      'lat/lng (pendiente en el backend).',
             style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 13),
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 12),
           MapaCampus(
@@ -491,9 +552,9 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
           Text(
             pin == null
                 ? 'Sin ubicación en el mapa: la app lista el lugar pero no lo '
-                    'dibuja.'
+                      'dibuja.'
                 : 'Pin: ${pin.$1.toStringAsFixed(6)}, '
-                    '${pin.$2.toStringAsFixed(6)}',
+                      '${pin.$2.toStringAsFixed(6)}',
             style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 13,
@@ -568,156 +629,331 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
     context.go('/multimedia?poi=${widget.poiId}');
   }
 
+  /// Abre Subir Multimedia (donde ya se edita o reemplaza cada archivo) en la
+  /// pestaña que corresponde: panorama, fotos, video o audio.
+  Future<void> _irAMultimedia(String tipo) async {
+    if (_modificado) {
+      final seguir = await confirmDialog(
+        context,
+        title: 'Hay cambios sin guardar',
+        message:
+            'Si abres Subir Multimedia ahora, se perderán los cambios '
+            'del formulario.',
+        confirmLabel: 'Continuar',
+      );
+      if (!seguir || !mounted) return;
+    }
+    context.go('/multimedia?poi=${widget.poiId}&tipo=$tipo');
+  }
+
+  void _marcarMedio(Medio m) => setState(() {
+    _mediosPorEliminar.add(m.id);
+    _modificado = true;
+  });
+
+  void _deshacerMedio(Medio m) =>
+      setState(() => _mediosPorEliminar.remove(m.id));
+
+  void _marcarEscena() => setState(() {
+    _escenaPorEliminar = true;
+    _modificado = true;
+  });
+
+  void _deshacerEscena() => setState(() => _escenaPorEliminar = false);
+
+  /// Borra de verdad lo marcado. Devuelve los errores (vacío si todo salió
+  /// bien); lo que sí se borró sale de las listas y de las marcas.
+  Future<List<String>> _aplicarEliminaciones() async {
+    final errores = <String>[];
+    for (final id in _mediosPorEliminar.toList()) {
+      try {
+        await medioRepository.eliminar(id);
+        _medios = _medios.where((m) => m.id != id).toList();
+        _mediosPorEliminar.remove(id);
+      } catch (e) {
+        errores.add(e is ApiException ? e.message : '$e');
+      }
+    }
+    final escena = _escena;
+    if (_escenaPorEliminar && escena != null) {
+      try {
+        await escenaRepository.eliminar(escena.id);
+        _escenas = _escenas.where((x) => x.id != escena.id).toList();
+        _escena = null;
+        _escenaBorrada = true;
+        _escenaPorEliminar = false;
+      } catch (e) {
+        errores.add(e is ApiException ? e.message : '$e');
+      }
+    }
+    return errores;
+  }
+
+  Widget _contenidoEscena(Escena escena, String alt) {
+    final sinPanoramica = escena.imagenUrl == null || escena.imagenUrl!.isEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${escena.nombre ?? 'Escena ${escena.id}'} · vista inicial '
+          '${escena.vistaInicialYaw?.toStringAsFixed(0) ?? '—'}° / '
+          '${escena.vistaInicialPitch?.toStringAsFixed(0) ?? '—'}°',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        if (escena.imagenUrlBaja != null || escena.imagenUrl != null) ...[
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              height: 120,
+              width: double.infinity,
+              child: ImagenRed(
+                url: (escena.imagenUrlBaja?.isNotEmpty ?? false)
+                    ? escena.imagenUrlBaja
+                    : escena.imagenUrl,
+                alternativo: Container(
+                  color: AppColors.border,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.threesixty,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            StatusBadge(
+              sinPanoramica ? 'Sin panorámica cargada' : 'Panorámica cargada',
+              color: sinPanoramica ? AppColors.warning : AppColors.success,
+            ),
+            StatusBadge(
+              alt.isEmpty ? 'Falta texto alternativo' : 'Texto alternativo',
+              color: alt.isEmpty ? AppColors.danger : AppColors.success,
+            ),
+          ],
+        ),
+        if (alt.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            alt,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _tarjetaContenido() {
     final escena = _escena;
     final audios = _medios.where((m) => m.tipo == TipoMedio.audio).toList();
     final alt = escena?.textoAlt?.trim() ?? '';
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Contenido del lugar',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          const Text('Escena 360°',
-              style: TextStyle(color: AppColors.textSecondary)),
-          const SizedBox(height: 6),
-          if (escena == null && _original?.escenaPrincipalId == null)
-            const Text(
-              'Sin escena: el lugar se ve en el mapa y en «Más lugares», sin '
-              'número, hasta que tenga su panorámica.',
-              style: TextStyle(fontSize: 13),
-            )
-          else if (escena == null)
-            const Text('No se pudo leer la escena.',
-                style: TextStyle(fontSize: 13))
-          else ...[
-            Text(
-              '${escena.nombre ?? 'Escena ${escena.id}'} · vista inicial '
-              '${escena.vistaInicialYaw?.toStringAsFixed(0) ?? '—'}° / '
-              '${escena.vistaInicialPitch?.toStringAsFixed(0) ?? '—'}°',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            if (escena.imagenUrlBaja != null || escena.imagenUrl != null) ...[
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: SizedBox(
-                  height: 120,
-                  width: double.infinity,
-                  child: ImagenRed(
-                    url: (escena.imagenUrlBaja?.isNotEmpty ?? false)
-                        ? escena.imagenUrlBaja
-                        : escena.imagenUrl,
-                    alternativo: Container(
-                      color: AppColors.border,
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.threesixty,
-                          color: AppColors.textSecondary),
-                    ),
+    final editando = _editandoContenido;
+    return TweenAnimationBuilder<Color?>(
+      tween: ColorTween(
+        end: editando ? const Color(0xFF3D63E0) : AppColors.border,
+      ),
+      duration: const Duration(milliseconds: 250),
+      builder: (context, color, hijo) =>
+          AppCard(borderColor: color, child: hijo!),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Contenido del lugar',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-              ),
-            ],
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                StatusBadge(
-                  escena.imagenUrl == null || escena.imagenUrl!.isEmpty
-                      ? 'Sin panorámica cargada'
-                      : 'Panorámica cargada',
-                  color: escena.imagenUrl == null || escena.imagenUrl!.isEmpty
-                      ? AppColors.warning
-                      : AppColors.success,
-                ),
-                StatusBadge(
-                  alt.isEmpty ? 'Falta texto alternativo' : 'Texto alternativo',
-                  color: alt.isEmpty ? AppColors.danger : AppColors.success,
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: editando
+                      ? ElevatedButton.icon(
+                          key: const ValueKey('listo'),
+                          onPressed: () =>
+                              setState(() => _editandoContenido = false),
+                          icon: const Icon(Icons.check, size: 18),
+                          label: const Text('Listo'),
+                        )
+                      : OutlinedButton.icon(
+                          key: const ValueKey('editar'),
+                          onPressed: () =>
+                              setState(() => _editandoContenido = true),
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text('Editar'),
+                        ),
                 ),
               ],
             ),
-            if (alt.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                alt,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ],
-          ],
-          const SizedBox(height: 16),
-          const Text('Fotos y videos',
-              style: TextStyle(color: AppColors.textSecondary)),
-          const SizedBox(height: 8),
-          _galeria(),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Expanded(
-                child: Text('Narraciones por idioma',
-                    style: TextStyle(color: AppColors.textSecondary)),
-              ),
-              OutlinedButton.icon(
-                onPressed: _agregarNarracion,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Agregar'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          if (audios.isEmpty)
-            const Text('Sin narración todavía.',
-                style: TextStyle(fontSize: 13))
-          else
-            for (final m in audios)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
+            AvisoModoEdicion(visible: editando),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Escena 360°',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                AccionesEdicion(
+                  visible: editando && escena != null,
+                  marcado: _escenaPorEliminar,
+                  onDeshacer: _deshacerEscena,
+                  onEditar: () => _irAMultimedia('panorama'),
+                  onEliminar: _marcarEscena,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (escena == null &&
+                (_escenaBorrada || _original?.escenaPrincipalId == null))
+              const Text(
+                'Sin escena: el lugar se ve en el mapa y en «Más lugares», '
+                'sin número, hasta que tenga su panorámica.',
+                style: TextStyle(fontSize: 13),
+              )
+            else if (escena == null)
+              const Text(
+                'No se pudo leer la escena.',
+                style: TextStyle(fontSize: 13),
+              )
+            else
+              AnimatedOpacity(
+                opacity: _escenaPorEliminar ? 0.5 : 1,
+                duration: const Duration(milliseconds: 200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.graphic_eq,
-                        size: 18, color: AppColors.primary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${nombreDeIdioma(m.idioma)}'
-                        '${m.duracionSeg == null ? '' : ' · ${_duracion(m.duracionSeg)}'}',
-                        overflow: TextOverflow.ellipsis,
+                    if (_escenaPorEliminar)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: StatusBadge(
+                          'Se eliminará al guardar',
+                          color: AppColors.danger,
+                        ),
                       ),
-                    ),
-                    StatusBadge(
-                      m.subtitulosUrl == null
-                          ? 'Sin subtítulos'
-                          : 'Con subtítulos',
-                      color: m.subtitulosUrl == null
-                          ? AppColors.warning
-                          : AppColors.success,
-                    ),
+                    _contenidoEscena(escena, alt),
                   ],
                 ),
               ),
-          const SizedBox(height: 10),
-          const Text(
-            'Una narración no se publica sin sus subtítulos (.vtt), ni una '
-            'escena sin texto alternativo (WCAG 2.2 AA). Los archivos se '
-            'suben en Subir Multimedia.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-        ],
+            const SizedBox(height: 16),
+            const Text(
+              'Fotos y videos',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            _galeria(editando),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Narraciones por idioma',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _agregarNarracion,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Agregar'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (audios.isEmpty)
+              const Text(
+                'Sin narración todavía.',
+                style: TextStyle(fontSize: 13),
+              )
+            else
+              for (final m in audios)
+                AnimatedOpacity(
+                  opacity: _mediosPorEliminar.contains(m.id) ? 0.5 : 1,
+                  duration: const Duration(milliseconds: 200),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.graphic_eq,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${nombreDeIdioma(m.idioma)}'
+                            '${m.duracionSeg == null ? '' : ' · ${_duracion(m.duracionSeg)}'}',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              decoration: _mediosPorEliminar.contains(m.id)
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        if (_mediosPorEliminar.contains(m.id))
+                          const StatusBadge(
+                            'Se eliminará al guardar',
+                            color: AppColors.danger,
+                          )
+                        else
+                          StatusBadge(
+                            m.subtitulosUrl == null
+                                ? 'Sin subtítulos'
+                                : 'Con subtítulos',
+                            color: m.subtitulosUrl == null
+                                ? AppColors.warning
+                                : AppColors.success,
+                          ),
+                        AccionesEdicion(
+                          visible: editando,
+                          marcado: _mediosPorEliminar.contains(m.id),
+                          onDeshacer: () => _deshacerMedio(m),
+                          onEditar: () => _irAMultimedia('audio'),
+                          onEliminar: () => _marcarMedio(m),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            const SizedBox(height: 10),
+            const Text(
+              'Una narración no se publica sin sus subtítulos (.vtt), ni una '
+              'escena sin texto alternativo (WCAG 2.2 AA). Los archivos se '
+              'suben en Subir Multimedia.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Fotos y videos ya guardados del lugar.
-  Widget _galeria() {
+  /// Fotos y videos ya guardados del lugar. En modo edición cada miniatura
+  /// muestra su lápiz y su papelera; lo marcado se oscurece hasta guardar.
+  Widget _galeria(bool editando) {
     final contenido = ContenidoPoi(escena: _escena, medios: _medios);
     final items = [...contenido.fotos, ...contenido.videos];
     if (items.isEmpty) {
-      return const Text('Sin fotos ni videos todavía.',
-          style: TextStyle(fontSize: 13));
+      return const Text(
+        'Sin fotos ni videos todavía.',
+        style: TextStyle(fontSize: 13),
+      );
     }
     return Wrap(
       spacing: 8,
@@ -725,7 +961,9 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
       children: [
         for (final m in items)
           Tooltip(
-            message: (m.textoAlt?.isNotEmpty ?? false)
+            message: _mediosPorEliminar.contains(m.id)
+                ? 'Se eliminará al guardar'
+                : (m.textoAlt?.isNotEmpty ?? false)
                 ? m.textoAlt!
                 : (m.tipo == TipoMedio.video ? 'Video' : 'Foto'),
             child: ClipRRect(
@@ -733,21 +971,59 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
               child: SizedBox(
                 width: 96,
                 height: 68,
-                child: m.tipo == TipoMedio.video
-                    ? Container(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (m.tipo == TipoMedio.video)
+                      Container(
                         color: AppColors.border,
                         alignment: Alignment.center,
                         child: const Icon(Icons.play_circle_outline),
                       )
-                    : ImagenRed(
+                    else
+                      ImagenRed(
                         url: m.url,
                         alternativo: Container(
                           color: AppColors.border,
                           alignment: Alignment.center,
-                          child: const Icon(Icons.image_outlined,
-                              color: AppColors.textSecondary),
+                          child: const Icon(
+                            Icons.image_outlined,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: AnimatedOpacity(
+                          opacity: _mediosPorEliminar.contains(m.id) ? 1 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Container(
+                            color: const Color(0xB3000000),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: AccionesEdicion(
+                        compacto: true,
+                        visible: editando,
+                        marcado: _mediosPorEliminar.contains(m.id),
+                        onDeshacer: () => _deshacerMedio(m),
+                        onEditar: () => _irAMultimedia(
+                          m.tipo == TipoMedio.video ? 'video' : 'fotos',
+                        ),
+                        onEliminar: () => _marcarMedio(m),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -788,7 +1064,7 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
               nombre: _nombre.text,
               descripcion: _descripcion.text,
               categoria: _categoria,
-              contenido: ContenidoPoi(escena: _escena, medios: _medios),
+              contenido: _contenidoFinal,
               parada: parada,
               totalParadas: total,
             ),

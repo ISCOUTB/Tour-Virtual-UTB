@@ -10,7 +10,11 @@
 // `payload.prueba = "contrato"`. Para borrarlos:
 //
 //   delete from public.eventos where payload->>'prueba' = 'contrato';
+//
+// Las descargas van una tras otra (88 narraciones y sus subtítulos): los 30 s
+// por defecto no alcanzan.
 @TestOn('vm')
+@Timeout(Duration(minutes: 3))
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -112,31 +116,26 @@ void main() {
       }
     });
 
-    test(
-      'cada narración se descarga y tiene subtítulos legibles',
-      () async {
-        for (final detalle in detalles.values) {
-          for (final audio in detalle.audios) {
-            final nombre = '${detalle.poi.nombre} (${audio.idiomaEfectivo})';
-            final mp3 = await http.get(
-              Uri.parse(audio.url),
-              headers: const {'Range': 'bytes=0-1023'},
-            );
-            expect(mp3.statusCode, anyOf(200, 206), reason: nombre);
-            expect(mp3.headers['content-type'], 'audio/mpeg', reason: nombre);
+    test('cada narración se descarga y tiene subtítulos legibles', () async {
+      for (final detalle in detalles.values) {
+        for (final audio in detalle.audios) {
+          final nombre = '${detalle.poi.nombre} (${audio.idiomaEfectivo})';
+          final mp3 = await http.get(
+            Uri.parse(audio.url),
+            headers: const {'Range': 'bytes=0-1023'},
+          );
+          expect(mp3.statusCode, anyOf(200, 206), reason: nombre);
+          expect(mp3.headers['content-type'], 'audio/mpeg', reason: nombre);
 
-            // WCAG 1.2.1: sin subtítulos no se puede publicar.
-            expect(audio.subtitulosUrl, isNotNull, reason: nombre);
-            final subtitulos = await repositorio.obtenerSubtitulos(
-              audio.subtitulosUrl!,
-            );
-            expect(subtitulos.lineas, isNotEmpty, reason: nombre);
-          }
+          // WCAG 1.2.1: sin subtítulos no se puede publicar.
+          expect(audio.subtitulosUrl, isNotNull, reason: nombre);
+          final subtitulos = await repositorio.obtenerSubtitulos(
+            audio.subtitulosUrl!,
+          );
+          expect(subtitulos.lineas, isNotEmpty, reason: nombre);
         }
-        // Son dos descargas por narración, una tras otra.
-      },
-      timeout: const Timeout(Duration(minutes: 3)),
-    );
+      }
+    });
   });
 
   group('analítica', skip: saltar, () {

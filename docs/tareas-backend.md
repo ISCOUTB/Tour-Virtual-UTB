@@ -38,7 +38,7 @@ Desde la migración `EscenaImagenOpcional` puede existir una escena sin imagen. 
 
 Hoy cada POI tiene un solo audio, en español y sin subtítulos. Las nuevas son 88: 8 lugares en 11 idiomas, cada una con su WebVTT.
 
-- [ ] **Columna `Idioma`** (`string?`, código BCP 47) en `Models/Medio.cs`, con su migración EF, y `idioma` en `MedioDto`, `CrearMedioRequest`, `ActualizarMedioRequest` y `SubirMedioRequest`. Nulo significa español. La app ya la lee: elige la narración del idioma de la interfaz y deja cambiarla en «Escuchar en».
+- [ ] **Columna `Idioma`** (`string?`, código BCP 47) en `Models/Medio.cs`, con su migración EF, y `idioma` en `MedioDto`, `CrearMedioRequest`, `ActualizarMedioRequest` y `SubirMedioRequest`. Nulo significa español. La app ya la lee: elige la narración del idioma de la interfaz.
 - [ ] **Varios audios por POI**, uno por idioma. Hay que comprobar que nada impide más de un `Medio` de tipo audio por POI.
 - [ ] **Subir el `.vtt`.** `TiposArchivo` no acepta `.vtt` y `SubirMedioRequest` no tiene campo de subtítulos. Propuesta:
   - un `IFormFile? Subtitulos` en `SubirMedioRequest`, guardado en la carpeta `subtitulos` (agregarla a `CarpetasPermitidas`) con `Content-Type: text/vtt`;

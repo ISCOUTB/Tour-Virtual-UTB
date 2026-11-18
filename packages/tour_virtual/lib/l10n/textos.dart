@@ -666,12 +666,6 @@ abstract class Textos {
   /// **'Narración en {idioma}'**
   String narracionEn(String idioma);
 
-  /// No description provided for @escucharEn.
-  ///
-  /// In es, this message translates to:
-  /// **'Escuchar en'**
-  String get escucharEn;
-
   /// Posición del audio para el lector de pantalla, por ejemplo «0:05 de 0:12».
   ///
   /// In es, this message translates to:

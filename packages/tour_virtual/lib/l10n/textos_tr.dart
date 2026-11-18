@@ -350,9 +350,6 @@ class TextosTr extends Textos {
   }
 
   @override
-  String get escucharEn => 'Dinleme dili';
-
-  @override
   String posicionDeTotal(String posicion, String total) {
     return '$posicion / $total';
   }

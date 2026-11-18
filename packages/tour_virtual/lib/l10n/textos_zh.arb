@@ -92,7 +92,6 @@
   "transcripcion": "文字稿",
   "subtitulos": "字幕",
   "narracionEn": "讲解语言：{idioma}",
-  "escucharEn": "收听语言",
   "posicionDeTotal": "{posicion} / {total}",
   "vistaPanoramicaDe": "{nombre}全景",
   "esteLugar": "此地点",

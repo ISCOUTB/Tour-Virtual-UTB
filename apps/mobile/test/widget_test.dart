@@ -21,6 +21,7 @@ import 'package:tour_virtual/nucleo/tema.dart';
 import 'package:tour_virtual/recorrido_screen.dart';
 import 'package:tour_virtual/ui/comunes/fondos.dart';
 import 'package:tour_virtual/ui/recorrido_completado.dart';
+import 'package:tour_virtual/ui/reproductores.dart';
 
 // Dos peculiaridades de estas pantallas condicionan como se prueban:
 //
@@ -646,6 +647,51 @@ void main() {
 
     final audio = tester.getTopLeft(find.text('Audio narrado')).dy;
     expect(audio, lessThan(tester.getTopLeft(pendiente).dy));
+
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('la narración sigue el idioma de la interfaz, sin selector', (
+    WidgetTester tester,
+  ) async {
+    // Antes la ficha tenía su propio «Escuchar en» con un botón por idioma:
+    // dos ajustes para lo mismo. Ahora la voz es la del idioma de la app.
+    Medio narracion(int id, String? idioma) => Medio(
+      id: id,
+      poiId: 1,
+      tipo: TipoMedio.audio,
+      url: 'https://placeholder.invalid/audio/biblioteca-$id.mp3',
+      idioma: idioma,
+    );
+    final referencia = await montarModulo(
+      tester,
+      repositorio: RepositorioFalso(
+        pois: poisDePrueba,
+        medios: [narracion(1, null), narracion(2, 'en'), narracion(3, 'fr')],
+      ),
+    );
+
+    await tester.tap(etiquetaSemantica('Parada 1, Biblioteca, Recursos'));
+    await asentar(tester);
+    final reproductor = find.byType(ReproductorAudio);
+    await desplazarFichaHasta(tester, reproductor);
+
+    Medio suena() => tester.widget<ReproductorAudio>(reproductor).medio;
+    expect(suena().id, 1, reason: 'español: la original');
+    expect(find.byType(ChoiceChip), findsNothing);
+
+    referencia
+        .read(preferenciasProvider.notifier)
+        .cambiarIdioma(const Locale('en'));
+    await asentar(tester);
+    expect(suena().id, 2, reason: 'inglés: la narración en inglés');
+
+    // Sin narración en alemán suena la original.
+    referencia
+        .read(preferenciasProvider.notifier)
+        .cambiarIdioma(const Locale('de'));
+    await asentar(tester);
+    expect(suena().id, 1);
 
     await drenarTemporizadores(tester);
   });

@@ -125,7 +125,6 @@
   "subtitulos": "Subtítulos",
   "narracionEn": "Narración en {idioma}",
   "@narracionEn": {"description": "{idioma} es el nombre del idioma en ese idioma, por ejemplo «Español».", "placeholders": {"idioma": {"type": "String"}}},
-  "escucharEn": "Escuchar en",
   "posicionDeTotal": "{posicion} de {total}",
   "@posicionDeTotal": {"description": "Posición del audio para el lector de pantalla, por ejemplo «0:05 de 0:12».", "placeholders": {"posicion": {"type": "String"}, "total": {"type": "String"}}},
 

@@ -353,9 +353,6 @@ class TextosPt extends Textos {
   }
 
   @override
-  String get escucharEn => 'Ouvir em';
-
-  @override
   String posicionDeTotal(String posicion, String total) {
     return '$posicion de $total';
   }

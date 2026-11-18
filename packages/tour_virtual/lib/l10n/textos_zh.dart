@@ -338,9 +338,6 @@ class TextosZh extends Textos {
   }
 
   @override
-  String get escucharEn => '收听语言';
-
-  @override
   String posicionDeTotal(String posicion, String total) {
     return '$posicion / $total';
   }

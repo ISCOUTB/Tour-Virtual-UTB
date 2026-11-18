@@ -339,9 +339,6 @@ class TextosKo extends Textos {
   }
 
   @override
-  String get escucharEn => '듣기 언어';
-
-  @override
   String posicionDeTotal(String posicion, String total) {
     return '$total 중 $posicion';
   }

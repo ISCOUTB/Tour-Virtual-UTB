@@ -92,7 +92,6 @@
   "transcripcion": "文字起こし",
   "subtitulos": "字幕",
   "narracionEn": "ナレーションの言語：{idioma}",
-  "escucharEn": "聞く言語",
   "posicionDeTotal": "{total} 中 {posicion}",
   "vistaPanoramicaDe": "{nombre}のパノラマ",
   "esteLugar": "この場所",

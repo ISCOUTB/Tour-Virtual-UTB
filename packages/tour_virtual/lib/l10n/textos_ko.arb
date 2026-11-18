@@ -92,7 +92,6 @@
   "transcripcion": "대본",
   "subtitulos": "자막",
   "narracionEn": "해설 언어: {idioma}",
-  "escucharEn": "듣기 언어",
   "posicionDeTotal": "{total} 중 {posicion}",
   "vistaPanoramicaDe": "{nombre} 파노라마",
   "esteLugar": "이 장소",

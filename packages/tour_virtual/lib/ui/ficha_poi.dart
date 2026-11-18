@@ -270,7 +270,7 @@ class _FichaPoi extends ConsumerWidget {
     return [
       if (audio != null) ...[
         _Seccion(txt.audioNarrado),
-        ReproductorAudio(audios: d.audios, inicial: audio),
+        ReproductorAudio(medio: audio),
         const SizedBox(height: 26),
       ],
       // El video en Lengua de Señas Colombiana va justo después: para quien

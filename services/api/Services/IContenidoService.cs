@@ -8,6 +8,8 @@ public interface IContenidoService
     Task<IReadOnlyList<PoiDto>> ObtenerPoisAsync(int lugarId, Audiencia audiencia);
     Task<RecorridoDto?> ObtenerRecorridoAsync(int lugarId, Audiencia audiencia);
     Task<PoiDetalleDto?> ObtenerPoiPorIdAsync(int poiId, Audiencia audiencia);
+    /// <summary>Detalle admin: POI activo o inactivo, con medios y escenas.</summary>
+    Task<PoiDetalleAdminDto?> ObtenerPoiAdminPorIdAsync(int poiId);
     Task<RutaDto?> ObtenerRutaActivaAsync(int lugarId, Audiencia audiencia);
     Task<string?> ObtenerRutaMapaLugarAsync(int lugarId);
     Task<bool> ActualizarMapaLugarAsync(int lugarId, string rutaS3);
@@ -22,7 +24,7 @@ public interface IContenidoService
     // Escenas
     Task<EscenaDto> CrearEscenaAsync(CrearEscenaRequest request);
     Task<EscenaDto?> ActualizarEscenaAsync(int id, ActualizarEscenaRequest request);
-    Task<bool> EliminarEscenaAsync(int id);
+    Task<EliminarEscenaResultado> EliminarEscenaAsync(int id);
 
     // Hotspots
     Task<HotspotDto> CrearHotspotAsync(CrearHotspotRequest request);

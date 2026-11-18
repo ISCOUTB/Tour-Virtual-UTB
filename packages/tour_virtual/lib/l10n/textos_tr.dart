@@ -489,4 +489,33 @@ class TextosTr extends Textos {
   @override
   String get ajustesSistema =>
       'Bu ayarlar telefonunuzun erişilebilirlik ayarlarına eklenir.';
+
+  @override
+  String get privacidad => 'Gizlilik';
+
+  @override
+  String get analiticaTitulo => 'Turu geliştirmemize yardım eder misiniz?';
+
+  @override
+  String analiticaTexto(String ajustes) {
+    return 'Kabul ederseniz uygulama hangi sahnelerin, yerlerin ve anlatımların kullanıldığını sayar; adınızı, konumunuzu veya sizi tanımlayan hiçbir bilgiyi göndermez. Bunu istediğiniz zaman “$ajustes” bölümünden değiştirebilirsiniz.';
+  }
+
+  @override
+  String get analiticaAceptar => 'Evet, paylaş';
+
+  @override
+  String get analiticaRechazar => 'Hayır, teşekkürler';
+
+  @override
+  String analiticaGuardada(String ajustes) {
+    return 'Kaydedildi. Bunu “$ajustes” bölümünden değiştirebilirsiniz.';
+  }
+
+  @override
+  String get analiticaAjuste => 'Kullanım istatistiklerini paylaş';
+
+  @override
+  String get analiticaAjusteDetalle =>
+      'Anonim: yalnızca hangi sahnelerin, yerlerin ve anlatımların kullanıldığı. Adınız veya konumunuz asla gönderilmez.';
 }

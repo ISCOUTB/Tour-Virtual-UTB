@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../nucleo/errores.dart';
 import '../nucleo/idiomas.dart';
+import 'analitica.dart';
 import 'modelos/modelos.dart';
 import 'subtitulos.dart';
 
@@ -150,6 +152,38 @@ class RepositorioContenido {
       return Subtitulos.leer(utf8.decode(response.bodyBytes));
     } on FalloApp {
       rethrow;
+    } on TimeoutException catch (error) {
+      throw FalloDeTiempo(detalle: error);
+    } on http.ClientException catch (error) {
+      throw FalloDeConexion(detalle: error);
+    }
+  }
+
+  /// Envía un evento de analítica (RF-23).
+  ///
+  /// Verdadero si la API lo guardó y falso si lo rechazó: un 4xx no se
+  /// arregla repitiendo la misma petición. Lanza [FalloApp] cuando vale la
+  /// pena reintentar: sin conexión, tiempo agotado, 408, 429 o 5xx.
+  /// `ColaAnalitica` decide qué hacer con cada caso.
+  Future<bool> registrarEvento(EventoAnalitica evento) async {
+    try {
+      final response = await _cliente
+          .post(
+            Uri.parse('$_baseUrl/api/eventos'),
+            headers: const {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(evento.toJson()),
+          )
+          .timeout(_tiempoLimite);
+      final codigo = response.statusCode;
+      if (codigo >= 200 && codigo < 300) return true;
+      if (codigo == 408 || codigo == 429 || codigo >= 500) {
+        throw FalloInesperado(detalle: 'HTTP $codigo');
+      }
+      debugPrint('POST /api/eventos: HTTP $codigo ${response.body}');
+      return false;
     } on TimeoutException catch (error) {
       throw FalloDeTiempo(detalle: error);
     } on http.ClientException catch (error) {

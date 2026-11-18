@@ -486,4 +486,33 @@ class TextosEn extends Textos {
   @override
   String get ajustesSistema =>
       'These settings add to your phone\'s own accessibility settings.';
+
+  @override
+  String get privacidad => 'Privacy';
+
+  @override
+  String get analiticaTitulo => 'Will you help us improve the tour?';
+
+  @override
+  String analiticaTexto(String ajustes) {
+    return 'If you agree, the app counts which scenes, places and narrations are used, without your name, your location or anything that identifies you. You can change this at any time in “$ajustes”.';
+  }
+
+  @override
+  String get analiticaAceptar => 'Yes, share';
+
+  @override
+  String get analiticaRechazar => 'No, thanks';
+
+  @override
+  String analiticaGuardada(String ajustes) {
+    return 'Saved. You can change this in “$ajustes”.';
+  }
+
+  @override
+  String get analiticaAjuste => 'Share usage statistics';
+
+  @override
+  String get analiticaAjusteDetalle =>
+      'Anonymous: which scenes, places and narrations are used. Never your name or your location.';
 }

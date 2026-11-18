@@ -495,4 +495,33 @@ class TextosIt extends Textos {
   @override
   String get ajustesSistema =>
       'Queste impostazioni si aggiungono a quelle di accessibilità del telefono.';
+
+  @override
+  String get privacidad => 'Privacy';
+
+  @override
+  String get analiticaTitulo => 'Ci aiuti a migliorare il percorso?';
+
+  @override
+  String analiticaTexto(String ajustes) {
+    return 'Se accetti, l’app conta quali scene, luoghi e narrazioni vengono usati, senza il tuo nome, la tua posizione o altro che ti identifichi. Puoi cambiare idea quando vuoi in «$ajustes».';
+  }
+
+  @override
+  String get analiticaAceptar => 'Sì, condividi';
+
+  @override
+  String get analiticaRechazar => 'No, grazie';
+
+  @override
+  String analiticaGuardada(String ajustes) {
+    return 'Salvato. Puoi cambiarlo in «$ajustes».';
+  }
+
+  @override
+  String get analiticaAjuste => 'Condividi statistiche d’uso';
+
+  @override
+  String get analiticaAjusteDetalle =>
+      'Anonime: quali scene, luoghi e narrazioni vengono usati. Mai il tuo nome né la tua posizione.';
 }

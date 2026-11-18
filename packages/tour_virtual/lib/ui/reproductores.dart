@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 
+import '../datos/analitica.dart';
 import '../datos/modelos/modelos.dart';
 import '../datos/preferencias.dart';
 import '../datos/proveedores.dart';
@@ -19,6 +20,21 @@ String _formato(Duration d) {
   final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
   final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
   return '$m:$s';
+}
+
+/// Cuenta la primera reproducción de un audio o video de un lugar (RF-23).
+void registrarReproduccion(WidgetRef ref, Medio medio) {
+  ref
+      .read(analiticaProvider)
+      .registrar(
+        TipoEvento.medioReproducido,
+        poiId: medio.poiId,
+        datos: {
+          'medio': medio.id,
+          'tipo': medio.tipo.name,
+          'idioma': medio.idiomaEfectivo,
+        },
+      );
 }
 
 /// Mensaje de fallo compartido por ambos reproductores.
@@ -60,6 +76,14 @@ class ReproductorVideo extends ConsumerStatefulWidget {
 class _ReproductorVideoState extends ConsumerState<ReproductorVideo> {
   VideoPlayerController? _control;
   Object? _fallo;
+  var _registrado = false;
+
+  void _reproducir(VideoPlayerController c) {
+    c.play();
+    if (_registrado) return;
+    _registrado = true;
+    registrarReproduccion(ref, widget.medio);
+  }
 
   @override
   void initState() {
@@ -162,7 +186,8 @@ class _ReproductorVideoState extends ConsumerState<ReproductorVideo> {
                         color: Colors.white.withValues(alpha: 0.24),
                       ),
                     ),
-                    onPressed: () => valor.isPlaying ? c.pause() : c.play(),
+                    onPressed: () =>
+                        valor.isPlaying ? c.pause() : _reproducir(c),
                     icon: Icon(
                       valor.isPlaying
                           ? Icons.pause_rounded
@@ -220,6 +245,15 @@ class _ReproductorAudioState extends ConsumerState<ReproductorAudio> {
   final _reproductor = AudioPlayer();
   late Medio _actual = widget.inicial;
   Object? _fallo;
+
+  /// Narraciones ya contadas: reanudar tras una pausa no es otra
+  /// reproducción, cambiar de idioma sí.
+  final _registrados = <int>{};
+
+  void _reproducir() {
+    _reproductor.play();
+    if (_registrados.add(_actual.id)) registrarReproduccion(ref, _actual);
+  }
 
   @override
   void initState() {
@@ -365,7 +399,7 @@ class _ReproductorAudioState extends ConsumerState<ReproductorAudio> {
             foregroundColor: ColoresUtb.texto,
             minimumSize: const Size.square(56),
           ),
-          onPressed: () => sonando ? _reproductor.pause() : _reproductor.play(),
+          onPressed: () => sonando ? _reproductor.pause() : _reproducir(),
           icon: AnimatedSwitcher(
             duration: sinMovimiento(context) ? Duration.zero : Movimiento.corto,
             transitionBuilder: (hijo, animacion) =>

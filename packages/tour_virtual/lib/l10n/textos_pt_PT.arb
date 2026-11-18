@@ -44,5 +44,11 @@
   "idiomaDelTelefono": "Idioma do telemóvel",
   "movimientoTelefonoDetalle": "No percurso em 360°, a vista acompanha o movimento do telemóvel.",
   "subtitulosDetalle": "Mostra o texto da narração enquanto é reproduzida.",
-  "ajustesSistema": "Estas definições somam-se às de acessibilidade do seu telemóvel."
+  "ajustesSistema": "Estas definições somam-se às de acessibilidade do seu telemóvel.",
+  "analiticaTitulo": "Quer ajudar-nos a melhorar o percurso?",
+  "analiticaTexto": "Se aceitar, a aplicação contabiliza que cenas, lugares e narrações são utilizados, sem o seu nome, a sua localização nem nada que o identifique. Pode alterar isto quando quiser em «{ajustes}».",
+  "analiticaAceptar": "Sim, partilhar",
+  "analiticaGuardada": "Guardado. Pode alterar isto em «{ajustes}».",
+  "analiticaAjuste": "Partilhar estatísticas de utilização",
+  "analiticaAjusteDetalle": "Anónimas: que cenas, lugares e narrações são utilizados. Nunca o seu nome nem a sua localização."
 }

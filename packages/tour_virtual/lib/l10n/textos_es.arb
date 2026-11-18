@@ -176,5 +176,22 @@
   "reducirMovimientoDetalle": "Quita animaciones, giros y efectos 3D.",
   "movimientoTelefonoDetalle": "En el recorrido 360°, la vista sigue el movimiento del teléfono.",
   "subtitulosDetalle": "Muestra el texto de la narración mientras suena.",
-  "ajustesSistema": "Estos ajustes se suman a los de accesibilidad de tu teléfono."
+  "ajustesSistema": "Estos ajustes se suman a los de accesibilidad de tu teléfono.",
+
+  "privacidad": "Privacidad",
+  "@privacidad": {"description": "Título de la sección de privacidad en los ajustes y etiqueta del aviso de estadísticas."},
+  "analiticaTitulo": "¿Nos ayudas a mejorar el recorrido?",
+  "@analiticaTitulo": {"description": "Pregunta del aviso de estadísticas de uso, en la lista del recorrido."},
+  "analiticaTexto": "Si aceptas, la app cuenta qué escenas, lugares y narraciones se usan, sin tu nombre, tu ubicación ni nada que te identifique. Puedes cambiarlo cuando quieras en «{ajustes}».",
+  "@analiticaTexto": {"description": "Qué se envía y qué no. {ajustes} es el título de la hoja de ajustes («Idioma y accesibilidad»), donde se puede cambiar.", "placeholders": {"ajustes": {"type": "String"}}},
+  "analiticaAceptar": "Sí, compartir",
+  "@analiticaAceptar": {"description": "Botón que acepta enviar estadísticas anónimas. Tiene el mismo peso visual que rechazar."},
+  "analiticaRechazar": "No, gracias",
+  "@analiticaRechazar": {"description": "Botón que rechaza enviar estadísticas."},
+  "analiticaGuardada": "Guardado. Puedes cambiarlo en «{ajustes}».",
+  "@analiticaGuardada": {"description": "Lo anuncia el lector de pantalla al contestar el aviso, que desaparece. {ajustes} como en analiticaTexto.", "placeholders": {"ajustes": {"type": "String"}}},
+  "analiticaAjuste": "Compartir estadísticas de uso",
+  "@analiticaAjuste": {"description": "Interruptor de estadísticas en los ajustes."},
+  "analiticaAjusteDetalle": "Anónimas: qué escenas, lugares y narraciones se usan. Nunca tu nombre ni tu ubicación.",
+  "@analiticaAjusteDetalle": {"description": "Detalle del interruptor de estadísticas."}
 }

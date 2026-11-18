@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../datos/analitica.dart';
 import '../datos/modelos/modelos.dart';
 import '../datos/progreso.dart';
 import '../datos/proveedores.dart';
@@ -59,7 +60,14 @@ Future<void> abrirPoi(
   if (!primeraVez || !context.mounted) return;
   final visibles = pois.map((p) => p.id).toSet();
   final vistos = ref.read(progresoProvider).where(visibles.contains).length;
-  if (vistos >= pois.length) await mostrarRecorridoCompletado(context);
+  if (vistos < pois.length) return;
+  ref
+      .read(analiticaProvider)
+      .registrar(
+        TipoEvento.recorridoCompletado,
+        datos: {'paradas': pois.length},
+      );
+  await mostrarRecorridoCompletado(context);
 }
 
 /// Ficha de un punto de interés (RF-12 a RF-17 del SRS v3.1).

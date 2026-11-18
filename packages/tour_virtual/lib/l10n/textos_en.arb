@@ -132,5 +132,13 @@
   "reducirMovimientoDetalle": "Turns off animations, spins and 3D effects.",
   "movimientoTelefonoDetalle": "In the 360° tour, the view follows your phone's movement.",
   "subtitulosDetalle": "Shows the narration text while it plays.",
-  "ajustesSistema": "These settings add to your phone's own accessibility settings."
+  "ajustesSistema": "These settings add to your phone's own accessibility settings.",
+  "privacidad": "Privacy",
+  "analiticaTitulo": "Will you help us improve the tour?",
+  "analiticaTexto": "If you agree, the app counts which scenes, places and narrations are used, without your name, your location or anything that identifies you. You can change this at any time in “{ajustes}”.",
+  "analiticaAceptar": "Yes, share",
+  "analiticaRechazar": "No, thanks",
+  "analiticaGuardada": "Saved. You can change this in “{ajustes}”.",
+  "analiticaAjuste": "Share usage statistics",
+  "analiticaAjusteDetalle": "Anonymous: which scenes, places and narrations are used. Never your name or your location."
 }

@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../datos/analitica.dart';
 import '../../datos/modelos/modelos.dart';
 import '../../datos/progreso.dart';
 import '../../datos/proveedores.dart';
@@ -88,6 +89,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _cambiarModo(ModoTour modo, double rangoCabecera) {
     if (modo == _modo) return;
     setState(() => _modo = modo);
+    if (modo == ModoTour.mapa) {
+      ref.read(analiticaProvider).registrar(TipoEvento.mapaAbierto);
+    }
 
     // Tras el cambio de contenido, la cabecera se pliega para dar el alto al
     // mapa o se despliega al volver a la lista.

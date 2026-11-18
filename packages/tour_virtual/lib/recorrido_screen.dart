@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:panorama_viewer/panorama_viewer.dart' as pv;
 
+import 'datos/analitica.dart';
 import 'datos/fuente_medio.dart';
 import 'datos/modelos/modelos.dart';
 import 'datos/preferencias.dart';
@@ -125,7 +126,7 @@ class RecorridoScreen extends ConsumerWidget {
   }
 }
 
-class _Visor extends StatefulWidget {
+class _Visor extends ConsumerStatefulWidget {
   const _Visor({
     required this.recorrido,
     required this.giroscopio,
@@ -145,10 +146,10 @@ class _Visor extends StatefulWidget {
   final bool contenidoEnIdiomaUi;
 
   @override
-  State<_Visor> createState() => _VisorState();
+  ConsumerState<_Visor> createState() => _VisorState();
 }
 
-class _VisorState extends State<_Visor> {
+class _VisorState extends ConsumerState<_Visor> {
   /// Escena a la que el usuario ha navegado con los hotspots.
   ///
   /// Nula mientras no se mueva, y entonces manda la que pidio la ruta. Vivio
@@ -171,6 +172,10 @@ class _VisorState extends State<_Visor> {
 
   /// Escena ya anunciada al lector de pantalla.
   int? _anunciada;
+
+  /// Escena ya contada como vista. El visor se rehace al cambiar el
+  /// giroscopio y vuelve a resolver la misma panorámica: eso no es otra vista.
+  int? _contada;
 
   @override
   void dispose() {
@@ -209,6 +214,20 @@ class _VisorState extends State<_Visor> {
       TipoHotspot.navegacion => txt.avanzarSiguienteEscena,
       _ => txt.verInformacion,
     };
+  }
+
+  /// Una escena cuenta como vista cuando su panorámica se ve de verdad, no
+  /// al pedirla: una que no carga no es una vista (RF-23).
+  void _contarVista(Escena escena) {
+    if (_contada == escena.id) return;
+    _contada = escena.id;
+    ref
+        .read(analiticaProvider)
+        .registrar(
+          TipoEvento.escenaVista,
+          escenaId: escena.id,
+          poiId: escena.poiId,
+        );
   }
 
   void _anunciar(Escena escena) {
@@ -275,9 +294,10 @@ class _VisorState extends State<_Visor> {
       escena: escena,
       camara: camara,
       giroscopio: widget.giroscopio,
-      alResolver: () {
+      alResolver: (seVe) {
         _levantarVelo();
         _anunciar(escena);
+        if (seVe) _contarVista(escena);
       },
       hotspots: [
         for (final hotspot in hotspots)
@@ -290,7 +310,7 @@ class _VisorState extends State<_Visor> {
               hotspot: hotspot,
               etiqueta: _etiqueta(txt, hotspot),
               animar: animar,
-              alTocar: () => _tocarHotspot(context, hotspot),
+              alTocar: () => _tocarHotspot(context, escena, hotspot),
             ),
           ),
       ],
@@ -333,7 +353,7 @@ class _VisorState extends State<_Visor> {
                 (
                   etiqueta: _etiqueta(txt, h),
                   destino: recorrido.escenaPorId(h.escenaDestinoId!)!,
-                  alTocar: () => _tocarHotspot(context, h),
+                  alTocar: () => _tocarHotspot(context, escena, h),
                 ),
             ],
             alGirar: _girar,
@@ -364,8 +384,24 @@ class _VisorState extends State<_Visor> {
     if (mounted && _velo != null) setState(() => _velo = null);
   }
 
-  Future<void> _tocarHotspot(BuildContext context, Hotspot hotspot) async {
+  Future<void> _tocarHotspot(
+    BuildContext context,
+    Escena origen,
+    Hotspot hotspot,
+  ) async {
     final txt = Textos.of(context);
+    ref
+        .read(analiticaProvider)
+        .registrar(
+          TipoEvento.hotspotTocado,
+          escenaId: origen.id,
+          poiId: origen.poiId,
+          datos: {
+            'hotspot': hotspot.id,
+            'tipo': hotspot.tipo.name,
+            'destino': ?hotspot.escenaDestinoId,
+          },
+        );
     switch (hotspot.tipo) {
       case TipoHotspot.navegacion:
         final destino = hotspot.escenaDestinoId;
@@ -810,9 +846,9 @@ class _Panorama extends StatefulWidget {
   final pv.PanoramaController camara;
   final bool giroscopio;
 
-  /// Avisa cuando hay algo que ver o cuando falló del todo, para levantar el
-  /// telón entre escenas.
-  final VoidCallback alResolver;
+  /// Avisa cuando hay algo que ver (verdadero) o cuando falló del todo
+  /// (falso), para levantar el telón entre escenas.
+  final ValueChanged<bool> alResolver;
 
   @override
   State<_Panorama> createState() => _PanoramaState();
@@ -868,7 +904,7 @@ class _PanoramaState extends State<_Panorama> {
     // Solo es un fallo si no se pudo mostrar ninguna de las dos.
     if (!completa && !hayAlgo && mounted) {
       setState(() => _estado = _EstadoPanorama.fallida);
-      widget.alResolver();
+      widget.alResolver(false);
     }
   }
 
@@ -894,7 +930,7 @@ class _PanoramaState extends State<_Panorama> {
           // por una panorámica fallida y el telón «Caminando hacia» se quedaba
           // puesto para siempre.
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) widget.alResolver();
+            if (mounted) widget.alResolver(true);
           });
         }
         terminar(true);

@@ -495,4 +495,33 @@ class TextosDe extends Textos {
   @override
   String get ajustesSistema =>
       'Diese Einstellungen ergänzen die Bedienungshilfen deines Handys.';
+
+  @override
+  String get privacidad => 'Datenschutz';
+
+  @override
+  String get analiticaTitulo => 'Hilfst du uns, den Rundgang zu verbessern?';
+
+  @override
+  String analiticaTexto(String ajustes) {
+    return 'Wenn du zustimmst, zählt die App, welche Szenen, Orte und Erzählungen genutzt werden – ohne deinen Namen, deinen Standort oder sonst etwas, das dich identifiziert. Du kannst das jederzeit unter „$ajustes“ ändern.';
+  }
+
+  @override
+  String get analiticaAceptar => 'Ja, teilen';
+
+  @override
+  String get analiticaRechazar => 'Nein, danke';
+
+  @override
+  String analiticaGuardada(String ajustes) {
+    return 'Gespeichert. Du kannst das unter „$ajustes“ ändern.';
+  }
+
+  @override
+  String get analiticaAjuste => 'Nutzungsstatistiken teilen';
+
+  @override
+  String get analiticaAjusteDetalle =>
+      'Anonym: welche Szenen, Orte und Erzählungen genutzt werden. Nie dein Name oder dein Standort.';
 }

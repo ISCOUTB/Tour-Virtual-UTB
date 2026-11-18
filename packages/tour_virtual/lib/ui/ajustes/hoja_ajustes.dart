@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../datos/analitica.dart';
 import '../../datos/preferencias.dart';
 import '../../l10n/textos.dart';
 import '../../nucleo/idiomas.dart';
@@ -44,6 +45,7 @@ class _Ajustes extends ConsumerWidget {
     final ajustes = ref.read(preferenciasProvider.notifier);
     final abajo = MediaQuery.paddingOf(context).bottom;
     final delTelefono = resolverIdioma(ref.watch(idiomasDelTelefonoProvider));
+    final analiticaEnElModulo = ref.watch(analiticaEnElModuloProvider);
 
     Widget seccion(String titulo) => Padding(
       padding: const EdgeInsets.fromLTRB(4, 26, 4, 10),
@@ -209,6 +211,21 @@ class _Ajustes extends ConsumerWidget {
             style: textos.bodySmall?.copyWith(color: paleta.textoTenue),
           ),
         ),
+
+        // Solo si la decisión es del usuario. Si la app anfitriona ya la tomó
+        // con su propia política, se cambia allí.
+        if (analiticaEnElModulo) ...[
+          seccion(txt.privacidad),
+          _Grupo(
+            child: interruptor(
+              titulo: txt.analiticaAjuste,
+              detalle: txt.analiticaAjusteDetalle,
+              valor: p.analitica ?? false,
+              alCambiar: ajustes.cambiarAnalitica,
+              icono: Icons.insights_rounded,
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),

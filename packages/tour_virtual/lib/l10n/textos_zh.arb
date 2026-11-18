@@ -132,5 +132,13 @@
   "reducirMovimientoDetalle": "关闭动画、旋转和 3D 效果。",
   "movimientoTelefonoDetalle": "在 360° 导览中，视角会跟随手机移动。",
   "subtitulosDetalle": "播放讲解时显示文字。",
-  "ajustesSistema": "这些设置会叠加在手机的无障碍设置之上。"
+  "ajustesSistema": "这些设置会叠加在手机的无障碍设置之上。",
+  "privacidad": "隐私",
+  "analiticaTitulo": "愿意帮助我们改进导览吗？",
+  "analiticaTexto": "如果你同意，应用会统计哪些场景、地点和讲解被使用，不会发送你的姓名、位置或任何能识别你身份的信息。你可以随时在“{ajustes}”中更改。",
+  "analiticaAceptar": "好，分享",
+  "analiticaRechazar": "不用了，谢谢",
+  "analiticaGuardada": "已保存。你可以在“{ajustes}”中更改。",
+  "analiticaAjuste": "分享使用统计",
+  "analiticaAjusteDetalle": "匿名：仅统计哪些场景、地点和讲解被使用，绝不包含你的姓名或位置。"
 }

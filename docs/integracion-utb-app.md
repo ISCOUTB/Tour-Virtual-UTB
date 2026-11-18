@@ -62,6 +62,7 @@ Desde un menú, una tarjeta o un enlace profundo, lo que haga la UTB APP para ab
 | `lugarId` | no, `1` | La sede. `1` es el Campus Tecnológico de Ternera, la única cargada. |
 | `audiencia` | no | Quién usa el módulo, si la UTB APP lo sabe. Elige el recorrido curado para su perfil. Nulo equivale a visitante externo. Ver «Audiencia y seguridad». |
 | `alSalir` | no | Qué hacer cuando el usuario sale desde la pantalla principal del módulo, normalmente `Navigator.pop`. Sin él, la flecha de volver solo aparece cuando hay algo que cerrar dentro del módulo. |
+| `analitica` | no, `preguntar` | Quién decide si se envían las estadísticas de uso anónimas. Con `preguntar`, el módulo lo pregunta una vez y deja cambiarlo en sus ajustes. Si la UTB APP ya pide ese consentimiento con su propia política, pasa `ConsentimientoAnalitica.concedido` o `.denegado` y el módulo no pregunta. Ver «Estadísticas de uso». |
 
 La configuración se lee una vez, al abrir el módulo.
 
@@ -102,6 +103,17 @@ Solo la línea de `fuente`. Para no recompilar, la UTB APP puede decidirla en ti
 - **Su idioma.** El que el usuario elija dentro del módulo, o el primero del teléfono que el módulo tenga traducido, o inglés. Hoy la UTB APP no puede imponer uno.
 - **Sus preferencias y su progreso**, en `shared_preferences` bajo claves `tourVirtual.*`, para no pisar las de la anfitriona.
 - **Accesibilidad.** Lectores de pantalla, texto al 200 %, alto contraste, reducir movimiento y subtítulos. Detalles en `docs/ACCESIBILIDAD.md`.
+
+## Estadísticas de uso
+
+Con `ContenidoRemoto`, el módulo envía a `POST /api/eventos` lo que alimenta las métricas del panel (RF-23 a RF-25): el mapa abierto, cada escena 360 que se llegó a ver, cada hotspot tocado, cada narración o video reproducido y el recorrido completado.
+
+- **Anónimo.** Cada apertura del módulo crea un identificador de sesión al azar que vive en memoria y no se guarda. No se envía el usuario, ni su ubicación, ni nada del teléfono.
+- **Con consentimiento.** Hasta que hay respuesta, los eventos esperan en memoria y no salen del teléfono. Si se acepta, se envían; si se rechaza, se descartan (sección 7 de `docs/arquitectura.md`).
+- **Sin bloquear.** Se envían en segundo plano. Sin red, se reintentan con espera creciente hasta dos minutos; si la API rechaza uno, se descarta. Lo pendiente al cerrar el módulo se pierde.
+- **`ContenidoLocal` no envía nada:** no hay API.
+
+El código está en `packages/tour_virtual/lib/datos/analitica.dart`.
 
 ## Lo que tiene que poner la UTB APP
 
@@ -147,4 +159,5 @@ flutter test                                                 # incluye integraci
 | Nube o local | La línea de `fuente`. Si es nube, quién aloja la API, la base y el almacenamiento. |
 | Tecnología de la UTB APP | Dependencia Flutter directa o *add-to-app*. |
 | Sesión e identidad | El campo de token y la validación en la API (ver «Audiencia y seguridad»). |
+| Consentimiento de analítica | Si la UTB APP ya lo pide, el valor de `analitica`. Si no, el módulo pregunta. |
 | Versiones de dependencias | Alinear Riverpod, go_router y demás si difieren. |

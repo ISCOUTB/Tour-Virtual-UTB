@@ -132,5 +132,13 @@
   "reducirMovimientoDetalle": "アニメーション、回転、3D 効果をオフにします。",
   "movimientoTelefonoDetalle": "360° ツアーで、視点がスマホの動きに合わせて動きます。",
   "subtitulosDetalle": "ナレーションの再生中にテキストを表示します。",
-  "ajustesSistema": "これらの設定は、スマホのアクセシビリティ設定に加えて適用されます。"
+  "ajustesSistema": "これらの設定は、スマホのアクセシビリティ設定に加えて適用されます。",
+  "privacidad": "プライバシー",
+  "analiticaTitulo": "ツアーの改善にご協力いただけますか？",
+  "analiticaTexto": "同意すると、どのシーン・場所・ナレーションが使われたかをアプリが集計します。名前や位置情報など、あなたを特定できる情報は送信しません。「{ajustes}」でいつでも変更できます。",
+  "analiticaAceptar": "はい、共有します",
+  "analiticaRechazar": "いいえ、結構です",
+  "analiticaGuardada": "保存しました。「{ajustes}」で変更できます。",
+  "analiticaAjuste": "利用統計を共有",
+  "analiticaAjusteDetalle": "匿名：どのシーン・場所・ナレーションが使われたかのみ。名前や位置情報は送信しません。"
 }

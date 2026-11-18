@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:tour_virtual/datos/analitica.dart';
 import 'package:tour_virtual/datos/modelos/modelos.dart';
 import 'package:tour_virtual/datos/preferencias.dart';
 import 'package:tour_virtual/datos/progreso.dart';
@@ -13,6 +14,7 @@ import 'package:tour_virtual/datos/subtitulos.dart';
 import 'package:tour_virtual/l10n/textos.dart';
 import 'package:tour_virtual/loading_screen.dart';
 import 'package:tour_virtual/app_tour.dart';
+import 'package:tour_virtual/configuracion_tour.dart';
 import 'package:tour_virtual/nucleo/errores.dart';
 import 'package:tour_virtual/nucleo/rutas.dart';
 import 'package:tour_virtual/nucleo/tema.dart';
@@ -128,6 +130,9 @@ class RepositorioFalso implements RepositorioContenido {
 
   int llamadasAPois = 0;
 
+  /// Eventos de analítica que llegaron a «la API».
+  final eventos = <EventoAnalitica>[];
+
   /// Como el servidor de hoy: todo en español.
   @override
   String get idiomaContenido => 'es';
@@ -163,6 +168,12 @@ class RepositorioFalso implements RepositorioContenido {
   @override
   Future<Subtitulos> obtenerSubtitulos(String url) async =>
       throw const FalloSinContenido();
+
+  @override
+  Future<bool> registrarEvento(EventoAnalitica evento) async {
+    eventos.add(evento);
+    return true;
+  }
 }
 
 /// Tres paradas y un lugar del campus sin panorámica. Las posiciones son las
@@ -276,12 +287,15 @@ Widget envolver(
   bool sinAnimaciones = false,
   Preferencias preferencias = espanol,
   double? escalaTexto,
+  ConfiguracionTour? configuracion,
 }) {
   return ProviderScope(
     overrides: [
       preferenciasInicialesProvider.overrideWithValue(preferencias),
       if (repositorio != null)
         repositorioContenidoProvider.overrideWithValue(repositorio),
+      if (configuracion != null)
+        configuracionTourProvider.overrideWithValue(configuracion),
     ],
     child: AppDePrueba(
       hijo: hijo,
@@ -297,6 +311,8 @@ Future<WidgetRef> montarModulo(
   List<Poi> pois = poisDePrueba,
   Preferencias preferencias = espanol,
   double? escalaTexto,
+  RepositorioFalso? repositorio,
+  ConfiguracionTour? configuracion,
 }) async {
   usarTelefono(tester);
   late WidgetRef referencia;
@@ -308,9 +324,10 @@ Future<WidgetRef> montarModulo(
           return const HomeScreen();
         },
       ),
-      repositorio: RepositorioFalso(pois: pois),
+      repositorio: repositorio ?? RepositorioFalso(pois: pois),
       preferencias: preferencias,
       escalaTexto: escalaTexto,
+      configuracion: configuracion,
     ),
   );
   await asentar(tester);
@@ -1014,6 +1031,251 @@ void main() {
     expect(find.text('Reintentar'), findsNothing);
 
     await drenarTemporizadores(tester);
+  });
+
+  group('analítica', () {
+    // RF-23 y RF-24, con el consentimiento de la sección 7 de
+    // docs/arquitectura.md: nada sale del teléfono antes de que la persona
+    // conteste, y rechazar no cambia nada del tour.
+    const conEstadisticas = Preferencias(idioma: Locale('es'), analitica: true);
+    const aceptar = 'Sí, compartir';
+    const rechazar = 'No, gracias';
+
+    Finder selector(IconData icono) => find.descendant(
+      of: find.byWidgetPredicate((w) => w is SegmentedButton),
+      matching: find.byIcon(icono),
+    );
+
+    Future<void> abrirAjustes(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('Idioma y accesibilidad'));
+      await asentar(tester);
+    }
+
+    /// Desplaza hasta [objetivo] y lo deja en el centro: scrollUntilVisible
+    /// para en cuanto asoma un borde, y tocar el centro fallaba.
+    Future<void> centrar(
+      WidgetTester tester,
+      Finder objetivo, {
+      Finder? scrollable,
+    }) async {
+      await tester.scrollUntilVisible(objetivo, 200, scrollable: scrollable);
+      await Scrollable.ensureVisible(tester.element(objetivo), alignment: 0.5);
+      await asentar(tester);
+    }
+
+    Future<void> bajarEnAjustes(WidgetTester tester, Finder objetivo) =>
+        centrar(tester, objetivo, scrollable: find.byType(Scrollable).last);
+
+    const pie = 'Recorrido oficial de la Universidad Tecnológica de Bolívar';
+
+    testWidgets('el aviso espera la respuesta y no envía nada antes', (
+      WidgetTester tester,
+    ) async {
+      final api = RepositorioFalso(pois: poisDePrueba);
+      await montarModulo(tester, repositorio: api);
+
+      await abrirMapa(tester);
+      expect(api.eventos, isEmpty);
+
+      await tester.tap(selector(Icons.route_rounded));
+      await asentar(tester);
+      await centrar(tester, find.text(aceptar));
+      expect(find.text('¿Nos ayudas a mejorar el recorrido?'), findsOneWidget);
+      // Aceptar y rechazar pesan lo mismo: el mismo tipo de botón.
+      for (final texto in [aceptar, rechazar]) {
+        expect(
+          find.ancestor(
+            of: find.text(texto),
+            matching: find.byType(OutlinedButton),
+          ),
+          findsOneWidget,
+        );
+      }
+
+      await tester.tap(find.text(aceptar));
+      await asentar(tester);
+
+      // El mapa que se abrió antes de contestar se envía ahora.
+      expect(api.eventos.map((e) => e.tipo), [TipoEvento.mapaAbierto]);
+      expect(find.text(aceptar), findsNothing);
+      final guardadas = await SharedPreferences.getInstance();
+      expect(guardadas.getBool('tourVirtual.pref.analitica.v1'), isTrue);
+
+      await drenarTemporizadores(tester);
+    });
+
+    testWidgets('rechazar descarta lo pendiente y no vuelve a preguntar', (
+      WidgetTester tester,
+    ) async {
+      final api = RepositorioFalso(pois: poisDePrueba);
+      final referencia = await montarModulo(tester, repositorio: api);
+      referencia.read(analiticaProvider).registrar(TipoEvento.mapaAbierto);
+
+      await centrar(tester, find.text(rechazar));
+      await tester.tap(find.text(rechazar));
+      await asentar(tester);
+      referencia.read(analiticaProvider).registrar(TipoEvento.escenaVista);
+      await asentar(tester);
+
+      expect(api.eventos, isEmpty);
+      expect(referencia.read(analiticaProvider).pendientes, 0);
+      expect(find.text(rechazar), findsNothing);
+      final guardadas = await SharedPreferences.getInstance();
+      expect(guardadas.getBool('tourVirtual.pref.analitica.v1'), isFalse);
+
+      await drenarTemporizadores(tester);
+    });
+
+    test('la respuesta guardada se lee al arrancar', () async {
+      SharedPreferences.setMockInitialValues({
+        'tourVirtual.pref.analitica.v1': true,
+      });
+      expect((await cargarPreferencias()).analitica, isTrue);
+      SharedPreferences.setMockInitialValues({});
+      expect((await cargarPreferencias()).analitica, isNull);
+    });
+
+    testWidgets('el interruptor de los ajustes también contesta', (
+      WidgetTester tester,
+    ) async {
+      final referencia = await montarModulo(tester);
+      await abrirAjustes(tester);
+      final interruptor = find.text('Compartir estadísticas de uso');
+      await bajarEnAjustes(tester, interruptor);
+      expect(find.text('PRIVACIDAD'), findsOneWidget);
+
+      await tester.tap(interruptor);
+      await asentar(tester);
+
+      expect(referencia.read(preferenciasProvider).analitica, isTrue);
+      expect(referencia.read(analiticaProvider).consentimiento, isTrue);
+
+      await drenarTemporizadores(tester);
+    });
+
+    testWidgets('si la app anfitriona ya decidió, el módulo no pregunta', (
+      WidgetTester tester,
+    ) async {
+      final api = RepositorioFalso(pois: poisDePrueba);
+      await montarModulo(
+        tester,
+        repositorio: api,
+        configuracion: const ConfiguracionTour(
+          fuente: ContenidoRemoto(urlApi: 'http://anfitriona.invalid'),
+          analitica: ConsentimientoAnalitica.concedido,
+        ),
+      );
+
+      // Ni el interruptor en los ajustes...
+      await abrirAjustes(tester);
+      await bajarEnAjustes(tester, find.text('Listo'));
+      expect(find.text('PRIVACIDAD'), findsNothing);
+      await tester.tap(find.text('Listo'));
+      await asentar(tester);
+
+      // Lo que pasa se envía sin preguntar...
+      await tester.tap(selector(Icons.map_rounded));
+      await asentar(tester);
+      expect(api.eventos.single.tipo, TipoEvento.mapaAbierto);
+
+      // ...y no hay aviso en la lista.
+      await tester.tap(selector(Icons.route_rounded));
+      await asentar(tester);
+      await tester.scrollUntilVisible(find.text(pie), 300);
+      expect(find.text(aceptar), findsNothing);
+
+      await drenarTemporizadores(tester);
+    });
+
+    testWidgets('con contenido local no se pregunta ni se envía', (
+      WidgetTester tester,
+    ) async {
+      final api = RepositorioFalso(pois: poisDePrueba);
+      await montarModulo(
+        tester,
+        repositorio: api,
+        configuracion: const ConfiguracionTour(fuente: ContenidoLocal()),
+      );
+
+      await tester.tap(selector(Icons.map_rounded));
+      await asentar(tester);
+      expect(api.eventos, isEmpty);
+
+      await tester.tap(selector(Icons.route_rounded));
+      await asentar(tester);
+      await tester.scrollUntilVisible(find.text(pie), 300);
+      expect(find.text(aceptar), findsNothing);
+
+      await drenarTemporizadores(tester);
+    });
+
+    testWidgets('tocar una salida del visor cuenta el hotspot', (
+      WidgetTester tester,
+    ) async {
+      usarTelefono(tester);
+      final api = RepositorioFalso(recorrido: recorridoConSalto);
+      await tester.pumpWidget(
+        envolver(
+          const RecorridoScreen(lugarId: 1),
+          repositorio: api,
+          preferencias: conEstadisticas,
+        ),
+      );
+      await asentar(tester);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(Wrap),
+          matching: find.text('Ir a la Enfermería'),
+        ),
+      );
+      await asentar(tester);
+
+      final evento = api.eventos.singleWhere(
+        (e) => e.tipo == TipoEvento.hotspotTocado,
+      );
+      expect(evento.escenaId, 1);
+      expect(evento.datos, {'hotspot': 1, 'tipo': 'navegacion', 'destino': 3});
+      // En las pruebas la panorámica nunca carga: no hay vista que contar.
+      expect(
+        api.eventos.where((e) => e.tipo == TipoEvento.escenaVista),
+        isEmpty,
+      );
+
+      await drenarTemporizadores(tester);
+    });
+
+    testWidgets('completar el recorrido se cuenta', (
+      WidgetTester tester,
+    ) async {
+      final api = RepositorioFalso(pois: poisDePrueba);
+      final referencia = await montarModulo(
+        tester,
+        repositorio: api,
+        preferencias: conEstadisticas,
+      );
+      final progreso = referencia.read(progresoProvider.notifier);
+      await progreso.cargado;
+      progreso
+        ..marcarVisitado(1)
+        ..marcarVisitado(2);
+      await asentar(tester);
+
+      await centrar(tester, etiquetaSemantica('Parada 3, Murales UTB'));
+      await tester.tap(etiquetaSemantica('Parada 3, Murales UTB'));
+      await asentar(tester);
+      // Cerrar la ficha tocando fuera de ella.
+      await tester.tapAt(const Offset(206, 40));
+      await asentar(tester);
+
+      expect(find.text('Conociste todo el recorrido'), findsOneWidget);
+      final evento = api.eventos.singleWhere(
+        (e) => e.tipo == TipoEvento.recorridoCompletado,
+      );
+      expect(evento.datos, {'paradas': 3});
+
+      await drenarTemporizadores(tester);
+    });
   });
 
   group('idioma', () {

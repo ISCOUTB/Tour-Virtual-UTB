@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'datos/analitica.dart';
 import 'datos/modelos/modelos.dart';
 import 'nucleo/configuracion.dart';
+
+export 'datos/analitica.dart' show ConsentimientoAnalitica;
 
 /// De dónde saca el módulo su contenido.
 ///
@@ -45,6 +48,7 @@ class ConfiguracionTour {
     this.lugarId = 1,
     this.audiencia,
     this.alSalir,
+    this.analitica = ConsentimientoAnalitica.preguntar,
   });
 
   /// La de la app de demostración: `DATOS=demo` y `MEDIOS_DEMO` eligen el
@@ -73,6 +77,15 @@ class ConfiguracionTour {
   /// normalmente `Navigator.pop` en la app anfitriona. Si es nulo, la flecha
   /// de volver solo aparece cuando hay algo que cerrar dentro del módulo.
   final VoidCallback? alSalir;
+
+  /// Quién decide si se envían las estadísticas de uso anónimas (RF-23).
+  ///
+  /// Por defecto el módulo lo pregunta una vez. Si la UTB APP ya pide ese
+  /// consentimiento con su propia política de datos, pasa
+  /// [ConsentimientoAnalitica.concedido] o [ConsentimientoAnalitica.denegado]
+  /// y el módulo no vuelve a preguntar. Con [ContenidoLocal] nunca se envía
+  /// nada: no hay API.
+  final ConsentimientoAnalitica analitica;
 
   bool get esLocal => fuente is ContenidoLocal;
 }

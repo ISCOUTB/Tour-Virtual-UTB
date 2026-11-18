@@ -132,5 +132,13 @@
   "reducirMovimientoDetalle": "Supprime les animations, les rotations et les effets 3D.",
   "movimientoTelefonoDetalle": "Dans la visite à 360°, la vue suit les mouvements du téléphone.",
   "subtitulosDetalle": "Affiche le texte du commentaire pendant la lecture.",
-  "ajustesSistema": "Ces réglages s’ajoutent à ceux d’accessibilité de votre téléphone."
+  "ajustesSistema": "Ces réglages s’ajoutent à ceux d’accessibilité de votre téléphone.",
+  "privacidad": "Confidentialité",
+  "analiticaTitulo": "Nous aidez-vous à améliorer la visite ?",
+  "analiticaTexto": "Si vous acceptez, l’application compte les scènes, les lieux et les commentaires utilisés, sans votre nom, votre position ni rien qui vous identifie. Vous pouvez changer d’avis à tout moment dans « {ajustes} ».",
+  "analiticaAceptar": "Oui, partager",
+  "analiticaRechazar": "Non, merci",
+  "analiticaGuardada": "Enregistré. Vous pouvez le modifier dans « {ajustes} ».",
+  "analiticaAjuste": "Partager les statistiques d’utilisation",
+  "analiticaAjusteDetalle": "Anonymes : les scènes, lieux et commentaires utilisés. Jamais votre nom ni votre position."
 }

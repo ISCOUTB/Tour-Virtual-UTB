@@ -132,5 +132,13 @@
   "reducirMovimientoDetalle": "Entfernt Animationen, Drehungen und 3D-Effekte.",
   "movimientoTelefonoDetalle": "Im 360°-Rundgang folgt die Ansicht der Bewegung deines Handys.",
   "subtitulosDetalle": "Zeigt den Text der Erzählung während der Wiedergabe.",
-  "ajustesSistema": "Diese Einstellungen ergänzen die Bedienungshilfen deines Handys."
+  "ajustesSistema": "Diese Einstellungen ergänzen die Bedienungshilfen deines Handys.",
+  "privacidad": "Datenschutz",
+  "analiticaTitulo": "Hilfst du uns, den Rundgang zu verbessern?",
+  "analiticaTexto": "Wenn du zustimmst, zählt die App, welche Szenen, Orte und Erzählungen genutzt werden – ohne deinen Namen, deinen Standort oder sonst etwas, das dich identifiziert. Du kannst das jederzeit unter „{ajustes}“ ändern.",
+  "analiticaAceptar": "Ja, teilen",
+  "analiticaRechazar": "Nein, danke",
+  "analiticaGuardada": "Gespeichert. Du kannst das unter „{ajustes}“ ändern.",
+  "analiticaAjuste": "Nutzungsstatistiken teilen",
+  "analiticaAjusteDetalle": "Anonym: welche Szenen, Orte und Erzählungen genutzt werden. Nie dein Name oder dein Standort."
 }

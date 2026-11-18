@@ -132,5 +132,13 @@
   "reducirMovimientoDetalle": "Remove animações, giros e efeitos 3D.",
   "movimientoTelefonoDetalle": "No percurso em 360°, a vista acompanha o movimento do celular.",
   "subtitulosDetalle": "Mostra o texto da narração enquanto ela toca.",
-  "ajustesSistema": "Estes ajustes se somam aos de acessibilidade do seu celular."
+  "ajustesSistema": "Estes ajustes se somam aos de acessibilidade do seu celular.",
+  "privacidad": "Privacidade",
+  "analiticaTitulo": "Quer nos ajudar a melhorar o percurso?",
+  "analiticaTexto": "Se você aceitar, o app conta quais cenas, lugares e narrações são usados, sem seu nome, sua localização nem nada que identifique você. Você pode mudar isso quando quiser em “{ajustes}”.",
+  "analiticaAceptar": "Sim, compartilhar",
+  "analiticaRechazar": "Não, obrigado",
+  "analiticaGuardada": "Salvo. Você pode mudar isso em “{ajustes}”.",
+  "analiticaAjuste": "Compartilhar estatísticas de uso",
+  "analiticaAjusteDetalle": "Anônimas: quais cenas, lugares e narrações são usados. Nunca seu nome nem sua localização."
 }

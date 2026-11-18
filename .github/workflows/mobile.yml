@@ -20,6 +20,12 @@ on:
 permissions:
   contents: read
 
+# Flutter fijo en 3.47.x, la ultima version con la que se verifico el modulo.
+# La 3.50 marca como obsoleto package:flutter/material.dart (Material paso a
+# material_ui) y --fatal-infos lo convierte en error en cada archivo; migrar
+# romperia la 3.41 y la 3.47, y la UTB APP puede estar en cualquiera de ellas.
+# Se sube cuando se sepa que version usa la UTB APP.
+
 jobs:
   modulo:
     name: Modulo (formato, codigo generado y analisis)
@@ -33,6 +39,7 @@ jobs:
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
+          flutter-version: 3.47.x
           cache: true
 
       - name: Resolver dependencias
@@ -68,6 +75,7 @@ jobs:
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
+          flutter-version: 3.47.x
           cache: true
 
       - name: Resolver dependencias
@@ -103,6 +111,7 @@ jobs:
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
+          flutter-version: 3.47.x
           cache: true
 
       - run: flutter pub get

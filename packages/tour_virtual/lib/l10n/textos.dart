@@ -911,6 +911,54 @@ abstract class Textos {
   /// In es, this message translates to:
   /// **'Estos ajustes se suman a los de accesibilidad de tu teléfono.'**
   String get ajustesSistema;
+
+  /// Título de la sección de privacidad en los ajustes y etiqueta del aviso de estadísticas.
+  ///
+  /// In es, this message translates to:
+  /// **'Privacidad'**
+  String get privacidad;
+
+  /// Pregunta del aviso de estadísticas de uso, en la lista del recorrido.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Nos ayudas a mejorar el recorrido?'**
+  String get analiticaTitulo;
+
+  /// Qué se envía y qué no. {ajustes} es el título de la hoja de ajustes («Idioma y accesibilidad»), donde se puede cambiar.
+  ///
+  /// In es, this message translates to:
+  /// **'Si aceptas, la app cuenta qué escenas, lugares y narraciones se usan, sin tu nombre, tu ubicación ni nada que te identifique. Puedes cambiarlo cuando quieras en «{ajustes}».'**
+  String analiticaTexto(String ajustes);
+
+  /// Botón que acepta enviar estadísticas anónimas. Tiene el mismo peso visual que rechazar.
+  ///
+  /// In es, this message translates to:
+  /// **'Sí, compartir'**
+  String get analiticaAceptar;
+
+  /// Botón que rechaza enviar estadísticas.
+  ///
+  /// In es, this message translates to:
+  /// **'No, gracias'**
+  String get analiticaRechazar;
+
+  /// Lo anuncia el lector de pantalla al contestar el aviso, que desaparece. {ajustes} como en analiticaTexto.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardado. Puedes cambiarlo en «{ajustes}».'**
+  String analiticaGuardada(String ajustes);
+
+  /// Interruptor de estadísticas en los ajustes.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir estadísticas de uso'**
+  String get analiticaAjuste;
+
+  /// Detalle del interruptor de estadísticas.
+  ///
+  /// In es, this message translates to:
+  /// **'Anónimas: qué escenas, lugares y narraciones se usan. Nunca tu nombre ni tu ubicación.'**
+  String get analiticaAjusteDetalle;
 }
 
 class _TextosDelegate extends LocalizationsDelegate<Textos> {

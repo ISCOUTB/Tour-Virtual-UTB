@@ -473,4 +473,33 @@ class TextosKo extends Textos {
 
   @override
   String get ajustesSistema => '이 설정은 휴대폰의 접근성 설정에 더해 적용됩니다.';
+
+  @override
+  String get privacidad => '개인정보 보호';
+
+  @override
+  String get analiticaTitulo => '투어 개선에 도움을 주시겠어요?';
+
+  @override
+  String analiticaTexto(String ajustes) {
+    return '동의하시면 앱이 어떤 장면, 장소, 해설이 이용되는지 집계합니다. 이름, 위치 등 본인을 식별할 수 있는 정보는 보내지 않습니다. 언제든지 ‘$ajustes’에서 변경할 수 있습니다.';
+  }
+
+  @override
+  String get analiticaAceptar => '네, 공유할게요';
+
+  @override
+  String get analiticaRechazar => '괜찮습니다';
+
+  @override
+  String analiticaGuardada(String ajustes) {
+    return '저장되었습니다. ‘$ajustes’에서 변경할 수 있습니다.';
+  }
+
+  @override
+  String get analiticaAjuste => '이용 통계 공유';
+
+  @override
+  String get analiticaAjusteDetalle =>
+      '익명: 어떤 장면, 장소, 해설이 이용되는지만 보냅니다. 이름이나 위치는 보내지 않습니다.';
 }

@@ -80,7 +80,16 @@ Es lo que el lector de pantalla dice en el visor 360, para quien no ve la imagen
 - [ ] **Traducir el contenido** según `Accept-Language`, respondiendo con `Content-Language` (ver `docs/ACCESIBILIDAD.md`, sección 4.3).
   - Para los 8 lugares con narración ya hay nombre y descripción en 11 idiomas en `scripts/narraciones/guiones.json`.
   - Son borradores sin revisión nativa.
-- [ ] **Datos de la realidad aumentada.** Hay que decidir dónde viven el grafo peatonal (JSON), la tabla `accesos` (la Biblioteca tiene dos entradas), `escenas.rumbo_norte` y los campos `ar_*` del POI, y si eso espera a la migración a Firestore del SRS. La propuesta está en [docs/plan-realidad-aumentada.md](plan-realidad-aumentada.md), en «Modelo de datos propuesto».
+- [ ] **Datos de la realidad aumentada.** Hay que decidir dónde viven en la API el grafo peatonal (JSON), la tabla `accesos` (la Biblioteca tiene dos entradas), `escenas.rumbo_norte` y los campos `ar_*` del POI. Desde el 2026-11-17 el backend no migra a Firestore. La propuesta está en [docs/plan-realidad-aumentada.md](plan-realidad-aumentada.md), en «Modelo de datos propuesto».
+
+## 9. Analítica desde la app (2026-11-17)
+
+La app ya envía los cinco tipos de evento a `POST /api/eventos`, con consentimiento y sin datos personales (ver «Estadísticas de uso» en [integracion-utb-app.md](integracion-utb-app.md)). Se probó contra la base compartida y las métricas del panel los cuentan. Del lado del backend queda:
+
+- [ ] **Programar la purga de 12 meses.** `public.purgar_eventos_vencidos()` existe, pero hay que confirmar que algo la ejecuta (pg_cron o una tarea programada).
+- [ ] **Limitar el endpoint.** `POST /api/eventos` es público y sin clave. Conviene un límite por IP (`AddRateLimiter` de ASP.NET Core) para que nadie infle las métricas ni llene la tabla.
+- [ ] **Decidir si se registra el consentimiento.** La sección 7 de arquitectura pide guardar el consentimiento con versión y fecha en `consentimientos`. La app lo guarda solo en el teléfono (`tourVirtual.pref.analitica.v1`): como el identificador de sesión es anónimo y no se guarda, un registro en el servidor no se podría asociar a nadie. Si Jurídica lo pide igualmente, hace falta un endpoint.
+- [ ] **Limpiar los eventos de prueba.** La prueba de contrato `apps/mobile/test/api_real_test.dart` marca los suyos: `delete from public.eventos where payload->>'prueba' = 'contrato';`.
 
 ## Qué no hay que tocar
 

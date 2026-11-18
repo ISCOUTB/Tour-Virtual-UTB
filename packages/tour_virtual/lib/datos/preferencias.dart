@@ -34,6 +34,7 @@ class Preferencias {
     this.reducirMovimiento = false,
     this.movimientoTelefono = true,
     this.subtitulos = true,
+    this.analitica,
   });
 
   /// Nulo: el idioma del teléfono.
@@ -49,6 +50,10 @@ class Preferencias {
   /// Subtítulos del audio narrado mientras suena.
   final bool subtitulos;
 
+  /// Respuesta al aviso de estadísticas de uso anónimas. Nula mientras no
+  /// se ha contestado: entonces no se envía nada (ver `datos/analitica.dart`).
+  final bool? analitica;
+
   Preferencias copyWith({
     Locale? Function()? idioma,
     TamanoTexto? tamanoTexto,
@@ -56,6 +61,7 @@ class Preferencias {
     bool? reducirMovimiento,
     bool? movimientoTelefono,
     bool? subtitulos,
+    bool? Function()? analitica,
   }) => Preferencias(
     idioma: idioma == null ? this.idioma : idioma(),
     tamanoTexto: tamanoTexto ?? this.tamanoTexto,
@@ -63,6 +69,7 @@ class Preferencias {
     reducirMovimiento: reducirMovimiento ?? this.reducirMovimiento,
     movimientoTelefono: movimientoTelefono ?? this.movimientoTelefono,
     subtitulos: subtitulos ?? this.subtitulos,
+    analitica: analitica == null ? this.analitica : analitica(),
   );
 
   @override
@@ -73,7 +80,8 @@ class Preferencias {
       other.altoContraste == altoContraste &&
       other.reducirMovimiento == reducirMovimiento &&
       other.movimientoTelefono == movimientoTelefono &&
-      other.subtitulos == subtitulos;
+      other.subtitulos == subtitulos &&
+      other.analitica == analitica;
 
   @override
   int get hashCode => Object.hash(
@@ -83,6 +91,7 @@ class Preferencias {
     reducirMovimiento,
     movimientoTelefono,
     subtitulos,
+    analitica,
   );
 }
 
@@ -95,6 +104,10 @@ abstract final class _Claves {
   static const reducirMovimiento = 'tourVirtual.pref.reducirMovimiento';
   static const movimientoTelefono = 'tourVirtual.pref.movimientoTelefono';
   static const subtitulos = 'tourVirtual.pref.subtitulos';
+
+  /// Con la versión del aviso en la clave: si su texto cambia de fondo, se
+  /// sube la versión y la respuesta anterior deja de valer.
+  static const analitica = 'tourVirtual.pref.analitica.v1';
 }
 
 /// Lee las preferencias guardadas. Se llama antes de `runApp` para que la
@@ -114,6 +127,7 @@ Future<Preferencias> cargarPreferencias() async {
       reducirMovimiento: prefs.getBool(_Claves.reducirMovimiento) ?? false,
       movimientoTelefono: prefs.getBool(_Claves.movimientoTelefono) ?? true,
       subtitulos: prefs.getBool(_Claves.subtitulos) ?? true,
+      analitica: prefs.getBool(_Claves.analitica),
     );
   } catch (error) {
     // Perder los ajustes no debe impedir usar la aplicación.
@@ -172,6 +186,11 @@ class AjustesPreferencias extends Notifier<Preferencias> {
   void cambiarSubtitulos(bool valor) {
     state = state.copyWith(subtitulos: valor);
     _guardar((p) => p.setBool(_Claves.subtitulos, valor));
+  }
+
+  void cambiarAnalitica(bool valor) {
+    state = state.copyWith(analitica: () => valor);
+    _guardar((p) => p.setBool(_Claves.analitica, valor));
   }
 
   Future<void> _guardar(

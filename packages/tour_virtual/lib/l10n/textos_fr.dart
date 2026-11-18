@@ -521,4 +521,37 @@ class TextosFr extends Textos {
   @override
   String get analiticaAjusteDetalle =>
       'Anonymes : les scènes, lieux et commentaires utilisés. Jamais votre nom ni votre position.';
+
+  @override
+  String get guiaTitulo => 'Salut, moi c’est Max';
+
+  @override
+  String get guiaTexto => 'Je vous fais découvrir le campus de l’UTB.';
+
+  @override
+  String get guia360 =>
+      'Entrez dans chaque lieu en 360° et regardez autour de vous.';
+
+  @override
+  String get guiaMapa => 'Repérez chaque étape sur le plan du campus.';
+
+  @override
+  String get guiaAudio =>
+      'Écoutez l’histoire de chaque lieu dans votre langue.';
+
+  @override
+  String get guiaEmpezar => 'Commencer la visite';
+
+  @override
+  String get guiaExplorar => 'Explorer par moi-même';
+
+  @override
+  String get verGuia => 'Revoir l’accueil';
+
+  @override
+  String get verGuiaDetalle =>
+      'Max vous réexplique le fonctionnement de la visite.';
+
+  @override
+  String get ayuda => 'Aide';
 }

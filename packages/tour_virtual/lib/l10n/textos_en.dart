@@ -512,4 +512,34 @@ class TextosEn extends Textos {
   @override
   String get analiticaAjusteDetalle =>
       'Anonymous: which scenes, places and narrations are used. Never your name or your location.';
+
+  @override
+  String get guiaTitulo => 'Hi, I’m Max';
+
+  @override
+  String get guiaTexto => 'I’ll show you around the UTB campus.';
+
+  @override
+  String get guia360 => 'Step into each place in 360° and look around.';
+
+  @override
+  String get guiaMapa => 'Find every stop on the campus map.';
+
+  @override
+  String get guiaAudio => 'Listen to each place’s story in your language.';
+
+  @override
+  String get guiaEmpezar => 'Start the tour';
+
+  @override
+  String get guiaExplorar => 'Explore on my own';
+
+  @override
+  String get verGuia => 'See the welcome again';
+
+  @override
+  String get verGuiaDetalle => 'Max explains again how the tour works.';
+
+  @override
+  String get ayuda => 'Help';
 }

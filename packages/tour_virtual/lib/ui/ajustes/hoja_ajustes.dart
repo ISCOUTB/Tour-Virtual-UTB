@@ -13,7 +13,9 @@ import '../comunes/componentes.dart';
 ///
 /// Todo se aplica al instante y detrás de la hoja: al elegir otro idioma o
 /// un texto más grande, la propia hoja cambia, que es la mejor vista previa.
-Future<void> mostrarAjustes(BuildContext context) {
+///
+/// [alVerGuia] vuelve a abrir la bienvenida de Max; sin él, la opción no sale.
+Future<void> mostrarAjustes(BuildContext context, {VoidCallback? alVerGuia}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -23,15 +25,17 @@ Future<void> mostrarAjustes(BuildContext context) {
       initialChildSize: 0.86,
       minChildSize: 0.5,
       maxChildSize: 0.96,
-      builder: (context, control) => _Ajustes(control: control),
+      builder: (context, control) =>
+          _Ajustes(control: control, alVerGuia: alVerGuia),
     ),
   );
 }
 
 class _Ajustes extends ConsumerWidget {
-  const _Ajustes({required this.control});
+  const _Ajustes({required this.control, this.alVerGuia});
 
   final ScrollController control;
+  final VoidCallback? alVerGuia;
 
   /// Valor del grupo de radios para «idioma del teléfono».
   static const _delTelefono = 'telefono';
@@ -211,6 +215,34 @@ class _Ajustes extends ConsumerWidget {
             style: textos.bodySmall?.copyWith(color: paleta.textoTenue),
           ),
         ),
+
+        if (alVerGuia case final verGuia?) ...[
+          seccion(txt.ayuda),
+          _Grupo(
+            child: ListTile(
+              leading: const Icon(
+                Icons.waving_hand_outlined,
+                color: ColoresUtb.azulClaro,
+              ),
+              title: Text(txt.verGuia, style: textos.titleSmall),
+              subtitle: Text(
+                txt.verGuiaDetalle,
+                style: textos.bodySmall?.copyWith(
+                  color: paleta.textoSecundario,
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: paleta.textoSecundario,
+              ),
+              contentPadding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+              onTap: () {
+                Navigator.of(context).pop();
+                verGuia();
+              },
+            ),
+          ),
+        ],
 
         // Solo si la decisión es del usuario. Si la app anfitriona ya la tomó
         // con su propia política, se cambia allí.

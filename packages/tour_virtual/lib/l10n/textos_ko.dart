@@ -499,4 +499,34 @@ class TextosKo extends Textos {
   @override
   String get analiticaAjusteDetalle =>
       '익명: 어떤 장면, 장소, 해설이 이용되는지만 보냅니다. 이름이나 위치는 보내지 않습니다.';
+
+  @override
+  String get guiaTitulo => '안녕하세요, 저는 맥스예요';
+
+  @override
+  String get guiaTexto => 'UTB 캠퍼스를 함께 둘러볼게요.';
+
+  @override
+  String get guia360 => '각 장소에 360°로 들어가 주위를 둘러보세요.';
+
+  @override
+  String get guiaMapa => '캠퍼스 지도에서 각 정류장을 찾아보세요.';
+
+  @override
+  String get guiaAudio => '각 장소의 이야기를 내 언어로 들어 보세요.';
+
+  @override
+  String get guiaEmpezar => '투어 시작하기';
+
+  @override
+  String get guiaExplorar => '혼자 둘러보기';
+
+  @override
+  String get verGuia => '환영 화면 다시 보기';
+
+  @override
+  String get verGuiaDetalle => '맥스가 투어 이용 방법을 다시 알려 드려요.';
+
+  @override
+  String get ayuda => '도움말';
 }

@@ -139,5 +139,15 @@
   "analiticaRechazar": "No, thanks",
   "analiticaGuardada": "Saved. You can change this in “{ajustes}”.",
   "analiticaAjuste": "Share usage statistics",
-  "analiticaAjusteDetalle": "Anonymous: which scenes, places and narrations are used. Never your name or your location."
+  "analiticaAjusteDetalle": "Anonymous: which scenes, places and narrations are used. Never your name or your location.",
+  "guiaTitulo": "Hi, I’m Max",
+  "guiaTexto": "I’ll show you around the UTB campus.",
+  "guia360": "Step into each place in 360° and look around.",
+  "guiaMapa": "Find every stop on the campus map.",
+  "guiaAudio": "Listen to each place’s story in your language.",
+  "guiaEmpezar": "Start the tour",
+  "guiaExplorar": "Explore on my own",
+  "verGuia": "See the welcome again",
+  "verGuiaDetalle": "Max explains again how the tour works.",
+  "ayuda": "Help"
 }

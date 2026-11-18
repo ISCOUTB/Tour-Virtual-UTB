@@ -192,5 +192,26 @@
   "analiticaAjuste": "Compartir estadísticas de uso",
   "@analiticaAjuste": {"description": "Interruptor de estadísticas en los ajustes."},
   "analiticaAjusteDetalle": "Anónimas: qué escenas, lugares y narraciones se usan. Nunca tu nombre ni tu ubicación.",
-  "@analiticaAjusteDetalle": {"description": "Detalle del interruptor de estadísticas."}
+  "@analiticaAjusteDetalle": {"description": "Detalle del interruptor de estadísticas."},
+
+  "guiaTitulo": "Hola, soy Max",
+  "@guiaTitulo": {"description": "Saludo de Max, la mascota de la UTB, en la bienvenida que sale la primera vez. «Max» es un nombre propio: no se traduce."},
+  "guiaTexto": "Te acompaño a recorrer el campus de la UTB.",
+  "@guiaTexto": {"description": "Debajo del saludo de la bienvenida."},
+  "guia360": "Entra a cada lugar en 360° y mira a tu alrededor.",
+  "@guia360": {"description": "Primera idea de la bienvenida: el visor 360."},
+  "guiaMapa": "Ubica cada parada en el mapa del campus.",
+  "@guiaMapa": {"description": "Segunda idea de la bienvenida: el mapa."},
+  "guiaAudio": "Escucha la historia de cada lugar en tu idioma.",
+  "@guiaAudio": {"description": "Tercera idea de la bienvenida: la narración sigue el idioma de la interfaz."},
+  "guiaEmpezar": "Empezar el recorrido",
+  "@guiaEmpezar": {"description": "Botón principal de la bienvenida: abre la primera parada."},
+  "guiaExplorar": "Explorar por mi cuenta",
+  "@guiaExplorar": {"description": "Botón secundario de la bienvenida: la cierra y deja la lista."},
+  "verGuia": "Ver la bienvenida",
+  "@verGuia": {"description": "Opción de los ajustes que vuelve a abrir la bienvenida."},
+  "verGuiaDetalle": "Max te vuelve a contar cómo funciona el recorrido.",
+  "@verGuiaDetalle": {"description": "Detalle de esa opción."},
+  "ayuda": "Ayuda",
+  "@ayuda": {"description": "Título de la sección de ayuda en los ajustes."}
 }

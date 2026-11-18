@@ -139,5 +139,15 @@
   "analiticaRechazar": "Não, obrigado",
   "analiticaGuardada": "Salvo. Você pode mudar isso em “{ajustes}”.",
   "analiticaAjuste": "Compartilhar estatísticas de uso",
-  "analiticaAjusteDetalle": "Anônimas: quais cenas, lugares e narrações são usados. Nunca seu nome nem sua localização."
+  "analiticaAjusteDetalle": "Anônimas: quais cenas, lugares e narrações são usados. Nunca seu nome nem sua localização.",
+  "guiaTitulo": "Oi, eu sou o Max",
+  "guiaTexto": "Vou te acompanhar pelo campus da UTB.",
+  "guia360": "Entre em cada lugar em 360° e olhe ao redor.",
+  "guiaMapa": "Encontre cada parada no mapa do campus.",
+  "guiaAudio": "Ouça a história de cada lugar no seu idioma.",
+  "guiaEmpezar": "Começar o percurso",
+  "guiaExplorar": "Explorar por conta própria",
+  "verGuia": "Ver as boas-vindas",
+  "verGuiaDetalle": "O Max conta de novo como o percurso funciona.",
+  "ayuda": "Ajuda"
 }

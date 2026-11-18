@@ -498,4 +498,34 @@ class TextosJa extends Textos {
   @override
   String get analiticaAjusteDetalle =>
       '匿名：どのシーン・場所・ナレーションが使われたかのみ。名前や位置情報は送信しません。';
+
+  @override
+  String get guiaTitulo => 'こんにちは、マックスです';
+
+  @override
+  String get guiaTexto => 'UTB のキャンパスをご案内します。';
+
+  @override
+  String get guia360 => '各スポットに 360° で入り、まわりを見渡しましょう。';
+
+  @override
+  String get guiaMapa => 'キャンパスマップで各スポットを確認しましょう。';
+
+  @override
+  String get guiaAudio => '各スポットの物語をあなたの言語で聞けます。';
+
+  @override
+  String get guiaEmpezar => 'ツアーを始める';
+
+  @override
+  String get guiaExplorar => '自分で見て回る';
+
+  @override
+  String get verGuia => 'ようこそ画面をもう一度見る';
+
+  @override
+  String get verGuiaDetalle => 'マックスがツアーの使い方をもう一度説明します。';
+
+  @override
+  String get ayuda => 'ヘルプ';
 }

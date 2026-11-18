@@ -78,6 +78,10 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
+    // Quien ya vio la bienvenida de Max: aquí se prueba la salida.
+    SharedPreferences.setMockInitialValues({
+      'tourVirtual.pref.guiaVista': true,
+    });
     await tester.pumpWidget(
       anfitriona(
         (salir) =>
@@ -94,5 +98,38 @@ void main() {
 
     expect(find.byType(TourVirtual), findsNothing);
     expect(find.text('Abrir tour'), findsOneWidget);
+  });
+
+  testWidgets('la bienvenida de Max sale la primera vez y no la segunda', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.localesTestValue = const [Locale('es')];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+
+    await tester.pumpWidget(
+      anfitriona((_) => const ConfiguracionTour(fuente: ContenidoLocal())),
+    );
+    await tester.tap(find.text('Abrir tour'));
+    await avanzar(tester);
+
+    expect(find.text('Hola, soy Max'), findsOneWidget);
+    await tester.tap(find.text('Explorar por mi cuenta'));
+    await avanzar(tester, 10);
+    expect(find.text('Hola, soy Max'), findsNothing);
+    final guardadas = await SharedPreferences.getInstance();
+    expect(guardadas.getBool('tourVirtual.pref.guiaVista'), isTrue);
+
+    // Se cierra el módulo y se vuelve a abrir: ya no sale.
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+    await avanzar(tester, 10);
+    await tester.tap(find.text('Abrir tour'));
+    await avanzar(tester);
+    expect(find.text('Hola, soy Max'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await avanzar(tester, 10);
   });
 }

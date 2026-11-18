@@ -139,5 +139,15 @@
   "analiticaRechazar": "Non, merci",
   "analiticaGuardada": "Enregistré. Vous pouvez le modifier dans « {ajustes} ».",
   "analiticaAjuste": "Partager les statistiques d’utilisation",
-  "analiticaAjusteDetalle": "Anonymes : les scènes, lieux et commentaires utilisés. Jamais votre nom ni votre position."
+  "analiticaAjusteDetalle": "Anonymes : les scènes, lieux et commentaires utilisés. Jamais votre nom ni votre position.",
+  "guiaTitulo": "Salut, moi c’est Max",
+  "guiaTexto": "Je vous fais découvrir le campus de l’UTB.",
+  "guia360": "Entrez dans chaque lieu en 360° et regardez autour de vous.",
+  "guiaMapa": "Repérez chaque étape sur le plan du campus.",
+  "guiaAudio": "Écoutez l’histoire de chaque lieu dans votre langue.",
+  "guiaEmpezar": "Commencer la visite",
+  "guiaExplorar": "Explorer par moi-même",
+  "verGuia": "Revoir l’accueil",
+  "verGuiaDetalle": "Max vous réexplique le fonctionnement de la visite.",
+  "ayuda": "Aide"
 }

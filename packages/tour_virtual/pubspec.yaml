@@ -47,6 +47,9 @@ flutter:
   # `packages/tour_virtual/` (ver PlanoCampus.ruta y FuenteMedio.carpeta).
   assets:
     - assets/
+    # Max, la mascota de la UTB: ilustraciones de la guía de inicio, la
+    # cabecera y el cierre (lib/ui/comunes/ilustracion_max.dart).
+    - assets/max/
     # Medios del APK de demostración que funciona sin red
     # (ContenidoLocal(medios: FuenteMedio.empaquetados)). En el repositorio van
     # vacías: son panorámicas y narraciones institucionales, y las llena

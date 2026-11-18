@@ -15,6 +15,7 @@ import '../../nucleo/movimiento.dart';
 import '../../nucleo/tema.dart';
 import '../comunes/componentes.dart';
 import '../comunes/fondos.dart';
+import '../comunes/ilustracion_max.dart';
 import '../comunes/inclinable.dart';
 import '../ficha_poi.dart';
 import '../postal_escena.dart';
@@ -78,6 +79,14 @@ class ListaRecorrido extends ConsumerWidget {
         ),
         sliver: SliverList.list(
           children: [
+            const Center(
+              child: IlustracionMax(
+                pose: PoseMax.pensativo,
+                alto: 132,
+                difuminarBase: true,
+              ),
+            ),
+            const SizedBox(height: 12),
             RecuadroInfo(
               icono: Icons.inbox_outlined,
               texto: txt.sinLugaresPublicados,
@@ -854,18 +863,32 @@ class TarjetaSugerencia extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ChipEtiqueta(
-                  texto: txt.sugerencia,
-                  icono: Icons.auto_awesome_rounded,
-                ),
-                const SizedBox(height: 12),
-                Text(txt.sugerenciaTitulo, style: textos.titleMedium),
-                const SizedBox(height: 6),
-                Text(
-                  txt.sugerenciaTexto,
-                  style: textos.bodyMedium?.copyWith(
-                    color: paleta.textoSecundario,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ChipEtiqueta(
+                            texto: txt.sugerencia,
+                            icono: Icons.auto_awesome_rounded,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(txt.sugerenciaTitulo, style: textos.titleMedium),
+                          const SizedBox(height: 6),
+                          Text(
+                            txt.sugerenciaTexto,
+                            style: textos.bodyMedium?.copyWith(
+                              color: paleta.textoSecundario,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const IlustracionMax(pose: PoseMax.mapa, alto: 124),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 const Divider(),

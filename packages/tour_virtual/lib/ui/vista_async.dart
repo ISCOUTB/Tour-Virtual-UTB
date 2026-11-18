@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/textos.dart';
 import '../nucleo/errores.dart';
 import '../nucleo/tema.dart';
+import 'comunes/ilustracion_max.dart';
 
 /// Presenta un [AsyncValue] cubriendo los tres estados.
 ///
@@ -68,21 +69,14 @@ class VistaError extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: ColoresUtb.fondoInfo,
-              shape: BoxShape.circle,
-              border: Border.all(color: ColoresUtb.borde),
-            ),
-            child: Icon(
-              sinContenido ? Icons.inbox_outlined : Icons.wifi_off_rounded,
-              size: 28,
-              color: ColoresUtb.azulInfo,
-            ),
+          // Max da la cara: apenado si falló la conexión, pensativo si no
+          // hay nada que mostrar. El mensaje va en el texto de abajo.
+          IlustracionMax(
+            pose: sinContenido ? PoseMax.pensativo : PoseMax.apenado,
+            alto: 132,
+            difuminarBase: true,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 320),
             child: Text(

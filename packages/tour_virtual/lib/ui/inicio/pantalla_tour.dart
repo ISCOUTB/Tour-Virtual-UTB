@@ -37,9 +37,12 @@ import '../../nucleo/errores.dart';
 import '../../nucleo/idiomas.dart';
 import '../../nucleo/movimiento.dart';
 import '../../nucleo/tema.dart';
+import '../../datos/preferencias.dart';
 import '../ajustes/hoja_ajustes.dart';
+import '../ficha_poi.dart';
 import '../vista_async.dart';
 import 'cabecera_tour.dart';
+import 'guia_inicio.dart';
 import 'vista_mapa.dart';
 import 'vista_recorrido.dart';
 
@@ -64,6 +67,20 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _desplazamiento = ScrollController();
   var _modo = ModoTour.recorrido;
+
+  /// La bienvenida ya se pidió en esta apertura: no se vuelve a encolar en
+  /// cada reconstrucción mientras está abierta.
+  var _guiaPedida = false;
+
+  /// Abre la bienvenida y, si se elige empezar, la primera parada.
+  Future<void> _abrirGuia(List<Poi> lugares) async {
+    final empezar = await mostrarGuiaInicio(context);
+    ref.read(preferenciasProvider.notifier).marcarGuiaVista();
+    if (!empezar || !mounted) return;
+    final paradas = [...lugares.where((p) => p.esParada)];
+    if (paradas.isEmpty) return;
+    await abrirPoi(context, ref, poi: paradas.first, pois: paradas);
+  }
 
   /// Alto del selector con sus márgenes. El mapa ocupa exactamente lo que
   /// queda bajo la cabecera compacta, y para eso este alto no puede depender
@@ -171,6 +188,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final altoSelector = _altoSelector(escala);
     final pois = ref.watch(poisProvider(lugar));
     final visitados = ref.watch(progresoProvider);
+    final guiaVista = ref.watch(
+      preferenciasProvider.select((p) => p.guiaVista),
+    );
+    if (!guiaVista && !_guiaPedida && pois.hasValue) {
+      _guiaPedida = true;
+      final lugares = pois.requireValue;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _abrirGuia(lugares);
+      });
+    }
     final ruta = ref.watch(rutaProvider(lugar)).valueOrNull;
     // Si hay una pantalla debajo de esta. `Navigator.canPop` también cuenta
     // las hojas modales abiertas encima, y la flecha aparecía al abrir una
@@ -184,7 +211,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       arriba: MediaQuery.paddingOf(context).top,
       resumen: _resumen(txt, pois.valueOrNull, visitados, ruta),
       alVolver: puedeVolver ? () => Navigator.maybePop(context) : alSalir,
-      alAjustes: () => mostrarAjustes(context),
+      alAjustes: () => mostrarAjustes(
+        context,
+        alVerGuia: pois.hasValue ? () => _abrirGuia(pois.requireValue) : null,
+      ),
       escala: escala,
     );
 

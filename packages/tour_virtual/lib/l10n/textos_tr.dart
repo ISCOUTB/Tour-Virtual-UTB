@@ -350,9 +350,6 @@ class TextosTr extends Textos {
   }
 
   @override
-  String get escucharEn => 'Dinleme dili';
-
-  @override
   String posicionDeTotal(String posicion, String total) {
     return '$posicion / $total';
   }
@@ -518,4 +515,34 @@ class TextosTr extends Textos {
   @override
   String get analiticaAjusteDetalle =>
       'Anonim: yalnızca hangi sahnelerin, yerlerin ve anlatımların kullanıldığı. Adınız veya konumunuz asla gönderilmez.';
+
+  @override
+  String get guiaTitulo => 'Merhaba, ben Max';
+
+  @override
+  String get guiaTexto => 'Size UTB kampüsünü gezdireceğim.';
+
+  @override
+  String get guia360 => 'Her yere 360° girin ve etrafınıza bakın.';
+
+  @override
+  String get guiaMapa => 'Her durağı kampüs haritasında bulun.';
+
+  @override
+  String get guiaAudio => 'Her yerin hikâyesini kendi dilinizde dinleyin.';
+
+  @override
+  String get guiaEmpezar => 'Tura başla';
+
+  @override
+  String get guiaExplorar => 'Kendim keşfedeyim';
+
+  @override
+  String get verGuia => 'Karşılamayı tekrar gör';
+
+  @override
+  String get verGuiaDetalle => 'Max turun nasıl işlediğini yeniden anlatır.';
+
+  @override
+  String get ayuda => 'Yardım';
 }

@@ -92,7 +92,6 @@
   "transcripcion": "Metin dökümü",
   "subtitulos": "Altyazılar",
   "narracionEn": "Anlatım dili: {idioma}",
-  "escucharEn": "Dinleme dili",
   "posicionDeTotal": "{posicion} / {total}",
   "vistaPanoramicaDe": "Panoramik görünüm: {nombre}",
   "esteLugar": "bu yer",
@@ -140,5 +139,15 @@
   "analiticaRechazar": "Hayır, teşekkürler",
   "analiticaGuardada": "Kaydedildi. Bunu “{ajustes}” bölümünden değiştirebilirsiniz.",
   "analiticaAjuste": "Kullanım istatistiklerini paylaş",
-  "analiticaAjusteDetalle": "Anonim: yalnızca hangi sahnelerin, yerlerin ve anlatımların kullanıldığı. Adınız veya konumunuz asla gönderilmez."
+  "analiticaAjusteDetalle": "Anonim: yalnızca hangi sahnelerin, yerlerin ve anlatımların kullanıldığı. Adınız veya konumunuz asla gönderilmez.",
+  "guiaTitulo": "Merhaba, ben Max",
+  "guiaTexto": "Size UTB kampüsünü gezdireceğim.",
+  "guia360": "Her yere 360° girin ve etrafınıza bakın.",
+  "guiaMapa": "Her durağı kampüs haritasında bulun.",
+  "guiaAudio": "Her yerin hikâyesini kendi dilinizde dinleyin.",
+  "guiaEmpezar": "Tura başla",
+  "guiaExplorar": "Kendim keşfedeyim",
+  "verGuia": "Karşılamayı tekrar gör",
+  "verGuiaDetalle": "Max turun nasıl işlediğini yeniden anlatır.",
+  "ayuda": "Yardım"
 }

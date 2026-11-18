@@ -50,5 +50,11 @@
   "analiticaAceptar": "Sim, partilhar",
   "analiticaGuardada": "Guardado. Pode alterar isto em «{ajustes}».",
   "analiticaAjuste": "Partilhar estatísticas de utilização",
-  "analiticaAjusteDetalle": "Anónimas: que cenas, lugares e narrações são utilizados. Nunca o seu nome nem a sua localização."
+  "analiticaAjusteDetalle": "Anónimas: que cenas, lugares e narrações são utilizados. Nunca o seu nome nem a sua localização.",
+  "guiaTitulo": "Olá, sou o Max",
+  "guiaTexto": "Acompanho-o pelo campus da UTB.",
+  "guiaMapa": "Encontre cada paragem no mapa do campus.",
+  "guiaAudio": "Ouça a história de cada lugar no seu idioma.",
+  "guiaExplorar": "Explorar por conta própria",
+  "verGuiaDetalle": "O Max volta a explicar como funciona o percurso."
 }

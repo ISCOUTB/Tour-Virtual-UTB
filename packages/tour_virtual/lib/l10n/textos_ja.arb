@@ -92,7 +92,6 @@
   "transcripcion": "文字起こし",
   "subtitulos": "字幕",
   "narracionEn": "ナレーションの言語：{idioma}",
-  "escucharEn": "聞く言語",
   "posicionDeTotal": "{total} 中 {posicion}",
   "vistaPanoramicaDe": "{nombre}のパノラマ",
   "esteLugar": "この場所",
@@ -140,5 +139,15 @@
   "analiticaRechazar": "いいえ、結構です",
   "analiticaGuardada": "保存しました。「{ajustes}」で変更できます。",
   "analiticaAjuste": "利用統計を共有",
-  "analiticaAjusteDetalle": "匿名：どのシーン・場所・ナレーションが使われたかのみ。名前や位置情報は送信しません。"
+  "analiticaAjusteDetalle": "匿名：どのシーン・場所・ナレーションが使われたかのみ。名前や位置情報は送信しません。",
+  "guiaTitulo": "こんにちは、マックスです",
+  "guiaTexto": "UTB のキャンパスをご案内します。",
+  "guia360": "各スポットに 360° で入り、まわりを見渡しましょう。",
+  "guiaMapa": "キャンパスマップで各スポットを確認しましょう。",
+  "guiaAudio": "各スポットの物語をあなたの言語で聞けます。",
+  "guiaEmpezar": "ツアーを始める",
+  "guiaExplorar": "自分で見て回る",
+  "verGuia": "ようこそ画面をもう一度見る",
+  "verGuiaDetalle": "マックスがツアーの使い方をもう一度説明します。",
+  "ayuda": "ヘルプ"
 }

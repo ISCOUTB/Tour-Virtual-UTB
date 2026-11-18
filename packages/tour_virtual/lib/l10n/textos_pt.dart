@@ -353,9 +353,6 @@ class TextosPt extends Textos {
   }
 
   @override
-  String get escucharEn => 'Ouvir em';
-
-  @override
   String posicionDeTotal(String posicion, String total) {
     return '$posicion de $total';
   }
@@ -521,6 +518,36 @@ class TextosPt extends Textos {
   @override
   String get analiticaAjusteDetalle =>
       'Anônimas: quais cenas, lugares e narrações são usados. Nunca seu nome nem sua localização.';
+
+  @override
+  String get guiaTitulo => 'Oi, eu sou o Max';
+
+  @override
+  String get guiaTexto => 'Vou te acompanhar pelo campus da UTB.';
+
+  @override
+  String get guia360 => 'Entre em cada lugar em 360° e olhe ao redor.';
+
+  @override
+  String get guiaMapa => 'Encontre cada parada no mapa do campus.';
+
+  @override
+  String get guiaAudio => 'Ouça a história de cada lugar no seu idioma.';
+
+  @override
+  String get guiaEmpezar => 'Começar o percurso';
+
+  @override
+  String get guiaExplorar => 'Explorar por conta própria';
+
+  @override
+  String get verGuia => 'Ver as boas-vindas';
+
+  @override
+  String get verGuiaDetalle => 'O Max conta de novo como o percurso funciona.';
+
+  @override
+  String get ayuda => 'Ajuda';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -721,4 +748,23 @@ class TextosPtPt extends TextosPt {
   @override
   String get analiticaAjusteDetalle =>
       'Anónimas: que cenas, lugares e narrações são utilizados. Nunca o seu nome nem a sua localização.';
+
+  @override
+  String get guiaTitulo => 'Olá, sou o Max';
+
+  @override
+  String get guiaTexto => 'Acompanho-o pelo campus da UTB.';
+
+  @override
+  String get guiaMapa => 'Encontre cada paragem no mapa do campus.';
+
+  @override
+  String get guiaAudio => 'Ouça a história de cada lugar no seu idioma.';
+
+  @override
+  String get guiaExplorar => 'Explorar por conta própria';
+
+  @override
+  String get verGuiaDetalle =>
+      'O Max volta a explicar como funciona o percurso.';
 }

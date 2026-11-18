@@ -5,6 +5,7 @@ import '../l10n/textos.dart';
 import '../nucleo/movimiento.dart';
 import '../nucleo/tema.dart';
 import 'comunes/anillo_progreso.dart';
+import 'comunes/ilustracion_max.dart';
 
 /// Cierre del recorrido (RF-20).
 ///
@@ -34,7 +35,7 @@ class _Cierre extends StatelessWidget {
 
     Widget palomita = const Icon(
       Icons.check_rounded,
-      size: 52,
+      size: 34,
       color: ColoresUtb.verde,
     );
     if (animar) {
@@ -59,15 +60,40 @@ class _Cierre extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Max celebra con el anillo completo como insignia: el anillo es el
+          // mismo de la cabecera, ahora lleno y en verde.
           Semantics(
             label: txt.recorridoCompleto,
             excludeSemantics: true,
-            child: AnilloProgreso(
-              valor: 1,
-              tamano: 128,
-              grosor: 11,
-              color: ColoresUtb.verde,
-              child: palomita,
+            child: SizedBox(
+              height: 220,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.bottomCenter,
+                children: [
+                  const IlustracionMax(pose: PoseMax.celebrando, alto: 220),
+                  Positioned(
+                    right: -58,
+                    bottom: 18,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: ColoresUtb.hoja,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: AnilloProgreso(
+                          valor: 1,
+                          tamano: 76,
+                          grosor: 7,
+                          color: ColoresUtb.verde,
+                          child: palomita,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 22),

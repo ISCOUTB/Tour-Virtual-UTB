@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/textos.dart';
 import '../../nucleo/idiomas.dart';
+import '../../nucleo/movimiento.dart';
 import '../../nucleo/tema.dart';
 import '../comunes/anillo_progreso.dart';
 import '../comunes/componentes.dart';
 import '../comunes/fondos.dart';
+import '../comunes/ilustracion_max.dart';
 
 /// Lo que la cabecera cuenta del recorrido. Es un registro para que dos
 /// resúmenes iguales se comparen iguales y la cabecera no se reconstruya sin
@@ -243,6 +245,46 @@ class _Cabecera extends StatelessWidget {
                     child: r == null ? const _BloqueCargando() : _Bloque(r),
                   ),
                 ),
+              ),
+
+            // Max asoma sobre el anillo, en la columna que el texto deja
+            // libre a la derecha. Mientras quedan paradas señala hacia el
+            // titular («Empieza tu recorrido», «Llevas 2 de 5»); con todo
+            // visto, pulgar arriba. Se va con el bloque al plegar: en la barra
+            // compacta no cabe y solo estorbaría.
+            if (r != null && bloque > 0)
+              Builder(
+                builder: (context) {
+                  final completo = r.total > 0 && r.hechos >= r.total;
+                  final pose = completo ? PoseMax.pulgar : PoseMax.senalando;
+                  final arribaMax = arriba + delegado.altoCompacto;
+                  final abajoMax = centroAnillo.dy - diametro / 2 + 14;
+                  final alto = abajoMax - arribaMax;
+                  if (alto < 72) return const SizedBox.shrink();
+                  final ancho = alto * pose.proporcion;
+                  return Positioned(
+                    top: arribaMax,
+                    left: centroAnillo.dx - ancho / 2,
+                    child: Opacity(
+                      opacity: bloque,
+                      child: Transform.translate(
+                        offset: Offset(0, -t * 28),
+                        child: AnimatedSwitcher(
+                          duration: sinMovimiento(context)
+                              ? Duration.zero
+                              : Movimiento.medio,
+                          child: IlustracionMax(
+                            key: ValueKey(pose),
+                            pose: pose,
+                            alto: alto,
+                            sombra: true,
+                            difuminarBase: true,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
 
             // El anillo sube hacia la esquina mientras se encoge y, ya en la

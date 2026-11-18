@@ -352,9 +352,6 @@ class TextosEs extends Textos {
   }
 
   @override
-  String get escucharEn => 'Escuchar en';
-
-  @override
   String posicionDeTotal(String posicion, String total) {
     return '$posicion de $total';
   }
@@ -521,4 +518,35 @@ class TextosEs extends Textos {
   @override
   String get analiticaAjusteDetalle =>
       'Anónimas: qué escenas, lugares y narraciones se usan. Nunca tu nombre ni tu ubicación.';
+
+  @override
+  String get guiaTitulo => 'Hola, soy Max';
+
+  @override
+  String get guiaTexto => 'Te acompaño a recorrer el campus de la UTB.';
+
+  @override
+  String get guia360 => 'Entra a cada lugar en 360° y mira a tu alrededor.';
+
+  @override
+  String get guiaMapa => 'Ubica cada parada en el mapa del campus.';
+
+  @override
+  String get guiaAudio => 'Escucha la historia de cada lugar en tu idioma.';
+
+  @override
+  String get guiaEmpezar => 'Empezar el recorrido';
+
+  @override
+  String get guiaExplorar => 'Explorar por mi cuenta';
+
+  @override
+  String get verGuia => 'Ver la bienvenida';
+
+  @override
+  String get verGuiaDetalle =>
+      'Max te vuelve a contar cómo funciona el recorrido.';
+
+  @override
+  String get ayuda => 'Ayuda';
 }

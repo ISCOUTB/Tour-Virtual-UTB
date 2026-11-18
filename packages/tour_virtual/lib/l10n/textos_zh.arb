@@ -92,7 +92,6 @@
   "transcripcion": "文字稿",
   "subtitulos": "字幕",
   "narracionEn": "讲解语言：{idioma}",
-  "escucharEn": "收听语言",
   "posicionDeTotal": "{posicion} / {total}",
   "vistaPanoramicaDe": "{nombre}全景",
   "esteLugar": "此地点",
@@ -140,5 +139,15 @@
   "analiticaRechazar": "不用了，谢谢",
   "analiticaGuardada": "已保存。你可以在“{ajustes}”中更改。",
   "analiticaAjuste": "分享使用统计",
-  "analiticaAjusteDetalle": "匿名：仅统计哪些场景、地点和讲解被使用，绝不包含你的姓名或位置。"
+  "analiticaAjusteDetalle": "匿名：仅统计哪些场景、地点和讲解被使用，绝不包含你的姓名或位置。",
+  "guiaTitulo": "你好，我是麦克斯",
+  "guiaTexto": "我带你参观 UTB 校园。",
+  "guia360": "以 360° 进入每个地点，环顾四周。",
+  "guiaMapa": "在校园地图上找到每个站点。",
+  "guiaAudio": "用你的语言收听每个地点的故事。",
+  "guiaEmpezar": "开始导览",
+  "guiaExplorar": "自己随便看看",
+  "verGuia": "再看一次欢迎页",
+  "verGuiaDetalle": "麦克斯再给你讲一遍导览怎么用。",
+  "ayuda": "帮助"
 }

@@ -92,7 +92,6 @@
   "transcripcion": "Transkript",
   "subtitulos": "Untertitel",
   "narracionEn": "Erzählung auf {idioma}",
-  "escucharEn": "Anhören auf",
   "posicionDeTotal": "{posicion} von {total}",
   "vistaPanoramicaDe": "Panoramaansicht: {nombre}",
   "esteLugar": "dieser Ort",
@@ -140,5 +139,15 @@
   "analiticaRechazar": "Nein, danke",
   "analiticaGuardada": "Gespeichert. Du kannst das unter „{ajustes}“ ändern.",
   "analiticaAjuste": "Nutzungsstatistiken teilen",
-  "analiticaAjusteDetalle": "Anonym: welche Szenen, Orte und Erzählungen genutzt werden. Nie dein Name oder dein Standort."
+  "analiticaAjusteDetalle": "Anonym: welche Szenen, Orte und Erzählungen genutzt werden. Nie dein Name oder dein Standort.",
+  "guiaTitulo": "Hallo, ich bin Max",
+  "guiaTexto": "Ich zeige dir den Campus der UTB.",
+  "guia360": "Betritt jeden Ort in 360° und schau dich um.",
+  "guiaMapa": "Finde jede Station auf dem Campusplan.",
+  "guiaAudio": "Hör dir die Geschichte jedes Ortes in deiner Sprache an.",
+  "guiaEmpezar": "Rundgang starten",
+  "guiaExplorar": "Selbst erkunden",
+  "verGuia": "Begrüßung noch einmal ansehen",
+  "verGuiaDetalle": "Max erklärt dir noch einmal, wie der Rundgang funktioniert.",
+  "ayuda": "Hilfe"
 }

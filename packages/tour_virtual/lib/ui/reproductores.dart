@@ -220,22 +220,19 @@ class _ReproductorVideoState extends ConsumerState<ReproductorVideo> {
 
 /// Audio narrado con reproducir, pausar y reanudar (RF-14).
 ///
-/// Cada lugar puede tener una narración por idioma. Suena primero la del
-/// idioma de quien escucha y, si hay varias, se puede cambiar. Mientras
-/// suena, los subtítulos muestran cada frase (WCAG 1.2.2): quien no oye, o
-/// está en un lugar con ruido, sigue la historia igual.
+/// Cada lugar puede tener una narración por idioma, y suena la del idioma de
+/// la interfaz: quien cambia el idioma de la app cambia también la voz. No
+/// hay un selector propio de idioma del audio; tenerlo aparte confundía,
+/// porque eran dos ajustes para lo mismo. Si no hay narración en ese idioma
+/// suena la original y se dice en cuál está. Mientras suena, los subtítulos
+/// muestran cada frase (WCAG 1.2.2): quien no oye, o está en un lugar con
+/// ruido, sigue la historia igual.
 class ReproductorAudio extends ConsumerStatefulWidget {
-  const ReproductorAudio({
-    super.key,
-    required this.audios,
-    required this.inicial,
-  });
+  const ReproductorAudio({super.key, required this.medio});
 
-  /// Todas las narraciones del lugar.
-  final List<Medio> audios;
-
-  /// La que suena al abrir: la del idioma de la interfaz si existe.
-  final Medio inicial;
+  /// La narración del idioma de la interfaz, o la que la reemplaza
+  /// (`PoiDetalle.audioPara`).
+  final Medio medio;
 
   @override
   ConsumerState<ReproductorAudio> createState() => _ReproductorAudioState();
@@ -243,7 +240,7 @@ class ReproductorAudio extends ConsumerStatefulWidget {
 
 class _ReproductorAudioState extends ConsumerState<ReproductorAudio> {
   final _reproductor = AudioPlayer();
-  late Medio _actual = widget.inicial;
+  late Medio _actual = widget.medio;
   Object? _fallo;
 
   /// Narraciones ya contadas: reanudar tras una pausa no es otra
@@ -277,11 +274,14 @@ class _ReproductorAudioState extends ConsumerState<ReproductorAudio> {
     }
   }
 
-  Future<void> _cambiar(Medio medio) async {
-    if (medio.id == _actual.id) return;
-    await _reproductor.stop();
-    setState(() => _actual = medio);
-    await _preparar();
+  /// El idioma de la interfaz cambió con la ficha abierta: la voz también.
+  @override
+  void didUpdateWidget(ReproductorAudio anterior) {
+    super.didUpdateWidget(anterior);
+    if (widget.medio.id == _actual.id) return;
+    _actual = widget.medio;
+    _reproductor.stop();
+    _preparar();
   }
 
   @override
@@ -313,13 +313,7 @@ class _ReproductorAudioState extends ConsumerState<ReproductorAudio> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.audios.length > 1)
-            _SelectorIdioma(
-              audios: widget.audios,
-              actual: _actual,
-              alElegir: _cambiar,
-            )
-          else if (!mismoIdioma(_actual.idiomaEfectivo, ui.languageCode))
+          if (!mismoIdioma(_actual.idiomaEfectivo, ui.languageCode))
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 2, 0, 10),
               child: Row(
@@ -463,64 +457,6 @@ class _ReproductorAudioState extends ConsumerState<ReproductorAudio> {
 
 /// Narraciones disponibles, cada una con el nombre de su idioma escrito en
 /// ese idioma.
-class _SelectorIdioma extends StatelessWidget {
-  const _SelectorIdioma({
-    required this.audios,
-    required this.actual,
-    required this.alElegir,
-  });
-
-  final List<Medio> audios;
-  final Medio actual;
-  final ValueChanged<Medio> alElegir;
-
-  @override
-  Widget build(BuildContext context) {
-    final txt = Textos.of(context);
-    final paleta = PaletaUtb.de(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 0, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            txt.escucharEn,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: paleta.textoSecundario),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              for (final audio in audios)
-                ChoiceChip(
-                  selected: audio.id == actual.id,
-                  onSelected: (_) => alElegir(audio),
-                  showCheckmark: false,
-                  label: Semantics(
-                    attributedLabel: atribuirIdioma(
-                      nombreDeIdioma(audio.idiomaEfectivo),
-                      localeDeEtiqueta(audio.idiomaEfectivo),
-                    ),
-                    excludeSemantics: true,
-                    child: Text(
-                      nombreDeIdioma(audio.idiomaEfectivo),
-                      locale: localeDeEtiqueta(audio.idiomaEfectivo),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Interruptor de subtítulos, compartido por todos los reproductores: quien
-/// los necesita los quiere en todos, y quien los apaga, también.
 class _BotonSubtitulos extends ConsumerWidget {
   const _BotonSubtitulos();
 

@@ -666,12 +666,6 @@ abstract class Textos {
   /// **'Narración en {idioma}'**
   String narracionEn(String idioma);
 
-  /// No description provided for @escucharEn.
-  ///
-  /// In es, this message translates to:
-  /// **'Escuchar en'**
-  String get escucharEn;
-
   /// Posición del audio para el lector de pantalla, por ejemplo «0:05 de 0:12».
   ///
   /// In es, this message translates to:
@@ -959,6 +953,66 @@ abstract class Textos {
   /// In es, this message translates to:
   /// **'Anónimas: qué escenas, lugares y narraciones se usan. Nunca tu nombre ni tu ubicación.'**
   String get analiticaAjusteDetalle;
+
+  /// Saludo de Max, la mascota de la UTB, en la bienvenida que sale la primera vez. «Max» es un nombre propio: no se traduce.
+  ///
+  /// In es, this message translates to:
+  /// **'Hola, soy Max'**
+  String get guiaTitulo;
+
+  /// Debajo del saludo de la bienvenida.
+  ///
+  /// In es, this message translates to:
+  /// **'Te acompaño a recorrer el campus de la UTB.'**
+  String get guiaTexto;
+
+  /// Primera idea de la bienvenida: el visor 360.
+  ///
+  /// In es, this message translates to:
+  /// **'Entra a cada lugar en 360° y mira a tu alrededor.'**
+  String get guia360;
+
+  /// Segunda idea de la bienvenida: el mapa.
+  ///
+  /// In es, this message translates to:
+  /// **'Ubica cada parada en el mapa del campus.'**
+  String get guiaMapa;
+
+  /// Tercera idea de la bienvenida: la narración sigue el idioma de la interfaz.
+  ///
+  /// In es, this message translates to:
+  /// **'Escucha la historia de cada lugar en tu idioma.'**
+  String get guiaAudio;
+
+  /// Botón principal de la bienvenida: abre la primera parada.
+  ///
+  /// In es, this message translates to:
+  /// **'Empezar el recorrido'**
+  String get guiaEmpezar;
+
+  /// Botón secundario de la bienvenida: la cierra y deja la lista.
+  ///
+  /// In es, this message translates to:
+  /// **'Explorar por mi cuenta'**
+  String get guiaExplorar;
+
+  /// Opción de los ajustes que vuelve a abrir la bienvenida.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver la bienvenida'**
+  String get verGuia;
+
+  /// Detalle de esa opción.
+  ///
+  /// In es, this message translates to:
+  /// **'Max te vuelve a contar cómo funciona el recorrido.'**
+  String get verGuiaDetalle;
+
+  /// Título de la sección de ayuda en los ajustes.
+  ///
+  /// In es, this message translates to:
+  /// **'Ayuda'**
+  String get ayuda;
 }
 
 class _TextosDelegate extends LocalizationsDelegate<Textos> {

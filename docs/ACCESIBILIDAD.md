@@ -71,7 +71,7 @@ Esta sección es la especificación para producir las narraciones.
 - Formato MP3 mono a 64 kbps y 44,1 kHz, el mismo al que `scripts/subir_medios.py` convierte hoy.
 - Volumen normalizado a −16 LUFS integrados con pico máximo de −1 dBTP, para que no haya saltos de volumen de un lugar a otro.
 - Voz clara y a ritmo pausado. Si hay música, debe quedar por debajo de la voz: quien tiene hipoacusia pierde la voz cuando la música compite.
-- La app elige la narración en el idioma de quien escucha; si no existe, usa la original con sus subtítulos. Cuando hay varias, se puede cambiar desde «Escuchar en».
+- La app elige la narración en el idioma de quien escucha; si no existe, usa la original con sus subtítulos. La narración sigue el idioma de la interfaz: al cambiarlo en los ajustes cambia también la voz. No hay un selector aparte para el audio (se quitó el 2026-11-18 porque eran dos ajustes para lo mismo); si no hay narración en ese idioma, el reproductor dice en cuál suena.
 
 **Subtítulos (uno por cada narración y en el mismo idioma)**
 

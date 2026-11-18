@@ -338,9 +338,6 @@ class TextosZh extends Textos {
   }
 
   @override
-  String get escucharEn => '收听语言';
-
-  @override
   String posicionDeTotal(String posicion, String total) {
     return '$posicion / $total';
   }
@@ -499,4 +496,34 @@ class TextosZh extends Textos {
 
   @override
   String get analiticaAjusteDetalle => '匿名：仅统计哪些场景、地点和讲解被使用，绝不包含你的姓名或位置。';
+
+  @override
+  String get guiaTitulo => '你好，我是麦克斯';
+
+  @override
+  String get guiaTexto => '我带你参观 UTB 校园。';
+
+  @override
+  String get guia360 => '以 360° 进入每个地点，环顾四周。';
+
+  @override
+  String get guiaMapa => '在校园地图上找到每个站点。';
+
+  @override
+  String get guiaAudio => '用你的语言收听每个地点的故事。';
+
+  @override
+  String get guiaEmpezar => '开始导览';
+
+  @override
+  String get guiaExplorar => '自己随便看看';
+
+  @override
+  String get verGuia => '再看一次欢迎页';
+
+  @override
+  String get verGuiaDetalle => '麦克斯再给你讲一遍导览怎么用。';
+
+  @override
+  String get ayuda => '帮助';
 }

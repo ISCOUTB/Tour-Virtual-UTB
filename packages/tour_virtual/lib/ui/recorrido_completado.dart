@@ -71,7 +71,7 @@ class _Cierre extends StatelessWidget {
                 clipBehavior: Clip.none,
                 alignment: Alignment.bottomCenter,
                 children: [
-                  const IlustracionMax(pose: PoseMax.frente, alto: 220),
+                  const IlustracionMax(pose: PoseMax.celebrando, alto: 220),
                   Positioned(
                     right: -58,
                     bottom: 18,

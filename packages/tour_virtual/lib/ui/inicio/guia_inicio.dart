@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../l10n/textos.dart';
-import '../../nucleo/movimiento.dart';
 import '../../nucleo/tema.dart';
 import '../comunes/fondos.dart';
 import '../comunes/ilustracion_max.dart';
@@ -39,24 +37,13 @@ class _GuiaInicio extends StatelessWidget {
     final textos = Theme.of(context).textTheme;
     final paleta = PaletaUtb.de(context);
     final abajo = MediaQuery.paddingOf(context).bottom;
-    final animar = !sinMovimiento(context);
 
-    Widget max = const IlustracionMax(
-      pose: PoseMax.frente,
+    // La entrada, la respiración y el parpadeo los pone IlustracionMax.
+    const max = IlustracionMax(
+      pose: PoseMax.saludo,
       alto: _altoMax,
       sombra: true,
     );
-    if (animar) {
-      max = max
-          .animate()
-          .fadeIn(duration: Movimiento.medio, curve: Movimiento.salida)
-          .slideY(
-            begin: 0.06,
-            end: 0,
-            duration: Movimiento.largo,
-            curve: Movimiento.salidaFuerte,
-          );
-    }
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
@@ -86,7 +73,7 @@ class _GuiaInicio extends StatelessWidget {
                     child: FondoCabeceraUtb(radioInferior: 0),
                   ),
                 ),
-                Positioned(bottom: 0, child: max),
+                const Positioned(bottom: 0, child: max),
               ],
             ),
           ),

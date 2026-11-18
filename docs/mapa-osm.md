@@ -60,7 +60,7 @@ Los datos de OSM son **ODbL 1.0**.
 
 ## Qué le toca a backend
 
-1. **Lat/Lng en la API de administración.** `CrearPoiRequest` y `ActualizarPoiRequest` no tienen `Lat` ni `Lng`, así que hoy no hay forma de guardar una posición por la API. Hay que agregarlos, pasarlos en `ContenidoService` y regenerar `packages/contracts/openapi.yaml` y `apps/admin/src/api/schema.d.ts`.
+1. ~~**Lat/Lng en la API de administración.**~~ Hecho: `CrearPoiRequest` y `ActualizarPoiRequest` los reciben desde el PR #16, y el panel (`apps/admin_flutter`) los elige sobre el plano.
 2. **Cargar el catálogo en la base compartida.** Primero hay que revisar `scripts/datos/pois_campus.sql` y luego ejecutarlo. Se puede ejecutar más de una vez sin efectos repetidos. Hace dos cosas:
    - A las cinco paradas les pone lat/lng y los textos del guion (y renombra «Enfermeria» a «Enfermería»).
    - Crea los 21 lugares restantes si no existen, reconociéndolos por nombre.

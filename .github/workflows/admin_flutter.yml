@@ -43,6 +43,10 @@ jobs:
       - name: Analisis estatico
         run: flutter analyze --no-fatal-infos
 
+      # Pruebas sin red: usan repositorios en memoria.
+      - name: Pruebas
+        run: flutter test
+
       # Compila en modo maqueta (sin claves): solo verifica que el panel
       # compila para web.
       - name: Compilar para web

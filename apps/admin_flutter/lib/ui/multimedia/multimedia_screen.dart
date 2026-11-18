@@ -12,6 +12,7 @@ import '../../data/models/idiomas.dart';
 import '../../data/models/medio.dart';
 import '../../data/models/poi.dart';
 import '../../data/repositories/repositories.dart';
+import '../../data/subida_panorama.dart';
 import '../../domain/reglas.dart';
 import '../widgets/common.dart';
 
@@ -110,6 +111,12 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
   /// El POI no sale en los endpoints públicos (inactivo u oculto): no se
   /// puede leer lo que ya tiene cargado.
   bool _sinDetalle = false;
+
+  /// Recuerda las escenas que crea, para que un reintento no cree otra.
+  final _panorama = SubidaPanorama(
+    escenas: escenaRepository,
+    pois: poiRepository,
+  );
 
   @override
   void initState() {
@@ -252,10 +259,12 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     setState(() => _subiendo = true);
     try {
       if (_pestana == _Pestana.panorama) {
-        final advertencia = await _subirPanorama(
-          detalle.poi,
-          escena,
-          archivo,
+        final advertencia = await _panorama.subir(
+          poi: detalle.poi,
+          escena: escena,
+          bytes: archivo.bytes,
+          nombreArchivo: archivo.nombre,
+          textoAlt: _textoAlt.text,
         );
         if (advertencia != null && mounted) {
           showToast(context, advertencia, error: true);
@@ -288,70 +297,6 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     } finally {
       if (mounted) setState(() => _subiendo = false);
     }
-  }
-
-  /// Sube la panorámica del POI y devuelve la advertencia del servidor, si
-  /// la imagen no es 2:1.
-  ///
-  /// Orden pensado para no dejar la base a medias (revisión del PR #22):
-  /// 1. La escena se busca por `escenaPrincipalId` del POI, no en el
-  ///    endpoint público: así un reintento no crea otra escena, y el POI
-  ///    nunca queda con más de una principal.
-  /// 2. Primero se sube la imagen. Solo si funcionó se guarda el texto
-  ///    alternativo, y con las rutas que devolvió el servidor (sin firmar):
-  ///    nunca se guarda en la base una URL firmada que vence.
-  Future<String?> _subirPanorama(
-    Poi poi,
-    Escena? escena,
-    ArchivoSubida archivo,
-  ) async {
-    final alt = _textoAlt.text.trim();
-    var escenaId = poi.escenaPrincipalId;
-    var nueva = false;
-    if (escenaId == null) {
-      final creada = await escenaRepository.crear(
-        Escena(
-          id: 0,
-          lugarId: AppConfig.lugarId,
-          poiId: poi.id,
-          nombre: poi.nombre,
-          esEscenaPrincipal: true,
-          textoAlt: alt,
-        ),
-      );
-      escenaId = creada.id;
-      nueva = true;
-      // Se enlaza antes de subir: si la subida falla, el reintento usa
-      // esta misma escena en vez de crear otra.
-      await poiRepository.actualizar(
-        poi.copyWith(escenaPrincipalId: escenaId),
-      );
-    }
-
-    final subida = await escenaRepository.subirImagen(
-      escenaId,
-      bytes: archivo.bytes,
-      filename: archivo.nombre,
-    );
-
-    if (!nueva && escena?.textoAlt?.trim() != alt) {
-      await escenaRepository.actualizar(
-        Escena(
-          id: escenaId,
-          lugarId: escena?.lugarId ?? AppConfig.lugarId,
-          poiId: poi.id,
-          nombre: escena?.nombre ?? poi.nombre,
-          imagenUrl: subida.imagenUrl,
-          imagenUrlBaja: subida.imagenUrlBaja,
-          esEscenaPrincipal: true,
-          orden: escena?.orden ?? 0,
-          vistaInicialYaw: escena?.vistaInicialYaw,
-          vistaInicialPitch: escena?.vistaInicialPitch,
-          textoAlt: alt,
-        ),
-      );
-    }
-    return subida.advertencia;
   }
 
   Future<void> _eliminar(Medio m) async {

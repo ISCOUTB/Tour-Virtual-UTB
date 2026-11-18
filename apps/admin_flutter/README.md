@@ -6,7 +6,7 @@ métricas, actividad y administradores. Habla con la API de `services/api`.
 
 ## Requisitos
 
-- Flutter 3.44 o superior (Dart 3.12).
+- Flutter 3.41 o superior (Dart 3.11), la misma versión del CI.
 - La API corriendo en `http://localhost:5209` (ver el README de `services/api`).
 - Una cuenta con rol `admin` en la tabla `perfiles` de Supabase.
 
@@ -30,6 +30,22 @@ métricas, actividad y administradores. Habla con la API de `services/api`.
    La publishable key está en Supabase → Project Settings → API Keys. Es
    pública (va en el navegador), pero no se guarda en el repo. Nunca usar la
    `secret` ni la `service_role` aquí.
+
+## Dependencias y `pubspec.lock`
+
+El `pubspec.lock` se genera con **Flutter 3.41** (Dart 3.11), la versión más
+vieja del equipo y la que usa el CI. El CI corre `flutter pub get
+--enforce-lockfile`: si el lock se resolvió con un Flutter más nuevo, falla.
+
+Correr el panel o `flutter pub get` con un Flutter más nuevo no cambia el lock.
+Para **agregar o actualizar paquetes** (`pub add`, `pub upgrade`), usar Flutter
+3.41. Se puede tener aparte, sin tocar el Flutter de siempre:
+
+```
+C:\dev\flutter-3.41\flutter\bin\flutter.bat pub add <paquete>
+```
+
+Después, revisar que el final del lock diga `dart: ">=3.11.0 <4.0.0"`.
 
 ## Parámetros (`--dart-define`)
 

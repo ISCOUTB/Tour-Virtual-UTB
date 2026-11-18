@@ -36,7 +36,7 @@ jobs:
           cache: true
 
       - name: Resolver dependencias
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       # Falla con errores y warnings. Las sugerencias de estilo (info) se
       # muestran pero no bloquean.

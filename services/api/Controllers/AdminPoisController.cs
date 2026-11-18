@@ -12,7 +12,10 @@ public class AdminPoisController(IContenidoService contenidoService) : Controlle
     /// <summary>
     /// Detalle de un POI (activo o inactivo) con medios y escenas.
     /// </summary>
+    // Declarar el 404 hace que Swagger deje de deducir el 200: van los dos.
     [HttpGet("{id:int}")]
+    [ProducesResponseType<PoiDetalleAdminDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PoiDetalleAdminDto>> ObtenerPoiAdmin(int id)
     {
         var detalle = await contenidoService.ObtenerPoiAdminPorIdAsync(id);

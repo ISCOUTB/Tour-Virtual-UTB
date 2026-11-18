@@ -72,10 +72,6 @@ paths:
     delete:
       tags:
         - AdminEscenas
-      summary: Elimina una escena
-      description: |
-        Si la escena es destino de hotspots de otras escenas, responde 409
-        en lugar de fallar con 500 por la restricción FK.
       parameters:
         - name: id
           in: path
@@ -85,21 +81,31 @@ paths:
             format: int32
       responses:
         '204':
-          description: Escena eliminada
+          description: No Content
         '404':
-          description: La escena no existe
-        '409':
-          description: Escena enlazada como destino desde otros hotspots
+          description: Not Found
           content:
+            text/plain:
+              schema:
+                type: string
             application/json:
               schema:
-                type: object
-                properties:
-                  mensaje:
-                    type: string
-                  codigo:
-                    type: string
-                    example: escena_en_uso
+                type: string
+            text/json:
+              schema:
+                type: string
+        '409':
+          description: Conflict
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ConflictoDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictoDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ConflictoDto'
   '/api/admin/escenas/{id}/imagen':
     post:
       tags:
@@ -611,42 +617,10 @@ paths:
             text/json:
               schema:
                 $ref: '#/components/schemas/PerfilDto'
-  /api/admin/pois:
-    post:
-      tags:
-        - AdminPois
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CrearPoiRequest'
-          text/json:
-            schema:
-              $ref: '#/components/schemas/CrearPoiRequest'
-          application/*+json:
-            schema:
-              $ref: '#/components/schemas/CrearPoiRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            text/plain:
-              schema:
-                $ref: '#/components/schemas/PoiDto'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PoiDto'
-            text/json:
-              schema:
-                $ref: '#/components/schemas/PoiDto'
   '/api/admin/pois/{id}':
     get:
       tags:
         - AdminPois
-      summary: Detalle de un POI (activo o inactivo) con medios y escenas
-      description: |
-        A diferencia de GET /api/pois/{poiId}, este endpoint no filtra por
-        activo ni por audiencia e incluye las escenas del POI.
       parameters:
         - name: id
           in: path
@@ -658,11 +632,27 @@ paths:
         '200':
           description: OK
           content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PoiDetalleAdminDto'
             application/json:
               schema:
                 $ref: '#/components/schemas/PoiDetalleAdminDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/PoiDetalleAdminDto'
         '404':
-          description: El punto de interés no existe
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: string
+            text/json:
+              schema:
+                type: string
     put:
       tags:
         - AdminPois
@@ -710,6 +700,34 @@ paths:
       responses:
         '200':
           description: OK
+  /api/admin/pois:
+    post:
+      tags:
+        - AdminPois
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
   /api/admin/rutas:
     post:
       tags:
@@ -1156,6 +1174,16 @@ components:
       type: object
       properties:
         rol:
+          type: string
+          nullable: true
+      additionalProperties: false
+    ConflictoDto:
+      type: object
+      properties:
+        mensaje:
+          type: string
+          nullable: true
+        codigo:
           type: string
           nullable: true
       additionalProperties: false
@@ -1695,7 +1723,6 @@ components:
       additionalProperties: false
     PoiDetalleAdminDto:
       type: object
-      description: Detalle de POI para el panel (incluye inactivos, medios y escenas).
       properties:
         poi:
           $ref: '#/components/schemas/PoiDto'

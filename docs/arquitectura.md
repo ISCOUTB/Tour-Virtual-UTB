@@ -4,19 +4,20 @@
 > requisitos y decide donde contradiga a este documento. Decision del 23 de
 > septiembre de 2026.
 >
-> Contradicciones conocidas, todas resueltas a favor del SRS:
+> Contradicciones conocidas:
 >
-> | Tema | Este documento | SRS v3.1 |
-> |---|---|---|
-> | Backend | Supabase + Postgres con RLS | Node.js / Firebase con Firestore |
-> | Mapa | Render isometrico con coordenadas normalizadas | Google Maps / Mapbox / OSM |
-> | Realidad aumentada | Descartada explicitamente | En alcance: F-06, RF-26 a RF-34 |
+> | Tema | Este documento | SRS v3.1 | Resuelto a favor de |
+> |---|---|---|---|
+> | Backend | Supabase + Postgres con RLS | Node.js / Firebase con Firestore | **Ninguno de los dos:** API .NET 10 + Postgres y Storage de Supabase (17-11-2026) |
+> | Mapa | Render isometrico con coordenadas normalizadas | Google Maps / Mapbox / OSM | SRS: plano de OpenStreetMap |
+> | Realidad aumentada | Descartada explicitamente | En alcance: F-06, RF-26 a RF-34 | SRS |
 >
-> **Lo que la migracion pone en riesgo y hay que reconstruir:** el filtrado por
-> audiencia lo garantiza hoy RLS dentro de la base, verificado sobre HTTP (un
-> cliente anonimo recibe 4 de 5 POI). Firestore usa Security Rules, que son otro
-> modelo. Tambien pierden su equivalente directo la auditoria por trigger, la
-> purga de eventos a 12 meses y los constraints de integridad.
+> **El backend no migra a Firestore.** Decision del 17 de noviembre de 2026:
+> se queda la API ASP.NET Core de `services/api` sobre el Postgres y el Storage
+> de Supabase, que es lo que ya esta construido e integrado. Donde el SRS nombra
+> Firebase (Auth, Firestore, Cloud Storage, Analytics), su equivalente es esa
+> API. Los requisitos funcionales del SRS siguen vigentes; solo cambia donde
+> viven.
 >
 > Lo demas de este documento sigue vigente, en particular la seccion 7 de
 > cumplimiento legal, que el SRS no cubre.

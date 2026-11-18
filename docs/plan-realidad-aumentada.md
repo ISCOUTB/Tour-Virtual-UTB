@@ -90,7 +90,7 @@ Anclar marcadores en 3D de verdad. La API geoespacial de ARCore depende de la co
 
 ## Modelo de datos propuesto
 
-Es independiente del backend: sirve igual con la API actual que tras una migración a Firestore.
+Vive en la API actual: desde el 2026-11-17 el backend no migra a Firestore.
 
 | Dónde | Campo | Para qué |
 |---|---|---|
@@ -99,7 +99,7 @@ Es independiente del backend: sirve igual con la API actual que tras una migraci
 | `Escena` | `rumbo_norte` (grados) | El yaw del norte geográfico en la panorámica |
 | Grafo (JSON con versión) | nodos `{id, lat, lng}`; aristas `{desde, hasta, metros, tipo_camino, escalones, techado}` | Tablas 26 y 49 del SRS, más los dos atributos de accesibilidad |
 
-El grafo se sirve como archivo estático: hoy desde S3 a través de la API; con Firestore, desde Cloud Storage. La app lo guarda en caché (DT-03).
+El grafo se sirve como archivo estático desde el Storage de Supabase, a través de la API. La app lo guarda en caché (DT-03).
 
 **Licencia del grafo.** Si se deriva de OSM, es una base de datos derivada y va bajo ODbL, igual que el plano.
 
@@ -146,5 +146,5 @@ Ninguno se ha agregado todavía.
 
 - **Equipo, en el campus:** la fase 0, con fecha. Es trabajo de campo y no se puede hacer desde el código.
 - **Equipo:** si se contribuye a OSM, con qué cuenta.
-- **Backend:** dónde viven el grafo, los accesos y `rumbo_norte`, y si eso espera a la migración a Firestore que pide el SRS.
+- **Backend:** dónde viven el grafo, los accesos y `rumbo_norte` dentro de la API actual.
 - **Frontend:** las fases 1 a 3, en ese orden.

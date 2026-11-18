@@ -26,9 +26,9 @@ El móvil no consulta la base directamente. Lee el contenido de la API mediante
 con la UTB APP, no depende del equipo: las dos vías están listas y
 documentadas en [`docs/integracion-utb-app.md`](./integracion-utb-app.md).
 
-La migración futura a Firebase/Firestore y la incorporación de AR pertenecen al
-roadmap del SRS, pero todavía no están implementadas. No deben iniciarse
-eliminando el contrato actual sin una migración verificable.
+El backend **no migra a Firebase/Firestore** (decisión del 2026-11-17): se queda
+la API .NET sobre el Postgres y el Storage de Supabase. La realidad aumentada sí
+sigue en el roadmap del SRS y todavía no está implementada.
 
 ### Documentos que siguen siendo autoridad
 
@@ -526,8 +526,8 @@ Reglas:
 
 ### Bloque futuro condicionado por el SRS
 
-La migración a Firestore, el mapa basado en Google Maps/Mapbox/OSM y AR solo
-deben comenzar con:
+La migración a Firestore quedó descartada el 2026-11-17 y el mapa ya es el
+plano de OpenStreetMap. La realidad aumentada solo debe comenzar con:
 
 - decisión técnica aprobada;
 - equivalencia de reglas de seguridad;

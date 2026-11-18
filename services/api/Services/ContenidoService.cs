@@ -94,6 +94,50 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         return new PoiDetalleDto(Dto.Poi(poi), medios.Select(Dto.Medio).ToList());
     }
 
+    /// <summary>
+    /// Detalle para el panel: funciona con POIs activos e inactivos y
+    /// incluye las escenas del POI (además de los medios).
+    /// </summary>
+    public async Task<PoiDetalleAdminDto?> ObtenerPoiAdminPorIdAsync(int poiId)
+    {
+        var poi = await db.Pois.AsNoTracking()
+            .Include(p => p.EscenaPrincipal)
+            .FirstOrDefaultAsync(p => p.Id == poiId);
+
+        if (poi is null) return null;
+
+        var medios = await db.Medios.AsNoTracking()
+            .Where(m => m.PoiId == poiId)
+            .OrderBy(m => m.Orden)
+            .ToListAsync();
+
+        var escenas = await db.Escenas.AsNoTracking()
+            .Where(e => e.PoiId == poiId)
+            .OrderBy(e => e.Orden)
+            .ToListAsync();
+
+        foreach (var medio in medios)
+        {
+            if (!string.IsNullOrEmpty(medio.Url))
+                medio.Url = await almacenamiento.ObtenerUrlFirmadaAsync(medio.Url, TimeSpan.FromHours(2));
+            if (!string.IsNullOrEmpty(medio.SubtitulosUrl))
+                medio.SubtitulosUrl = await almacenamiento.ObtenerUrlFirmadaAsync(medio.SubtitulosUrl, TimeSpan.FromHours(2));
+        }
+
+        foreach (var escena in escenas)
+        {
+            if (!string.IsNullOrEmpty(escena.ImagenUrl))
+                escena.ImagenUrl = await almacenamiento.ObtenerUrlFirmadaAsync(escena.ImagenUrl, TimeSpan.FromHours(2));
+            if (!string.IsNullOrEmpty(escena.ImagenUrlBaja))
+                escena.ImagenUrlBaja = await almacenamiento.ObtenerUrlFirmadaAsync(escena.ImagenUrlBaja, TimeSpan.FromHours(2));
+        }
+
+        return new PoiDetalleAdminDto(
+            Dto.Poi(poi),
+            medios.Select(Dto.Medio).ToList(),
+            escenas.Select(Dto.Escena).ToList());
+    }
+
     // Una escena sin panorámica no hace parada: la app trata como parada a todo
     // POI con escena_principal_id y ofrecería un 360 que no abre. Solo cambia la
     // respuesta (el POI viene sin seguimiento); en la base la escena sigue asignada.
@@ -221,14 +265,19 @@ public class ContenidoService(TourDbContext db, IAlmacenamientoService almacenam
         return Dto.Escena(escena);
     }
 
-    public async Task<bool> EliminarEscenaAsync(int id)
+    public async Task<EliminarEscenaResultado> EliminarEscenaAsync(int id)
     {
         var escena = await db.Escenas.FindAsync(id);
-        if (escena == null) return false;
+        if (escena == null) return EliminarEscenaResultado.NoExiste;
+
+        // Hotspots de otras escenas que la usan como destino (OnDelete Restrict).
+        var referenciada = await db.Hotspots.AnyAsync(h => h.EscenaDestinoId == id);
+        if (referenciada)
+            return EliminarEscenaResultado.EnUsoComoDestino;
 
         db.Escenas.Remove(escena);
         await db.SaveChangesAsync();
-        return true;
+        return EliminarEscenaResultado.Eliminada;
     }
 
     // --- MEDIOS (Multimedia) ---

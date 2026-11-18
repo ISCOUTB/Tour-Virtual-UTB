@@ -29,13 +29,26 @@ public class AdminEscenasController(
         return Ok(escena);
     }
 
+    // Las respuestas se declaran para que el Swagger, y con él
+    // packages/contracts/openapi.yaml, las documente: sin esto dice «200 OK».
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<string>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ConflictoDto>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> EliminarEscena(int id)
     {
-        var eliminado = await contenidoService.EliminarEscenaAsync(id);
-        if (!eliminado) return NotFound("La escena no existe.");
+        var resultado = await contenidoService.EliminarEscenaAsync(id);
 
-        return NoContent();
+        return resultado switch
+        {
+            EliminarEscenaResultado.NoExiste =>
+                NotFound("La escena no existe."),
+            EliminarEscenaResultado.EnUsoComoDestino =>
+                Conflict(new ConflictoDto(
+                    "No se puede eliminar la escena porque está enlazada como destino desde otra(s) escena(s). Elimina o reasigna esos hotspots primero.",
+                    "escena_en_uso")),
+            _ => NoContent()
+        };
     }
 
     /// <summary>

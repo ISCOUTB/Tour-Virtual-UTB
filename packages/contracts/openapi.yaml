@@ -80,8 +80,32 @@ paths:
             type: integer
             format: int32
       responses:
-        '200':
-          description: OK
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: string
+            text/json:
+              schema:
+                type: string
+        '409':
+          description: Conflict
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ConflictoDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictoDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/ConflictoDto'
   '/api/admin/escenas/{id}/imagen':
     post:
       tags:
@@ -593,35 +617,42 @@ paths:
             text/json:
               schema:
                 $ref: '#/components/schemas/PerfilDto'
-  /api/admin/pois:
-    post:
+  '/api/admin/pois/{id}':
+    get:
       tags:
         - AdminPois
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CrearPoiRequest'
-          text/json:
-            schema:
-              $ref: '#/components/schemas/CrearPoiRequest'
-          application/*+json:
-            schema:
-              $ref: '#/components/schemas/CrearPoiRequest'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
       responses:
         '200':
           description: OK
           content:
             text/plain:
               schema:
-                $ref: '#/components/schemas/PoiDto'
+                $ref: '#/components/schemas/PoiDetalleAdminDto'
             application/json:
               schema:
-                $ref: '#/components/schemas/PoiDto'
+                $ref: '#/components/schemas/PoiDetalleAdminDto'
             text/json:
               schema:
-                $ref: '#/components/schemas/PoiDto'
-  '/api/admin/pois/{id}':
+                $ref: '#/components/schemas/PoiDetalleAdminDto'
+        '404':
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: string
+            text/json:
+              schema:
+                type: string
     put:
       tags:
         - AdminPois
@@ -669,6 +700,34 @@ paths:
       responses:
         '200':
           description: OK
+  /api/admin/pois:
+    post:
+      tags:
+        - AdminPois
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearPoiRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
+            text/json:
+              schema:
+                $ref: '#/components/schemas/PoiDto'
   /api/admin/rutas:
     post:
       tags:
@@ -1115,6 +1174,16 @@ components:
       type: object
       properties:
         rol:
+          type: string
+          nullable: true
+      additionalProperties: false
+    ConflictoDto:
+      type: object
+      properties:
+        mensaje:
+          type: string
+          nullable: true
+        codigo:
           type: string
           nullable: true
       additionalProperties: false
@@ -1650,6 +1719,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Medio'
+          nullable: true
+      additionalProperties: false
+    PoiDetalleAdminDto:
+      type: object
+      properties:
+        poi:
+          $ref: '#/components/schemas/PoiDto'
+        medios:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedioDto'
+          nullable: true
+        escenas:
+          type: array
+          items:
+            $ref: '#/components/schemas/EscenaDto'
           nullable: true
       additionalProperties: false
     PoiDetalleDto:

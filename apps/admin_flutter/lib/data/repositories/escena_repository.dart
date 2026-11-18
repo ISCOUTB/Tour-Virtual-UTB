@@ -16,13 +16,25 @@ abstract class EscenaRepository {
 
   /// POST /api/admin/escenas/{id}/imagen (multipart: Archivo, Carpeta).
   /// [bajaResolucion] sube la versión liviana de la imagen.
-  Future<void> subirImagen(
+  /// Sube la panorámica. Devuelve las rutas que guardó el servidor (sin
+  /// firmar) y su advertencia, si la imagen no es 2:1.
+  Future<PanoramaSubida> subirImagen(
     int escenaId, {
     required Uint8List bytes,
     required String filename,
     bool bajaResolucion = false,
     String? carpeta,
   });
+}
+
+/// Respuesta de POST /api/admin/escenas/{id}/imagen.
+class PanoramaSubida {
+  const PanoramaSubida({this.imagenUrl, this.imagenUrlBaja, this.advertencia});
+
+  /// Rutas relativas en el bucket, tal como quedan en la base.
+  final String? imagenUrl;
+  final String? imagenUrlBaja;
+  final String? advertencia;
 }
 
 class HttpEscenaRepository implements EscenaRepository {
@@ -54,20 +66,25 @@ class HttpEscenaRepository implements EscenaRepository {
   Future<void> eliminar(int id) => _api.delete('/api/admin/escenas/$id');
 
   @override
-  Future<void> subirImagen(
+  Future<PanoramaSubida> subirImagen(
     int escenaId, {
     required Uint8List bytes,
     required String filename,
     bool bajaResolucion = false,
     String? carpeta,
-  }) =>
-      _api.uploadFile(
-        '/api/admin/escenas/$escenaId/imagen',
-        bytes: bytes,
-        filename: filename,
-        carpeta: carpeta,
-        query: {'esBajaResolucion': bajaResolucion.toString()},
-      );
+  }) async {
+    final r = await _api.postMultipart(
+      '/api/admin/escenas/$escenaId/imagen',
+      fields: {if (carpeta != null && carpeta.isNotEmpty) 'Carpeta': carpeta},
+      files: [ArchivoSubida('Archivo', bytes, filename)],
+    );
+    final m = r is Map ? r.cast<String, dynamic>() : const <String, dynamic>{};
+    return PanoramaSubida(
+      imagenUrl: m['imagenUrl'] as String?,
+      imagenUrlBaja: m['imagenUrlBaja'] as String?,
+      advertencia: m['advertencia'] as String?,
+    );
+  }
 }
 
 /// Versión en memoria para maquetar sin backend.
@@ -179,12 +196,14 @@ class MockEscenaRepository implements EscenaRepository {
   }
 
   @override
-  Future<void> subirImagen(
+  Future<PanoramaSubida> subirImagen(
     int escenaId, {
     required Uint8List bytes,
     required String filename,
     bool bajaResolucion = false,
     String? carpeta,
-  }) =>
-      _delay();
+  }) async {
+    await _delay();
+    return PanoramaSubida(imagenUrl: filename, imagenUrlBaja: filename);
+  }
 }

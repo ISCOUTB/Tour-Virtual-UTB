@@ -1,6 +1,6 @@
 # Archivo generado desde el Swagger de la API. No lo edites a mano:
-# cambia el codigo de services/api y ejecuta en apps/admin
-# `npm run generar:openapi` con la API corriendo.
+# cambia el codigo de services/api y ejecuta
+# `node scripts/generar_openapi.mjs` con la API corriendo.
 openapi: 3.0.4
 info:
   title: TourVirtualUTB.Api

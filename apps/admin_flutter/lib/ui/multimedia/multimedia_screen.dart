@@ -103,6 +103,14 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
   String _idioma = idiomaOriginal;
   bool _subiendo = false;
 
+  /// Sección 7 de arquitectura: las panorámicas no se publican con rostros
+  /// reconocibles. El panel no difumina; pide confirmarlo antes de subir.
+  bool _sinRostros = false;
+
+  /// El POI no sale en los endpoints públicos (inactivo u oculto): no se
+  /// puede leer lo que ya tiene cargado.
+  bool _sinDetalle = false;
+
   @override
   void initState() {
     super.initState();
@@ -138,7 +146,21 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
       return;
     }
     _futuroContenido = () async {
-      final detalle = await poiRepository.detalle(id);
+      PoiDetalle detalle;
+      try {
+        detalle = await poiRepository.detalle(id);
+        _sinDetalle = false;
+      } on ApiException catch (e) {
+        // GET /api/pois/{id} es público y esconde los lugares inactivos o
+        // sin audiencias. Mientras no haya un GET de administración, se
+        // trabaja con el POI de la lista de admin y sin su contenido.
+        if (e.statusCode != 404) rethrow;
+        final todos = await poiRepository.listar();
+        final poi = todos.where((p) => p.id == id).firstOrNull;
+        if (poi == null) rethrow;
+        detalle = PoiDetalle(poi: poi);
+        _sinDetalle = true;
+      }
       Escena? escena;
       final escenaId = detalle.poi.escenaPrincipalId;
       if (escenaId != null) {
@@ -154,6 +176,7 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     _vtt = null;
     _textoAlt.clear();
     _idioma = idiomaOriginal;
+    _sinRostros = false;
   }
 
   // ---------------------------------------------------------------- archivos
@@ -205,6 +228,9 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     if (_pestana.llevaTextoAlt && _textoAlt.text.trim().isEmpty) {
       return 'Escribe el texto alternativo';
     }
+    if (_pestana == _Pestana.panorama && !_sinRostros) {
+      return 'Confirma que no hay rostros reconocibles';
+    }
     if (_pestana.llevaSubtitulos && _vtt == null) {
       return 'Adjunta los subtítulos (.vtt)';
     }
@@ -226,7 +252,14 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     setState(() => _subiendo = true);
     try {
       if (_pestana == _Pestana.panorama) {
-        await _subirPanorama(detalle.poi, escena, archivo);
+        final advertencia = await _subirPanorama(
+          detalle.poi,
+          escena,
+          archivo,
+        );
+        if (advertencia != null && mounted) {
+          showToast(context, advertencia, error: true);
+        }
       } else {
         final mismos = detalle.medios
             .where((m) => m.tipo == _pestana.tipo)
@@ -257,15 +290,26 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
     }
   }
 
-  Future<void> _subirPanorama(
+  /// Sube la panorámica del POI y devuelve la advertencia del servidor, si
+  /// la imagen no es 2:1.
+  ///
+  /// Orden pensado para no dejar la base a medias (revisión del PR #22):
+  /// 1. La escena se busca por `escenaPrincipalId` del POI, no en el
+  ///    endpoint público: así un reintento no crea otra escena, y el POI
+  ///    nunca queda con más de una principal.
+  /// 2. Primero se sube la imagen. Solo si funcionó se guarda el texto
+  ///    alternativo, y con las rutas que devolvió el servidor (sin firmar):
+  ///    nunca se guarda en la base una URL firmada que vence.
+  Future<String?> _subirPanorama(
     Poi poi,
     Escena? escena,
     ArchivoSubida archivo,
   ) async {
     final alt = _textoAlt.text.trim();
-    var destino = escena;
-    if (destino == null) {
-      destino = await escenaRepository.crear(
+    var escenaId = poi.escenaPrincipalId;
+    var nueva = false;
+    if (escenaId == null) {
+      final creada = await escenaRepository.crear(
         Escena(
           id: 0,
           lugarId: AppConfig.lugarId,
@@ -275,31 +319,39 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
           textoAlt: alt,
         ),
       );
+      escenaId = creada.id;
+      nueva = true;
+      // Se enlaza antes de subir: si la subida falla, el reintento usa
+      // esta misma escena en vez de crear otra.
       await poiRepository.actualizar(
-        poi.copyWith(escenaPrincipalId: destino.id),
+        poi.copyWith(escenaPrincipalId: escenaId),
       );
-    } else if (destino.textoAlt != alt) {
-      destino = await escenaRepository.actualizar(
+    }
+
+    final subida = await escenaRepository.subirImagen(
+      escenaId,
+      bytes: archivo.bytes,
+      filename: archivo.nombre,
+    );
+
+    if (!nueva && escena?.textoAlt?.trim() != alt) {
+      await escenaRepository.actualizar(
         Escena(
-          id: destino.id,
-          lugarId: destino.lugarId,
-          poiId: destino.poiId,
-          nombre: destino.nombre,
-          imagenUrl: destino.imagenUrl,
-          imagenUrlBaja: destino.imagenUrlBaja,
-          esEscenaPrincipal: destino.esEscenaPrincipal,
-          orden: destino.orden,
-          vistaInicialYaw: destino.vistaInicialYaw,
-          vistaInicialPitch: destino.vistaInicialPitch,
+          id: escenaId,
+          lugarId: escena?.lugarId ?? AppConfig.lugarId,
+          poiId: poi.id,
+          nombre: escena?.nombre ?? poi.nombre,
+          imagenUrl: subida.imagenUrl,
+          imagenUrlBaja: subida.imagenUrlBaja,
+          esEscenaPrincipal: true,
+          orden: escena?.orden ?? 0,
+          vistaInicialYaw: escena?.vistaInicialYaw,
+          vistaInicialPitch: escena?.vistaInicialPitch,
           textoAlt: alt,
         ),
       );
     }
-    await escenaRepository.subirImagen(
-      destino.id,
-      bytes: archivo.bytes,
-      filename: archivo.nombre,
-    );
+    return subida.advertencia;
   }
 
   Future<void> _eliminar(Medio m) async {
@@ -447,7 +499,14 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            if (actuales.isEmpty)
+            if (_sinDetalle)
+              const Text(
+                'Este lugar está inactivo o sin perfiles visibles: la API aún '
+                'no deja leer su contenido desde el panel. Se puede subir, '
+                'pero aquí no se verá hasta activarlo.',
+                style: TextStyle(color: AppColors.warning),
+              )
+            else if (actuales.isEmpty)
               const Text(
                 'Aún no hay archivos de este tipo.',
                 style: TextStyle(color: AppColors.textSecondary),
@@ -570,6 +629,24 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+        if (_pestana == _Pestana.panorama) ...[
+          const SizedBox(height: 4),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            value: _sinRostros,
+            onChanged: (v) => setState(() => _sinRostros = v ?? false),
+            title: const Text(
+              'La panorámica no muestra rostros reconocibles, o ya están '
+              'difuminados',
+            ),
+            subtitle: const Text(
+              'El panel no difumina rostros: hazlo antes de subirla '
+              '(sección 7 de arquitectura).',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
           ),
         ],
         const SizedBox(height: 20),

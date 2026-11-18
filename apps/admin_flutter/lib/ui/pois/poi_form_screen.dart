@@ -67,6 +67,10 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
   String? _categoria;
   String? _errorCategoria;
   bool _activo = false; // Propuesta de la guía: inactivo al crear.
+  // Perfiles que ven el lugar en la app. Sin ninguno, el lugar queda oculto
+  // para todos aunque esté activo (revisión del PR #22).
+  Set<Audiencia> _audiencias = {...Audiencia.values};
+  String? _errorAudiencias;
 
   bool _cargando = true;
   bool _guardando = false;
@@ -142,6 +146,7 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
         _longitud.text = original.lng?.toStringAsFixed(7) ?? '';
         _categoria = original.categoria;
         _activo = original.activo;
+        _audiencias = {...original.audiencias};
       }
       setState(() {
         _cargando = false;
@@ -208,7 +213,15 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
     if (_categoria == null) {
       setState(() => _errorCategoria = 'Selecciona una categoría');
     }
-    if (!formularioValido || _categoria == null) return;
+    if (_audiencias.isEmpty) {
+      setState(
+        () => _errorAudiencias =
+            'Elige al menos un perfil; si no, nadie verá el lugar',
+      );
+    }
+    if (!formularioValido || _categoria == null || _audiencias.isEmpty) {
+      return;
+    }
 
     final original = _original;
     if (original != null &&
@@ -252,6 +265,10 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
         lat: double.tryParse(_latitud.text.trim().replaceAll(',', '.')),
         lng: double.tryParse(_longitud.text.trim().replaceAll(',', '.')),
         activo: _activo,
+        audiencias: [
+          for (final a in Audiencia.values)
+            if (_audiencias.contains(a)) a,
+        ],
       );
       if (original == null) {
         await poiRepository.crear(poi);
@@ -480,6 +497,39 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            const Text(
+              'Visible para',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final (a, etiqueta) in const [
+                  (Audiencia.externo, 'Visitantes externos'),
+                  (Audiencia.estudiante, 'Estudiantes'),
+                  (Audiencia.docente, 'Docentes'),
+                ])
+                  FilterChip(
+                    label: Text(etiqueta),
+                    selected: _audiencias.contains(a),
+                    onSelected: (v) => setState(() {
+                      _audiencias = {..._audiencias};
+                      v ? _audiencias.add(a) : _audiencias.remove(a);
+                      _errorAudiencias = null;
+                      _modificado = true;
+                    }),
+                  ),
+              ],
+            ),
+            if (_errorAudiencias != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                _errorAudiencias!,
+                style: const TextStyle(color: AppColors.danger, fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 16),
             Row(
               children: [

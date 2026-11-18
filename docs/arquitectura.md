@@ -52,7 +52,7 @@ Los mockups del panel administrativo mencionan «configurar navegación y visual
 
 | Decisión | Elección | Motivo |
 |---|---|---|
-| Panel administrativo | Next.js 15 + React 19 + TypeScript | Ecosistema maduro para tablas, formularios y el editor visual de hotspots; hosting gratuito |
+| Panel administrativo | Flutter web (`apps/admin_flutter`) | El equipo ya trabaja en Flutter con el móvil. Reemplazó el primer panel en Next.js, retirado el 2026-11-17 |
 | Backend | Supabase + API .NET 9 | Aprovecha la API existente; Supabase resuelve auth, Postgres, storage y RLS sin construirlos |
 | Almacenamiento de medios | Cloudflare R2 | 10 GB gratis y egreso sin costo; Supabase Storage (1 GB) no soporta panorámicas ni video |
 | Perfil «externo» | Visitantes externos a la UTB | Aspirantes, familias y público general; no implica internacionalización inmediata |
@@ -92,7 +92,7 @@ que sigue la aplicación móvil.
 utbtour/
   apps/
     mobile/              Flutter — aplicación de usuarios (hoy utb_virtual_placeholder)
-    admin/               Next.js — panel de administración
+    admin_flutter/       Flutter web — panel de administración
   services/
     api/                 .NET 9 Minimal API
   packages/
@@ -134,7 +134,9 @@ Esto sustituye a `_CampusPlaceholderPainter` y a la generación aleatoria de POI
 
 **Patrones de interfaz.** Ficha de POI como `DraggableScrollableSheet` con puntos de anclaje y cabecera colapsable; transición `Hero` desde el marcador del mapa hacia la escena 360; parallax en la galería mediante `SliverAppBar` sobre el desplazamiento; esqueletos de carga en lugar de indicadores circulares. Se debe respetar `MediaQuery.disableAnimations` para usuarios con sensibilidad al movimiento.
 
-### Panel de administración (Next.js)
+### Panel de administración (Flutter web)
+
+> **Actualización 2026-11-17:** el panel quedó en Flutter web (`apps/admin_flutter`), con Supabase Auth y la API .NET. El panel en Next.js se retiró. Lo que sigue es el diseño original; el editor visual de hotspots sigue pendiente.
 
 - Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui.
 - TanStack Table para listados; Recharts para el módulo de analítica.

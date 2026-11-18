@@ -15,9 +15,9 @@ etiquetas (ver sección 12).
 | Frontend móvil | `packages/tour_virtual`, `apps/mobile` | Flutter/Dart, Riverpod, go_router | Funcional, con contenido remoto o local |
 | Backend | `services/api` | ASP.NET Core sobre .NET 10, EF Core 10 | Funcional en desarrollo |
 | Persistencia | — | PostgreSQL y Storage (S3) de Supabase | Migraciones EF versionadas |
-| Frontend de administración | `apps/admin` | Next.js 16 | Listado de POI; formularios pendientes |
+| Frontend de administración | `apps/admin_flutter` | Flutter web, Supabase Auth | Funcional contra la API: POI, multimedia, métricas y administradores |
 | Contrato | `packages/contracts` | OpenAPI, DTOs `snake_case` | Implementado |
-| CI | `.github/workflows` | GitHub Actions | Móvil, API y contrato |
+| CI | `.github/workflows` | GitHub Actions | Móvil, panel admin, API y contrato |
 | Autenticación y autorización | — | Sesión de la UTB APP | Pendiente; depende de la UTB |
 
 El móvil no consulta la base directamente. Lee el contenido de la API mediante
@@ -50,7 +50,7 @@ sigue en el roadmap del SRS y todavía no está implementada.
 ```text
 packages/tour_virtual/  Frontend móvil: el módulo Flutter que se incrusta en la UTB APP
 apps/mobile/            App de demostración que abre el módulo; genera el APK y corre las pruebas
-apps/admin/             Frontend de administración (Next.js)
+apps/admin_flutter/     Frontend de administración (Flutter web)
 services/api/           Backend: API ASP.NET Core y modelo EF Core
 packages/contracts/     Contrato OpenAPI administrativo
 scripts/                Mapa del campus, narraciones, medios y APK de demostración
@@ -442,14 +442,12 @@ dotnet restore
 dotnet build --configuration Release
 ```
 
-Contrato de la API. `packages/contracts/openapi.yaml` y
-`apps/admin/src/api/schema.d.ts` se generan desde el Swagger, así que se
-regeneran cada vez que cambia un endpoint o un DTO. Con la API corriendo:
+Contrato de la API. `packages/contracts/openapi.yaml` se genera desde el
+Swagger, así que se regenera cada vez que cambia un endpoint o un DTO. Con la
+API corriendo (necesita Node 18 o superior, sin dependencias):
 
 ```powershell
-cd ..\..\apps\admin
-npm run generar:contratos
-cd ..\..
+node scripts/generar_openapi.mjs
 npx --yes @redocly/cli@2.64.0 lint packages/contracts/openapi.yaml
 ```
 
@@ -501,7 +499,7 @@ Reglas:
 1. Completar las tareas de backend de [`docs/tareas-backend.md`](./tareas-backend.md)
    (issue #10): lat/lng, catálogo de lugares, narraciones por idioma,
    subtítulos y texto alternativo.
-2. Completar el panel de administración: formularios de POI, escenas y medios.
+2. Completar el panel de administración: GET de administración para el detalle y las escenas de lugares inactivos, y el editor de hotspots.
 3. Añadir pruebas de integración de la API contra PostgreSQL.
 4. Acordar con la UTB la vía de integración y la fuente de contenido
    ([`docs/integracion-utb-app.md`](./integracion-utb-app.md)).
@@ -519,7 +517,7 @@ Reglas:
 ### Bloque de producto
 
 1. Completar textos, panoramas, audios, subtítulos y textos alternativos.
-2. Implementar el panel administrativo.
+2. Agregar al panel el editor visual de hotspots.
 3. Alinear el contrato OpenAPI con los endpoints reales.
 4. Validar accesibilidad y dispositivos de gama baja.
 5. Medir apertura, escenas vistas, hotspots usados y recorridos completos.

@@ -74,7 +74,7 @@ Los dos modos están implementados. Se elige uno al construir `ConfiguracionTour
 
 El módulo pide lugares, escenas, hotspots y medios a la API de `services/api` por HTTP. Los medios llegan con URL firmadas de Supabase Storage.
 
-- **Ventaja:** el contenido se edita desde el panel de administración (`apps/admin`) sin publicar una versión nueva de la UTB APP.
+- **Ventaja:** el contenido se edita desde el panel de administración (`apps/admin_flutter`) sin publicar una versión nueva de la UTB APP.
 - **Necesita:** la API desplegada con HTTPS, su base de datos y su almacenamiento. Configuración en `README.md` («Backend»).
 - **Sin conexión:** el módulo muestra el error y ofrece reintentar.
 

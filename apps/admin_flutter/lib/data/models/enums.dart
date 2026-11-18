@@ -1,5 +1,5 @@
-/// Enumeraciones del contrato de la API (schema.d.ts).
-/// El backend las envía como texto en minúsculas.
+// Enumeraciones del contrato de la API (packages/contracts/openapi.yaml).
+// El backend las envía como texto en minúsculas.
 
 enum Audiencia {
   externo,

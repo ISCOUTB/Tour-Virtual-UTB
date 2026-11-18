@@ -17,7 +17,7 @@ Los archivos de audio y subtítulos no están en el repositorio. Van en `entrega
 
 - [ ] Agregar `double? Lat` y `double? Lng` a `CrearPoiRequest` y `ActualizarPoiRequest` en `DTOs/AdminRequests.cs`.
 - [ ] Pasarlos en `ContenidoService.CrearPoiAsync` y `ActualizarPoiAsync`.
-- [ ] Regenerar `packages/contracts/openapi.yaml` y `apps/admin/src/api/schema.d.ts`.
+- [ ] Regenerar `packages/contracts/openapi.yaml`.
 
 ## 2. Base compartida: cargar el catálogo de lugares
 

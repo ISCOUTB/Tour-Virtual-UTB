@@ -6,7 +6,13 @@
 //
 //   cd services/api && dotnet run --launch-profile http
 //
-// Otra direccion: API_URL=http://localhost:5000 npm run generar:openapi
+// Desde la raiz del repositorio:
+//
+//   node scripts/generar_openapi.mjs
+//
+// Otra direccion: API_URL=http://localhost:5000 node scripts/generar_openapi.mjs
+//
+// Antes vivia en apps/admin (panel Next.js, retirado el 2026-11-17).
 
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -14,13 +20,13 @@ import { fileURLToPath } from "node:url";
 const api = process.env.API_URL ?? "http://localhost:5209";
 const origen = `${api}/swagger/v1/swagger.yaml`;
 const destino = fileURLToPath(
-  new URL("../../../packages/contracts/openapi.yaml", import.meta.url),
+  new URL("../packages/contracts/openapi.yaml", import.meta.url),
 );
 
 const encabezado = [
   "# Archivo generado desde el Swagger de la API. No lo edites a mano:",
-  "# cambia el codigo de services/api y ejecuta en apps/admin",
-  "# `npm run generar:openapi` con la API corriendo.",
+  "# cambia el codigo de services/api y ejecuta",
+  "# `node scripts/generar_openapi.mjs` con la API corriendo.",
   "",
 ].join("\n");
 

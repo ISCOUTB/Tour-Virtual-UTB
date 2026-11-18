@@ -9,6 +9,17 @@ namespace TourVirtualUTB.Api.Controllers;
 [RequiereClaveAdmin]
 public class AdminPoisController(IContenidoService contenidoService) : ControllerBase
 {
+    /// <summary>
+    /// Detalle de un POI (activo o inactivo) con medios y escenas.
+    /// </summary>
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<PoiDetalleAdminDto>> ObtenerPoiAdmin(int id)
+    {
+        var detalle = await contenidoService.ObtenerPoiAdminPorIdAsync(id);
+        if (detalle is null) return NotFound("El punto de interés no existe.");
+        return Ok(detalle);
+    }
+
     [HttpPost]
     public async Task<ActionResult<PoiDto>> CrearPoi([FromBody] CrearPoiRequest request)
     {

@@ -100,16 +100,6 @@ class AuthState extends ChangeNotifier {
     }
   }
 
-  Future<String?> iniciarConGoogle() async {
-    if (AppConfig.loginReal) {
-      return 'El ingreso con Google aún no está habilitado. '
-          'Usa tu correo y contraseña.';
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    _entrar('admin$dominio');
-    return null;
-  }
-
   void cerrarSesion() {
     _signedIn = false;
     notifyListeners();

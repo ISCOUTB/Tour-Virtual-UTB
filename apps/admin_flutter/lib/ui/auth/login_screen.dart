@@ -52,19 +52,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  Future<void> _ingresarConGoogle() async {
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
-    final error = await authState.iniciarConGoogle();
-    if (!mounted) return;
-    setState(() {
-      _cargando = false;
-      _error = error;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,53 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // El ingreso con Google no está configurado en Supabase:
-                        // solo se muestra en la maqueta.
-                        if (!AppConfig.loginReal) ...[
-                          FilledButton(
-                            onPressed: _cargando ? null : _ingresarConGoogle,
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircleAvatar(
-                                  radius: 11,
-                                  backgroundColor: Colors.white,
-                                  child: Text(
-                                    'G',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Flexible(
-                                  child: Text(
-                                    'Iniciar sesión con cuenta institucional',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          const Row(
-                            children: [
-                              Expanded(child: Divider()),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 12),
-                                child: Text(
-                                  'o',
-                                  style:
-                                      TextStyle(color: AppColors.textSecondary),
-                                ),
-                              ),
-                              Expanded(child: Divider()),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                        ],
                         TextFormField(
                           controller: _correo,
                           keyboardType: TextInputType.emailAddress,
@@ -212,8 +152,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline,
-                                    color: AppColors.danger, size: 20),
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: AppColors.danger,
+                                  size: 20,
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(child: Text(_error!)),
                               ],
@@ -228,7 +171,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Iniciar sesión'),
                         ),

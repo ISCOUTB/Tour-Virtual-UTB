@@ -32,10 +32,20 @@ public class AdminEscenasController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> EliminarEscena(int id)
     {
-        var eliminado = await contenidoService.EliminarEscenaAsync(id);
-        if (!eliminado) return NotFound("La escena no existe.");
+        var resultado = await contenidoService.EliminarEscenaAsync(id);
 
-        return NoContent();
+        return resultado switch
+        {
+            EliminarEscenaResultado.NoExiste =>
+                NotFound("La escena no existe."),
+            EliminarEscenaResultado.EnUsoComoDestino =>
+                Conflict(new
+                {
+                    mensaje = "No se puede eliminar la escena porque está enlazada como destino desde otra(s) escena(s). Elimina o reasigna esos hotspots primero.",
+                    codigo = "escena_en_uso"
+                }),
+            _ => NoContent()
+        };
     }
 
     /// <summary>

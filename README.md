@@ -11,7 +11,7 @@ El tour está diseñado como **un módulo de la app oficial UTB APP**, con su mi
 | **Backend** | [`services/api/`](services/api) | ASP.NET Core (.NET 10), EF Core, PostgreSQL y Storage de Supabase | API de contenido para la app y API de administración para el panel. |
 | **Frontend móvil** | [`packages/tour_virtual/`](packages/tour_virtual) | Flutter, Riverpod, go_router | **El módulo**: todo el tour, listo para incrustarse en la UTB APP. |
 | | [`apps/mobile/`](apps/mobile) | Flutter | App de demostración que abre el módulo, genera el APK y corre las pruebas. |
-| **Frontend admin** | [`apps/admin/`](apps/admin) | Next.js 16, React 19 | Panel para editar lugares, escenas y medios. Hoy lista los POI. |
+| **Frontend admin** | [`apps/admin_flutter/`](apps/admin_flutter) | Flutter web, Supabase Auth | Panel para administrar lugares, ubicación, multimedia (360°, fotos, video, audio con idioma y subtítulos), métricas y administradores. |
 
 Además:
 
@@ -110,13 +110,15 @@ Las tareas pendientes del backend están en [`docs/tareas-backend.md`](docs/tare
 
 ### Frontend admin
 
-Con la API corriendo en `http://localhost:5209`, que el panel alcanza mediante el proxy de `next.config.ts`:
+Con la API corriendo en `http://localhost:5209`:
 
 ```bash
-cd apps/admin
-npm install
-npm run dev     # http://localhost:3000
+cd apps/admin_flutter
+flutter pub get
+flutter run -d chrome --dart-define=USE_MOCK=false --dart-define=SUPABASE_ANON_KEY=<publishable key>
 ```
+
+Sin `--dart-define` corre en modo maqueta, sin API. Parámetros y modos en [`apps/admin_flutter/README.md`](apps/admin_flutter/README.md).
 
 ## Ramas
 
@@ -129,7 +131,7 @@ CI (GitHub Actions) verifica en cada pull request:
 - el módulo: formato, código generado y análisis;
 - la app de demostración: pruebas y APK de depuración;
 - la API: compilación y dependencias vulnerables;
-- el panel admin: dependencias vulnerables, análisis y compilación;
+- el panel admin: análisis y compilación para web;
 - el contrato OpenAPI.
 
 ## Documentación
@@ -154,6 +156,6 @@ El SRS (`SRSIEEE830TourVirtualUTBv3.1.pdf`) es la autoridad sobre los requisitos
 - Panorámicas, audios, el mapa ilustrado y los documentos fuente son material de la universidad. Viven fuera del repositorio (`assets/`, ignorado).
 - Toda panorámica pasa por el difuminado de caras y la eliminación de EXIF antes de publicarse (Ley 1581; ver `docs/arquitectura.md`, sección 7).
 - Las capturas de la UTB APP muestran datos personales y no se suben.
-- El panel admin **nunca** envía `X-Admin-Key` desde el navegador. Cuando escriba contenido, debe hacerlo desde el servidor de Next.js (route handlers o server actions), con la clave en una variable de entorno sin el prefijo `NEXT_PUBLIC_`. Además, el panel necesita su propio inicio de sesión antes de publicarse.
+- El panel admin **nunca** envía `X-Admin-Key` desde el navegador: inicia sesión con Supabase Auth y manda el token de la sesión, y la API exige el rol `admin` en `perfiles`. La publishable key de Supabase se pasa al compilar (`--dart-define`) y no se versiona.
 - La API solo acepta imágenes que puede volver a codificar (JPEG, PNG, WebP; nunca SVG) y de hasta 64 megapíxeles.
-- El CI falla si una dependencia tiene una vulnerabilidad conocida: `npm audit` en el panel y `dotnet list package --vulnerable` en la API. Las acciones de terceros van fijadas por commit, y los workflows solo tienen permiso de lectura.
+- El CI falla si una dependencia de la API tiene una vulnerabilidad conocida (`dotnet list package --vulnerable`). Las acciones de terceros van fijadas por commit, y los workflows solo tienen permiso de lectura.

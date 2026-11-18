@@ -1,0 +1,53 @@
+name: Panel admin (Flutter)
+
+# Panel de administración en Flutter web (apps/admin_flutter). Se compila con
+# la versión de Flutter más vieja que usa el equipo (Dart 3.11), para que un
+# paquete que exija algo más nuevo falle aquí y no en el computador de alguien.
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/admin_flutter/**'
+      - '.github/workflows/admin_flutter.yml'
+  pull_request:
+    paths:
+      - 'apps/admin_flutter/**'
+      - '.github/workflows/admin_flutter.yml'
+
+# El token de GitHub de estos jobs solo necesita leer el código.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: apps/admin_flutter
+
+jobs:
+  verificar:
+    name: Analizar y compilar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: 3.41.x
+          cache: true
+
+      - name: Resolver dependencias
+        run: flutter pub get
+
+      # Falla con errores y warnings. Las sugerencias de estilo (info) se
+      # muestran pero no bloquean.
+      - name: Analisis estatico
+        run: flutter analyze --no-fatal-infos
+
+      # Pruebas sin red: usan repositorios en memoria.
+      - name: Pruebas
+        run: flutter test
+
+      # Compila en modo maqueta (sin claves): solo verifica que el panel
+      # compila para web.
+      - name: Compilar para web
+        run: flutter build web --release

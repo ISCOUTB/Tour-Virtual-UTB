@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:tour_virtual/datos/analitica.dart';
 import 'package:tour_virtual/datos/fuente_medio.dart';
 import 'package:tour_virtual/datos/repositorio_contenido.dart';
 import 'package:tour_virtual/datos/repositorio_demo.dart';
@@ -276,5 +277,76 @@ void main() {
 
     await repositorio.obtenerPois(1);
     expect(repositorio.idiomaContenido, 'en');
+  });
+
+  group('registrarEvento', () {
+    const evento = EventoAnalitica(
+      sesionId: '6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b',
+      tipo: TipoEvento.escenaVista,
+      escenaId: 2,
+      poiId: 2,
+    );
+
+    RepositorioContenido repositorioQueResponde(
+      int codigo, {
+      void Function(http.Request)? alRecibir,
+    }) => RepositorioContenido(
+      baseUrl: 'http://127.0.0.1:5209',
+      cliente: MockClient((peticion) async {
+        alRecibir?.call(peticion);
+        return http.Response('', codigo);
+      }),
+    );
+
+    test('hace POST de JSON a /api/eventos', () async {
+      late http.Request recibida;
+      final aceptado = await repositorioQueResponde(
+        204,
+        alRecibir: (p) => recibida = p,
+      ).registrarEvento(evento);
+
+      expect(aceptado, isTrue);
+      expect(recibida.method, 'POST');
+      expect(recibida.url.toString(), 'http://127.0.0.1:5209/api/eventos');
+      expect(recibida.headers['Content-Type'], startsWith('application/json'));
+      expect(jsonDecode(recibida.body), {
+        'sesionId': '6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b',
+        'tipo': 'scene_viewed',
+        'poiId': 2,
+        'escenaId': 2,
+      });
+    });
+
+    test('un 400 es un rechazo: no se reintenta', () async {
+      expect(
+        await repositorioQueResponde(400).registrarEvento(evento),
+        isFalse,
+      );
+    });
+
+    test('un 5xx, 408 o 429 se reintenta', () async {
+      for (final codigo in [500, 503, 408, 429]) {
+        await expectLater(
+          repositorioQueResponde(codigo).registrarEvento(evento),
+          throwsA(isA<FalloInesperado>()),
+          reason: 'HTTP $codigo',
+        );
+      }
+    });
+
+    test('sin conexión se reintenta', () async {
+      final repositorio = RepositorioContenido(
+        baseUrl: 'http://127.0.0.1:5209',
+        cliente: MockClient((_) async => throw http.ClientException('sin red')),
+      );
+      await expectLater(
+        repositorio.registrarEvento(evento),
+        throwsA(isA<FalloDeConexion>()),
+      );
+    });
+
+    test('el modo demo no envía nada', () async {
+      expect(await const RepositorioDemo().registrarEvento(evento), isFalse);
+    });
   });
 }

@@ -492,6 +492,35 @@ class TextosPt extends Textos {
   @override
   String get ajustesSistema =>
       'Estes ajustes se somam aos de acessibilidade do seu celular.';
+
+  @override
+  String get privacidad => 'Privacidade';
+
+  @override
+  String get analiticaTitulo => 'Quer nos ajudar a melhorar o percurso?';
+
+  @override
+  String analiticaTexto(String ajustes) {
+    return 'Se você aceitar, o app conta quais cenas, lugares e narrações são usados, sem seu nome, sua localização nem nada que identifique você. Você pode mudar isso quando quiser em “$ajustes”.';
+  }
+
+  @override
+  String get analiticaAceptar => 'Sim, compartilhar';
+
+  @override
+  String get analiticaRechazar => 'Não, obrigado';
+
+  @override
+  String analiticaGuardada(String ajustes) {
+    return 'Salvo. Você pode mudar isso em “$ajustes”.';
+  }
+
+  @override
+  String get analiticaAjuste => 'Compartilhar estatísticas de uso';
+
+  @override
+  String get analiticaAjusteDetalle =>
+      'Anônimas: quais cenas, lugares e narrações são usados. Nunca seu nome nem sua localização.';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -669,4 +698,27 @@ class TextosPtPt extends TextosPt {
   @override
   String get ajustesSistema =>
       'Estas definições somam-se às de acessibilidade do seu telemóvel.';
+
+  @override
+  String get analiticaTitulo => 'Quer ajudar-nos a melhorar o percurso?';
+
+  @override
+  String analiticaTexto(String ajustes) {
+    return 'Se aceitar, a aplicação contabiliza que cenas, lugares e narrações são utilizados, sem o seu nome, a sua localização nem nada que o identifique. Pode alterar isto quando quiser em «$ajustes».';
+  }
+
+  @override
+  String get analiticaAceptar => 'Sim, partilhar';
+
+  @override
+  String analiticaGuardada(String ajustes) {
+    return 'Guardado. Pode alterar isto em «$ajustes».';
+  }
+
+  @override
+  String get analiticaAjuste => 'Partilhar estatísticas de utilização';
+
+  @override
+  String get analiticaAjusteDetalle =>
+      'Anónimas: que cenas, lugares e narrações são utilizados. Nunca o seu nome nem a sua localização.';
 }

@@ -471,4 +471,32 @@ class TextosZh extends Textos {
 
   @override
   String get ajustesSistema => '这些设置会叠加在手机的无障碍设置之上。';
+
+  @override
+  String get privacidad => '隐私';
+
+  @override
+  String get analiticaTitulo => '愿意帮助我们改进导览吗？';
+
+  @override
+  String analiticaTexto(String ajustes) {
+    return '如果你同意，应用会统计哪些场景、地点和讲解被使用，不会发送你的姓名、位置或任何能识别你身份的信息。你可以随时在“$ajustes”中更改。';
+  }
+
+  @override
+  String get analiticaAceptar => '好，分享';
+
+  @override
+  String get analiticaRechazar => '不用了，谢谢';
+
+  @override
+  String analiticaGuardada(String ajustes) {
+    return '已保存。你可以在“$ajustes”中更改。';
+  }
+
+  @override
+  String get analiticaAjuste => '分享使用统计';
+
+  @override
+  String get analiticaAjusteDetalle => '匿名：仅统计哪些场景、地点和讲解被使用，绝不包含你的姓名或位置。';
 }

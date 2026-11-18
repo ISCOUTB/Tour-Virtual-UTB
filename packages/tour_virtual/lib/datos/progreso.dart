@@ -4,9 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Puntos de interés que el usuario ya conoció (RF-19).
 ///
-/// Se guarda en el dispositivo y no en la base por dos razones: el visitante
-/// externo —el usuario principal— entra sin cuenta, y así el progreso
-/// sobrevive a la migración de backend pendiente.
+/// Se guarda en el dispositivo y no en la base: el visitante externo —el
+/// usuario principal— entra sin cuenta.
 ///
 /// Un POI cuenta como visitado al abrir su ficha, no al entrar en su escena
 /// 360: es el momento en que el usuario conoce el lugar, y funciona aunque la

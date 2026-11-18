@@ -18,6 +18,7 @@ import '../comunes/fondos.dart';
 import '../comunes/inclinable.dart';
 import '../ficha_poi.dart';
 import '../postal_escena.dart';
+import 'aviso_analitica.dart';
 
 /// Contenido de «Recorrido» (RF-19, RF-20, RF-21).
 ///
@@ -93,6 +94,8 @@ class ListaRecorrido extends ConsumerWidget {
         ? 0
         : pois.indexWhere((p) => !visitados.contains(p.id));
 
+    final preguntar = AvisoAnalitica.visible(ref);
+
     final animar = !sinMovimiento(context);
     Widget entrada(Widget hijo, int orden) {
       if (!animar) return hijo;
@@ -154,6 +157,10 @@ class ListaRecorrido extends ConsumerWidget {
               2 + i,
             ),
           const SizedBox(height: 22),
+          if (preguntar) ...[
+            entrada(const AvisoAnalitica(), pois.length + 2),
+            const SizedBox(height: 14),
+          ],
           entrada(TarjetaSugerencia(alAbrirMapa: alAbrirMapa), pois.length + 2),
           ...masLugares,
           const SizedBox(height: 34),

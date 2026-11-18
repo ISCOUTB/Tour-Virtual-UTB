@@ -132,5 +132,13 @@
   "reducirMovimientoDetalle": "Animasyonları, dönüşleri ve 3B efektleri kapatır.",
   "movimientoTelefonoDetalle": "360° turda görünüm telefonun hareketini takip eder.",
   "subtitulosDetalle": "Anlatım çalarken metnini gösterir.",
-  "ajustesSistema": "Bu ayarlar telefonunuzun erişilebilirlik ayarlarına eklenir."
+  "ajustesSistema": "Bu ayarlar telefonunuzun erişilebilirlik ayarlarına eklenir.",
+  "privacidad": "Gizlilik",
+  "analiticaTitulo": "Turu geliştirmemize yardım eder misiniz?",
+  "analiticaTexto": "Kabul ederseniz uygulama hangi sahnelerin, yerlerin ve anlatımların kullanıldığını sayar; adınızı, konumunuzu veya sizi tanımlayan hiçbir bilgiyi göndermez. Bunu istediğiniz zaman “{ajustes}” bölümünden değiştirebilirsiniz.",
+  "analiticaAceptar": "Evet, paylaş",
+  "analiticaRechazar": "Hayır, teşekkürler",
+  "analiticaGuardada": "Kaydedildi. Bunu “{ajustes}” bölümünden değiştirebilirsiniz.",
+  "analiticaAjuste": "Kullanım istatistiklerini paylaş",
+  "analiticaAjusteDetalle": "Anonim: yalnızca hangi sahnelerin, yerlerin ve anlatımların kullanıldığı. Adınız veya konumunuz asla gönderilmez."
 }

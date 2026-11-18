@@ -22,6 +22,11 @@ library;
 
 export 'app_tour.dart' show TourVirtual;
 export 'configuracion_tour.dart'
-    show ConfiguracionTour, ContenidoLocal, ContenidoRemoto, FuenteContenido;
+    show
+        ConfiguracionTour,
+        ConsentimientoAnalitica,
+        ContenidoLocal,
+        ContenidoRemoto,
+        FuenteContenido;
 export 'datos/fuente_medio.dart' show FuenteMedio;
 export 'datos/modelos/modelos.dart' show Audiencia;

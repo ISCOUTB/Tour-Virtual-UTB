@@ -132,5 +132,13 @@
   "reducirMovimientoDetalle": "애니메이션, 회전, 3D 효과를 끕니다.",
   "movimientoTelefonoDetalle": "360° 투어에서 시점이 휴대폰 움직임을 따라갑니다.",
   "subtitulosDetalle": "해설이 재생되는 동안 텍스트를 보여 줍니다.",
-  "ajustesSistema": "이 설정은 휴대폰의 접근성 설정에 더해 적용됩니다."
+  "ajustesSistema": "이 설정은 휴대폰의 접근성 설정에 더해 적용됩니다.",
+  "privacidad": "개인정보 보호",
+  "analiticaTitulo": "투어 개선에 도움을 주시겠어요?",
+  "analiticaTexto": "동의하시면 앱이 어떤 장면, 장소, 해설이 이용되는지 집계합니다. 이름, 위치 등 본인을 식별할 수 있는 정보는 보내지 않습니다. 언제든지 ‘{ajustes}’에서 변경할 수 있습니다.",
+  "analiticaAceptar": "네, 공유할게요",
+  "analiticaRechazar": "괜찮습니다",
+  "analiticaGuardada": "저장되었습니다. ‘{ajustes}’에서 변경할 수 있습니다.",
+  "analiticaAjuste": "이용 통계 공유",
+  "analiticaAjusteDetalle": "익명: 어떤 장면, 장소, 해설이 이용되는지만 보냅니다. 이름이나 위치는 보내지 않습니다."
 }

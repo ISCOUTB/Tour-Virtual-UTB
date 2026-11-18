@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import 'analitica.dart';
 import 'fuente_medio.dart';
 import '../nucleo/errores.dart';
 import '../nucleo/idiomas.dart';
@@ -556,6 +557,11 @@ class RepositorioDemo implements RepositorioContenido {
       if (cliente == null) c.close();
     }
   }
+
+  /// Sin API no hay dónde guardar la analítica. No llega a llamarse: con
+  /// contenido local el consentimiento es siempre falso.
+  @override
+  Future<bool> registrarEvento(EventoAnalitica evento) async => false;
 
   @override
   Future<Ruta?> obtenerRutaActual(int lugarId) async => const Ruta(

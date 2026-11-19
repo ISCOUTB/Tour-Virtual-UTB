@@ -8,7 +8,7 @@ abstract class PoiRepository {
   /// Lista los POI del lugar configurado.
   Future<List<Poi>> listar();
 
-  /// POI con sus medios.
+  /// POI con sus medios y escenas, aunque esté inactivo o sin audiencias.
   Future<PoiDetalle> detalle(int id);
 
   Future<Poi> crear(Poi poi);
@@ -45,8 +45,10 @@ class HttpPoiRepository extends PoiRepository {
   }
 
   @override
+  /// GET de administración (#26). El público (/api/pois/{id}) esconde los
+  /// lugares inactivos y los de otras audiencias.
   Future<PoiDetalle> detalle(int id) async =>
-      PoiDetalle.fromJson(_map(await _api.get('/api/pois/$id')));
+      PoiDetalle.fromJson(_map(await _api.get('/api/admin/pois/$id')));
 
   @override
   Future<Poi> crear(Poi poi) async {

@@ -108,10 +108,6 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
   /// reconocibles. El panel no difumina; pide confirmarlo antes de subir.
   bool _sinRostros = false;
 
-  /// El POI no sale en los endpoints públicos (inactivo u oculto): no se
-  /// puede leer lo que ya tiene cargado.
-  bool _sinDetalle = false;
-
   /// Recuerda las escenas que crea, para que un reintento no cree otra.
   final _panorama = SubidaPanorama(
     escenas: escenaRepository,
@@ -153,26 +149,19 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
       return;
     }
     _futuroContenido = () async {
-      PoiDetalle detalle;
-      try {
-        detalle = await poiRepository.detalle(id);
-        _sinDetalle = false;
-      } on ApiException catch (e) {
-        // GET /api/pois/{id} es público y esconde los lugares inactivos o
-        // sin audiencias. Mientras no haya un GET de administración, se
-        // trabaja con el POI de la lista de admin y sin su contenido.
-        if (e.statusCode != 404) rethrow;
-        final todos = await poiRepository.listar();
-        final poi = todos.where((p) => p.id == id).firstOrNull;
-        if (poi == null) rethrow;
-        detalle = PoiDetalle(poi: poi);
-        _sinDetalle = true;
-      }
+      // GET de administración: trae medios y escenas también de los lugares
+      // inactivos o sin audiencias.
+      final detalle = await poiRepository.detalle(id);
       Escena? escena;
       final escenaId = detalle.poi.escenaPrincipalId;
       if (escenaId != null) {
-        final escenas = await escenaRepository.listar();
-        escena = escenas.where((e) => e.id == escenaId).firstOrNull;
+        escena = detalle.escenas.where((e) => e.id == escenaId).firstOrNull;
+        // Modo maqueta (y API sin el GET de administración): las escenas
+        // solo están en la lista pública.
+        if (escena == null && detalle.escenas.isEmpty) {
+          final escenas = await escenaRepository.listar();
+          escena = escenas.where((e) => e.id == escenaId).firstOrNull;
+        }
       }
       return (detalle, escena);
     }();
@@ -444,14 +433,7 @@ class _MultimediaScreenState extends State<MultimediaScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            if (_sinDetalle)
-              const Text(
-                'Este lugar está inactivo o sin perfiles visibles: la API aún '
-                'no deja leer su contenido desde el panel. Se puede subir, '
-                'pero aquí no se verá hasta activarlo.',
-                style: TextStyle(color: AppColors.warning),
-              )
-            else if (actuales.isEmpty)
+            if (actuales.isEmpty)
               const Text(
                 'Aún no hay archivos de este tipo.',
                 style: TextStyle(color: AppColors.textSecondary),

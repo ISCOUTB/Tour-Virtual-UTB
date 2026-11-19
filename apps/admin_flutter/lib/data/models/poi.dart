@@ -1,4 +1,5 @@
 import 'enums.dart';
+import 'escena.dart';
 import 'medio.dart';
 
 double? _toDouble(Object? v) => (v as num?)?.toDouble();
@@ -113,15 +114,27 @@ class Poi {
 
 /// Respuesta de GET /api/pois/{id} (PoiDetalleDto).
 class PoiDetalle {
-  const PoiDetalle({required this.poi, this.medios = const []});
+  const PoiDetalle({
+    required this.poi,
+    this.medios = const [],
+    this.escenas = const [],
+  });
 
   final Poi poi;
   final List<Medio> medios;
+
+  /// Escenas ligadas al POI (GET /api/admin/pois/{id}), también si está
+  /// inactivo. Las URL vienen firmadas: sirven para mostrar, nunca para
+  /// volver a guardarlas.
+  final List<Escena> escenas;
 
   factory PoiDetalle.fromJson(Map<String, dynamic> j) => PoiDetalle(
         poi: Poi.fromJson((j['poi'] as Map).cast<String, dynamic>()),
         medios: ((j['medios'] as List?) ?? const [])
             .map((e) => Medio.fromJson((e as Map).cast<String, dynamic>()))
+            .toList(),
+        escenas: ((j['escenas'] as List?) ?? const [])
+            .map((e) => Escena.fromJson((e as Map).cast<String, dynamic>()))
             .toList(),
       );
 }

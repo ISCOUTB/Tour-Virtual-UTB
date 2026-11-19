@@ -128,14 +128,18 @@ class _PoiFormScreenState extends State<PoiFormScreen> {
       _original = original;
       if (original != null) {
         // El contenido es opcional: si falla, el formulario sigue funcionando.
-        // Cada lectura va aparte: un POI inactivo no tiene detalle público,
-        // pero su escena sí debe verse.
+        // El detalle de administración trae medios y escenas también de los
+        // lugares inactivos.
         try {
-          _medios = (await poiRepository.detalle(original.id)).medios;
+          final detalle = await poiRepository.detalle(original.id);
+          _medios = detalle.medios;
+          _escena = escenaDePoi(original, detalle.escenas);
         } catch (_) {}
+        // Las paradas del recorrido («Parada N de M») sí son las públicas.
         try {
           _escenas = await escenaRepository.listar();
-          _escena = escenaDePoi(original, _escenas);
+          // Modo maqueta: el detalle no trae escenas.
+          _escena ??= escenaDePoi(original, _escenas);
         } catch (_) {}
       }
       if (!mounted) return;

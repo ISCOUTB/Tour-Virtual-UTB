@@ -104,10 +104,10 @@ class _PoisListScreenState extends State<PoisListScreen> {
     }
   }
 
-  /// Trae los medios de cada POI de a cuatro, para que la lista muestre sus
-  /// fotos y su información sin bloquear la carga inicial. Si un POI no se
-  /// puede leer (p. ej. está inactivo y el detalle público no lo devuelve),
-  /// se queda sin esos datos.
+  /// Trae los medios y escenas de cada POI de a cuatro, para que la lista
+  /// muestre sus fotos y su información sin bloquear la carga inicial. El
+  /// detalle de administración incluye los lugares inactivos, cuya escena no
+  /// sale en la lista pública.
   Future<void> _cargarMedios(List<Poi> pois) async {
     for (var i = 0; i < pois.length; i += 4) {
       final lote = pois.skip(i).take(4);
@@ -117,7 +117,13 @@ class _PoisListScreenState extends State<PoisListScreen> {
             try {
               final d = await poiRepository.detalle(p.id);
               if (!mounted) return;
-              setState(() => _medios[p.id] = d.medios);
+              setState(() {
+                _medios[p.id] = d.medios;
+                final nuevas = d.escenas
+                    .where((e) => !_escenas.any((x) => x.id == e.id))
+                    .toList();
+                if (nuevas.isNotEmpty) _escenas = [..._escenas, ...nuevas];
+              });
             } catch (_) {}
           }(),
       ]);

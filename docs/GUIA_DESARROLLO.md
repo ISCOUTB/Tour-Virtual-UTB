@@ -499,7 +499,7 @@ Reglas:
 1. Completar las tareas de backend de [`docs/tareas-backend.md`](./tareas-backend.md)
    (issue #10): lat/lng, catálogo de lugares, narraciones por idioma,
    subtítulos y texto alternativo.
-2. Completar el panel de administración: GET de administración para el detalle y las escenas de lugares inactivos, y el editor de hotspots.
+2. Agregar al panel de administración el editor visual de hotspots.
 3. Añadir pruebas de integración de la API contra PostgreSQL.
 4. Acordar con la UTB la vía de integración y la fuente de contenido
    ([`docs/integracion-utb-app.md`](./integracion-utb-app.md)).

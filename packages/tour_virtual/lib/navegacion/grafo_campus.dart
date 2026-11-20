@@ -200,8 +200,9 @@ class GrafoCampus {
     Iterable<(String, double, TramoCampus?)> vecinos(String nodo) sync* {
       if (nodo == inicio) {
         // Del punto de entrada a los dos extremos de su tramo.
-        yield (entrada!.a, entrada.metros * mejor.fraccion, entrada);
-        yield (entrada.b, entrada.metros * (1 - mejor.fraccion), entrada);
+        final tramo = entrada!;
+        yield (tramo.a, tramo.metros * mejor.fraccion, tramo);
+        yield (tramo.b, tramo.metros * (1 - mejor.fraccion), tramo);
         return;
       }
       for (final t in _vecinos[nodo] ?? const <TramoCampus>[]) {

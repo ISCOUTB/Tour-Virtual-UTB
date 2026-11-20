@@ -142,6 +142,9 @@ class GrafoCampus {
   static const archivo =
       'packages/tour_virtual/assets/navegacion/grafo_campus.json';
 
+  /// Margen para comenzar a guiar cerca de la entrada del campus.
+  static const distanciaMaximaEntrada = 150.0;
+
   final String version;
 
   /// Declinación magnética del campus, en grados (positiva al este). La
@@ -181,7 +184,9 @@ class GrafoCampus {
         entrada = t;
       }
     }
-    if (entrada == null) return null;
+    // El grafo solo cubre el campus. Enganchar una posición de otra ciudad
+    // inventaba una ruta y provocaba recálculos continuos (RF-33).
+    if (entrada == null || mejor.metros > distanciaMaximaEntrada) return null;
 
     const inicio = '_inicio';
     double h(String nodo) {

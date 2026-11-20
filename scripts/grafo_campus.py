@@ -44,6 +44,7 @@ se escriben los recorridos grabados para revisarlos en geojson.io o JOSM.
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import math
 import statistics
@@ -99,10 +100,24 @@ def cargar_levantamientos(rutas: list[str]) -> dict[str, list]:
     accesos, nortes y recorridos)."""
     juntos: dict[str, list] = {k: [] for k in
                                ("accesos", "nortes", "tramos", "brujula", "pruebas", "recorridos")}
-    for ruta in rutas:
+    archivos = set()
+    for patron in rutas:
+        # PowerShell pasa los comodines literalmente a los programas nativos.
+        coincidencias = glob.glob(patron) if glob.has_magic(patron) else [patron]
+        if not coincidencias:
+            raise FileNotFoundError(f"No hay levantamientos que coincidan con {patron}")
+        archivos.update(Path(ruta).resolve() for ruta in coincidencias)
+    vistos = {k: set() for k in juntos}
+    for ruta in sorted(archivos):
         datos = json.loads(Path(ruta).read_text(encoding="utf-8"))
         for k in juntos:
-            juntos[k].extend(datos.get(k) or [])
+            # Cada exportación contiene también los días anteriores. No contar
+            # dos veces una medida presente en varias copias del mismo teléfono.
+            for registro in datos.get(k) or []:
+                identidad = json.dumps(registro, sort_keys=True, ensure_ascii=False)
+                if identidad not in vistos[k]:
+                    juntos[k].append(registro)
+                    vistos[k].add(identidad)
     for k in juntos:
         juntos[k].sort(key=lambda d: d.get("fecha", ""))
     return juntos
@@ -209,9 +224,9 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
             if n is None:
                 lineas.append(f"| ⬜ {nombre} | — | — | — | — | — |")
                 continue
-            geo = n.get("rumbo_geografico")
-            if geo is None:
-                geo = (n["rumbo_magnetico"] + declinacion) % 360
+            # Se conserva el magnético crudo para poder corregir después la
+            # declinación sin volver a medir las panorámicas.
+            geo = (n["rumbo_magnetico"] + declinacion) % 360
             yaw = n.get("yaw_objeto")
             norte = "falta el yaw" if yaw is None else f"{(yaw - geo) % 360:.1f}°"
             lineas.append(f"| {nombre} | {n.get('objeto', '')} | {n['rumbo_magnetico']:.1f}° | {geo:.1f}° | "
@@ -228,8 +243,8 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
         sesgo = statistics.fmean(errores)
         residuos = sorted(abs(e - sesgo) for e in errores)
         p95 = residuos[min(len(residuos) - 1, math.ceil(0.95 * len(residuos)) - 1)]
-        cumple = "cumple" if p95 <= ERROR_RUMBO_MAX else "NO cumple"
-        lineas += [f"- Comprobaciones: {len(errores)}",
+        cumple = "cumple" if len(errores) >= 8 and p95 <= ERROR_RUMBO_MAX else "NO cumple"
+        lineas += [f"- Comprobaciones: {len(errores)} (mínimo 8, en sitios distintos)",
                    f"- Sesgo medio: {sesgo:+.1f}° → declinación sugerida: {declinacion - sesgo:.1f}° "
                    f"(hoy {declinacion}°). Si el sesgo pasa de 3°, cambiar DECLINACION en este script.",
                    f"- Error tras corregir el sesgo: p95 {p95:.1f}°, máximo {residuos[-1]:.1f}° → RNF-27 **{cumple}**",
@@ -251,7 +266,9 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
             if llegada and puerta:
                 error = metros((llegada["lat"], llegada["lng"]), (puerta["lat"], puerta["lng"]))
                 error_txt = f"{error:.1f} m"
-                ok = error <= RADIO_LLEGADA_M and not malas
+                ok = (error <= RADIO_LLEGADA_M and not malas
+                      and llegada.get("precision", math.inf) <= RADIO_LLEGADA_M
+                      and puerta.get("precision", math.inf) <= PRECISION_ACEPTABLE_M)
             else:
                 error_txt = "—"
                 ok = False
@@ -259,7 +276,8 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
             lineas.append(f"| {p.get('destino', p.get('poi_id'))} | {p.get('metros_ruta', 0):.0f} m | {detectada} | "
                           f"{error_txt} | {recalculos} | {malas} | {'✅' if ok else '❌'} |")
         lineas += ["", f"Pasa si la app detecta la llegada a {RADIO_LLEGADA_M:.0f} m o menos de la puerta real "
-                   "y ninguna indicación se marcó como equivocada.", ""]
+                   "y ninguna indicación se marcó como equivocada. La precisión debe ser de 10 m o mejor "
+                   "en la llegada y de 5 m o mejor al marcar la puerta.", ""]
 
     # Tramos y recorridos
     lineas += ["## Tramos y recorridos", "",
@@ -506,4 +524,7 @@ if __name__ == "__main__":
     argumentos.add_argument("--informe", action="store_true", help="solo imprimir el estado del levantamiento")
     argumentos.add_argument("--geojson", help="con --informe, dónde escribir los recorridos grabados")
     a = argumentos.parse_args()
-    main(a.levantamientos, a.informe, a.geojson)
+    try:
+        main(a.levantamientos, a.informe, a.geojson)
+    except (FileNotFoundError, json.JSONDecodeError) as error:
+        argumentos.error(str(error))

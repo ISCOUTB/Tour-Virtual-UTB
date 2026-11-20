@@ -72,6 +72,28 @@ LecturaPosicion lectura(PuntoGeo p, {double precision = 5}) =>
     LecturaPosicion(punto: p, precision: precision);
 
 void main() {
+  test('elige un rumbo fiable sin orientar la flecha con una brújula mala', () {
+    const brujula = LecturaRumbo(grados: 90, inclinacion: 0);
+    const mala = LecturaRumbo(grados: 180, inclinacion: 0, descalibrada: true);
+    const caminando = LecturaPosicion(
+      punto: origen,
+      precision: 5,
+      velocidad: 1.2,
+      rumbo: 40,
+    );
+    expect(rumboNavegacion(caminando, brujula), 40);
+    expect(rumboNavegacion(caminando, mala), 40);
+    expect(rumboNavegacion(lectura(origen), brujula), 90);
+    expect(rumboNavegacion(lectura(origen), mala), isNull);
+    expect(rumboNavegacion(null, null), isNull);
+    const imprecisa = LecturaPosicion(
+      punto: origen,
+      precision: 80,
+      velocidad: 1.2,
+      rumbo: 40,
+    );
+    expect(rumboNavegacion(imprecisa, mala), isNull);
+  });
   group('geometría', () {
     test('distancia y rumbo', () {
       final norte = desplazar(origen, norte: 100);
@@ -120,6 +142,10 @@ void main() {
   });
 
   group('ruta con A*', () {
+    test('fuera del campus no inventa una ruta desde la casa', () {
+      final lejos = desplazar(origen, norte: 2000, este: 2000);
+      expect(grafoEnL().ruta(lejos, 9), isNull);
+    });
     test('toma el camino más corto y evita escaleras si se pide', () {
       final grafo = grafoEnL();
       final corta = grafo.ruta(origen, 9)!;

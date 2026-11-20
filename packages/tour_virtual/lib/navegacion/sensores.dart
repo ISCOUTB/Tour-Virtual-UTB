@@ -195,6 +195,21 @@ abstract class FuenteRumbo {
   Stream<LecturaRumbo> lecturas();
 }
 
+/// Al caminar, el GPS evita los errores de la brújula cerca del metal.
+/// Quieto, solo se usa una brújula calibrada; sin rumbo fiable no hay flecha.
+double? rumboNavegacion(LecturaPosicion? posicion, LecturaRumbo? brujula) {
+  final gps = posicion?.rumbo;
+  if (gps != null &&
+      gps.isFinite &&
+      gps >= 0 &&
+      (posicion?.velocidad ?? 0) > 0.6 &&
+      posicion!.precision <= 20) {
+    return normalizarGrados(gps);
+  }
+  if (brujula == null || brujula.descalibrada) return null;
+  return brujula.grados;
+}
+
 /// Rumbo calculado con el acelerómetro y el magnetómetro.
 ///
 /// Es la misma cuenta que `SensorManager.getRotationMatrix` de Android: con la

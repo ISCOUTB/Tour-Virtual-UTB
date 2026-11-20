@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tour_virtual/navegacion/geo.dart';
 import 'package:tour_virtual/navegacion/grafo_campus.dart';
+import 'package:tour_virtual/navegacion/pantalla_activa.dart';
 import 'package:tour_virtual/navegacion/seguimiento.dart';
 import 'package:tour_virtual/navegacion/sensores.dart';
 
@@ -65,7 +66,8 @@ const _tiposTramo = ['sendero', 'pasillo', 'rampa', 'escalera', 'via'];
 /// pantalla se apagó o el GPS se cortó: no vale.
 const _lecturasMinimas = 20;
 
-class _LevantamientoState extends State<_Levantamiento> {
+class _LevantamientoState extends State<_Levantamiento>
+    with WidgetsBindingObserver {
   static const _clave = 'levantamiento.datos';
 
   final _ubicacion = UbicacionGps();
@@ -78,6 +80,10 @@ class _LevantamientoState extends State<_Levantamiento> {
   LecturaPosicion? _posicion;
   LecturaRumbo? _rumbo;
   String? _error;
+  final _pantalla = PantallaActiva();
+  var _enPrimerPlano = true;
+  var _sesion = 0;
+  Future<void> _cancelacion = Future<void>.value();
 
   GrafoCampus? _grafo;
   Json _datos = normalizarDatos(null);
@@ -104,16 +110,50 @@ class _LevantamientoState extends State<_Levantamiento> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _cargar();
   }
 
   @override
   void dispose() {
-    _subPosicion?.cancel();
-    _subRumbo?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _pausarSensores();
     _reloj?.cancel();
+    if (_finMedida case final fin? when !fin.isCompleted) fin.complete(false);
     _medidor.dispose();
     super.dispose();
+  }
+
+  void _pausarSensores() {
+    _sesion++;
+    _cancelacion = Future.wait<void>([
+      _cancelacion,
+      if (_subPosicion != null) _subPosicion!.cancel(),
+      if (_subRumbo != null) _subRumbo!.cancel(),
+    ]).then((_) {});
+    _subPosicion = null;
+    _subRumbo = null;
+    _posicion = null;
+    _rumbo = null;
+    unawaited(_pantalla.cambiar(false));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    // Un diálogo de permisos causa `inactive`, sin salir de la app.
+    if (estado == AppLifecycleState.inactive) return;
+    final estabaActiva = _enPrimerPlano;
+    _enPrimerPlano = estado == AppLifecycleState.resumed;
+    if (!_enPrimerPlano) {
+      if (_midiendo != null) {
+        _terminarMedida(false);
+        _avisar('Medición interrumpida al salir de la app: repítela.');
+      }
+      if (_rastro != null) unawaited(_alternarRastro());
+      _pausarSensores();
+    } else if (!estabaActiva && _grafo != null) {
+      unawaited(_escuchar());
+    }
   }
 
   double get _declinacion => _grafo?.declinacion ?? 0;
@@ -151,8 +191,9 @@ class _LevantamientoState extends State<_Levantamiento> {
   }
 
   Future<void> _escuchar() async {
+    final sesion = ++_sesion;
     final permiso = await _ubicacion.pedirPermiso();
-    if (!mounted) return;
+    if (!mounted || !_enPrimerPlano || sesion != _sesion) return;
     if (permiso != PermisoUbicacion.concedido) {
       setState(() {
         _error = switch (permiso) {
@@ -167,14 +208,18 @@ class _LevantamientoState extends State<_Levantamiento> {
     }
     setState(() => _error = null);
     await _subPosicion?.cancel();
+    await _subRumbo?.cancel();
+    await _cancelacion;
+    if (!mounted || !_enPrimerPlano || sesion != _sesion) return;
+    unawaited(_pantalla.cambiar(true));
     _subPosicion = _ubicacion.lecturas().listen(
       _alLeerPosicion,
       onError: (Object e) {
         if (mounted) setState(() => _error = 'GPS: $e');
       },
     );
-    await _subRumbo?.cancel();
     _subRumbo = _brujula.lecturas().listen((r) {
+      if (!mounted || !_enPrimerPlano || sesion != _sesion) return;
       if (_midiendo != null) {
         _rumbos.add(r.grados);
         _inclinaciones.add(r.inclinacion);
@@ -192,7 +237,7 @@ class _LevantamientoState extends State<_Levantamiento> {
   }
 
   void _alLeerPosicion(LecturaPosicion l) {
-    if (!mounted) return;
+    if (!mounted || !_enPrimerPlano) return;
     if (_midiendo != null) _muestras.add(l);
     _rastro?.add({...posicionJson(l), 't': DateTime.now().toIso8601String()});
     final prueba = _prueba;
@@ -215,7 +260,8 @@ class _LevantamientoState extends State<_Levantamiento> {
   }
 
   Future<void> _agregar(String lista, Json registro) async {
-    setState(() => (_datos[lista] as List).add(registro));
+    (_datos[lista] as List).add(registro);
+    if (mounted) setState(() {});
     await _guardar();
   }
 
@@ -618,10 +664,10 @@ class _LevantamientoState extends State<_Levantamiento> {
     await _agregar('tramos', {
       'a': t.a,
       'b': t.b,
-      // El punto del tramo, no el de la persona: así el script lo encuentra
-      // aunque los identificadores de los nodos cambien.
-      'lat': cercano.punto.lat,
-      'lng': cercano.punto.lng,
+      // El centro del tramo evita confundir dos caminos cuando la persona
+      // está justo en su cruce; los identificadores pueden cambiar.
+      'lat': (_grafo!.nodos[t.a]!.lat + _grafo!.nodos[t.b]!.lat) / 2,
+      'lng': (_grafo!.nodos[t.a]!.lng + _grafo!.nodos[t.b]!.lng) / 2,
       'tipo': tipo,
       'escalones': escalones,
       'techado': techado,
@@ -1005,6 +1051,12 @@ class _LevantamientoState extends State<_Levantamiento> {
   Future<void> _enLaPuerta() async {
     final p = _posicion, prueba = _prueba;
     if (p == null || prueba == null) return;
+    if (p.precision > precisionAceptable) {
+      _avisar(
+        'Espera a tener precisión de ±5 m o mejor para marcar la puerta.',
+      );
+      return;
+    }
     prueba.marcarPuerta(p);
     setState(() => _prueba = null);
     await _agregar('pruebas', prueba.toJson());
@@ -1184,7 +1236,20 @@ class _LevantamientoState extends State<_Levantamiento> {
         .length;
     final nortes = (_datos['nortes'] as List).cast<Json>();
     final paradasConNorte = _paradas.keys
-        .where((id) => nortes.any((n) => n['poi_id'] == id))
+        .where(
+          (id) =>
+              nortes
+                  .where(
+                    (n) =>
+                        n['poi_id'] == id &&
+                        n['yaw_objeto'] is num &&
+                        n['descalibrada'] != true,
+                  )
+                  .map((n) => n['objeto'])
+                  .toSet()
+                  .length >=
+              2,
+        )
         .length;
     final pruebas = (_datos['pruebas'] as List).cast<Json>();
     final paradasProbadas = _paradas.keys

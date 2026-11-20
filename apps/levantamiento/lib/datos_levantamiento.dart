@@ -243,7 +243,7 @@ class ResumenBrujula {
   final double p95;
   final double maximo;
 
-  bool get cumple => p95 <= errorRumboMaximo;
+  bool get cumple => comprobaciones >= 8 && p95 <= errorRumboMaximo;
 }
 
 /// Igual que el informe de `scripts/grafo_campus.py`. Nulo con menos de dos.
@@ -387,9 +387,13 @@ class RegistroPrueba {
   }
 
   /// Pasa si la app detectó la llegada a 10 m o menos de la puerta real y
-  /// nadie marcó una indicación equivocada.
+  /// nadie marcó una indicación equivocada. La llegada requiere precisión
+  /// de 10 m o mejor y la referencia en la puerta, de 5 m o mejor.
   bool get paso =>
       (errorLlegada ?? double.infinity) <= radioLlegada &&
+      (llegadaApp?['precision'] as num? ?? double.infinity) <= radioLlegada &&
+      (puertaReal?['precision'] as num? ?? double.infinity) <=
+          precisionAceptable &&
       indicacionesMalas == 0;
 
   void _evento(String tipo, LecturaPosicion l, [Json extra = const {}]) {

@@ -34,6 +34,8 @@ dependencies:
   camera: ^0.12.0+2
   flutter_tts: ^4.2.5
   dchs_motion_sensors: 2.0.2
+  # 1.7 conserva compatibilidad con Flutter 3.41 y el GPS del módulo.
+  wakelock_plus: 1.7.0
 
 dev_dependencies:
   flutter_test:

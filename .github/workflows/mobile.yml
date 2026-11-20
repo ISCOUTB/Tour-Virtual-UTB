@@ -12,12 +12,16 @@ on:
       - 'packages/tour_virtual/**'
       - 'apps/mobile/**'
       - 'apps/levantamiento/**'
+      - 'scripts/grafo_campus.py'
+      - 'scripts/test_grafo_campus.py'
       - '.github/workflows/mobile.yml'
   pull_request:
     paths:
       - 'packages/tour_virtual/**'
       - 'apps/mobile/**'
       - 'apps/levantamiento/**'
+      - 'scripts/grafo_campus.py'
+      - 'scripts/test_grafo_campus.py'
       - '.github/workflows/mobile.yml'
 
 # El token de GitHub de estos jobs solo necesita leer el código.
@@ -31,6 +35,16 @@ permissions:
 # Se sube cuando se sepa que version usa la UTB APP.
 
 jobs:
+  grafo:
+    name: Importar datos de campo (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -I -m unittest discover -s scripts -p test_grafo_campus.py -v
+
   modulo:
     name: Modulo (formato, codigo generado y analisis)
     runs-on: ubuntu-latest
@@ -126,12 +140,15 @@ jobs:
         run: flutter test
 
   compilar-android:
-    name: APK de debug
+    name: APK de debug (${{ matrix.app }})
     runs-on: ubuntu-latest
-    needs: app
+    needs: [app, levantamiento]
+    strategy:
+      matrix:
+        app: [mobile, levantamiento]
     defaults:
       run:
-        working-directory: apps/mobile
+        working-directory: apps/${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
 
@@ -151,6 +168,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          name: ${{ matrix.app }}-debug-apk
+          path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7

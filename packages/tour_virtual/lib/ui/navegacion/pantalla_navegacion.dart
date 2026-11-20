@@ -13,6 +13,7 @@ import '../../datos/proveedores.dart';
 import '../../l10n/textos.dart';
 import '../../navegacion/geo.dart';
 import '../../navegacion/grafo_campus.dart';
+import '../../navegacion/pantalla_activa.dart';
 import '../../navegacion/seguimiento.dart';
 import '../../navegacion/sensores.dart';
 import '../../navegacion/voz_guia.dart';
@@ -111,13 +112,17 @@ class _Guia extends ConsumerStatefulWidget {
   ConsumerState<_Guia> createState() => _GuiaState();
 }
 
-class _GuiaState extends ConsumerState<_Guia> {
+class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
   var _fase = _Fase.intro;
   PermisoUbicacion? _permiso;
   var _vista = _Vista.plano;
   var _sinEscaleras = false;
   var _camaraFallo = false;
   var _recalculando = false;
+  var _enPrimerPlano = true;
+  var _sesion = 0;
+  final _pantalla = PantallaActiva();
+  Future<void> _cancelacion = Future<void>.value();
 
   // Se leen una vez al montar: en dispose ya no se puede usar ref.
   late final FuenteUbicacion _ubicacion;
@@ -133,6 +138,7 @@ class _GuiaState extends ConsumerState<_Guia> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _ubicacion = ref.read(fuenteUbicacionProvider);
     _fuenteRumbo = ref.read(fuenteRumboProvider(widget.grafo.declinacion));
     _voz = ref.read(vozGuiaProvider);
@@ -140,10 +146,34 @@ class _GuiaState extends ConsumerState<_Guia> {
 
   @override
   void dispose() {
-    _subPosicion?.cancel();
-    _subRumbo?.cancel();
-    _voz.callar();
+    WidgetsBinding.instance.removeObserver(this);
+    _pausar();
     super.dispose();
+  }
+
+  void _pausar({bool callar = true}) {
+    _sesion++;
+    _cancelacion = Future.wait<void>([
+      _cancelacion,
+      if (_subPosicion != null) _subPosicion!.cancel(),
+      if (_subRumbo != null) _subRumbo!.cancel(),
+    ]).then((_) {});
+    _subPosicion = null;
+    _subRumbo = null;
+    _rumbo = null;
+    if (callar) unawaited(_voz.callar());
+    unawaited(_pantalla.cambiar(false));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    _enPrimerPlano = estado == AppLifecycleState.resumed;
+    if (!_enPrimerPlano) {
+      _pausar();
+    } else if (_fase == _Fase.guiando) {
+      _anunciada = null;
+      unawaited(_escuchar());
+    }
   }
 
   Future<void> _empezar() async {
@@ -162,27 +192,43 @@ class _GuiaState extends ConsumerState<_Guia> {
     }
   }
 
-  void _escuchar() {
-    _subPosicion?.cancel();
+  Future<void> _escuchar() async {
+    final sesion = ++_sesion;
+    await _cancelacion;
+    if (!mounted || !_enPrimerPlano || sesion != _sesion) return;
+    unawaited(_pantalla.cambiar(true));
     _subPosicion = _ubicacion.lecturas().listen(
-      _alLeer,
+      (lectura) {
+        if (sesion == _sesion) _alLeer(lectura);
+      },
       onError: (Object error) {
+        if (sesion != _sesion) return;
         debugPrint('GPS: $error');
-        if (mounted) setState(() => _fase = _Fase.gpsApagado);
+        if (mounted) {
+          _pausar();
+          setState(() => _fase = _Fase.gpsApagado);
+        }
       },
     );
-    _subRumbo?.cancel();
-    _subRumbo = _fuenteRumbo.lecturas().listen((r) {
-      final antes = _rumbo;
-      // Repintar con cada lectura del sensor (20 Hz) es gastar batería: solo
-      // si cambió algo que se vea.
-      if (antes == null ||
-          diferenciaAngular(antes.grados, r.grados).abs() > 1 ||
-          (antes.inclinacion - r.inclinacion).abs() > 2 ||
-          antes.descalibrada != r.descalibrada) {
-        if (mounted) setState(() => _rumbo = r);
-      }
-    }, onError: (Object error) => debugPrint('Brújula: $error'));
+    _subRumbo = _fuenteRumbo.lecturas().listen(
+      (r) {
+        if (!mounted || !_enPrimerPlano || sesion != _sesion) return;
+        final antes = _rumbo;
+        // Repintar con cada lectura del sensor (20 Hz) es gastar batería: solo
+        // si cambió algo que se vea.
+        if (antes == null ||
+            diferenciaAngular(antes.grados, r.grados).abs() > 1 ||
+            (antes.inclinacion - r.inclinacion).abs() > 2 ||
+            antes.descalibrada != r.descalibrada) {
+          if (mounted) setState(() => _rumbo = r);
+        }
+      },
+      onError: (Object error) {
+        if (sesion != _sesion) return;
+        debugPrint('Brújula: $error');
+        if (mounted) setState(() => _rumbo = null);
+      },
+    );
   }
 
   bool _calcular(PuntoGeo desde) {
@@ -192,6 +238,7 @@ class _GuiaState extends ConsumerState<_Guia> {
       sinEscaleras: _sinEscaleras,
     );
     if (ruta == null) {
+      _pausar();
       setState(() => _fase = _Fase.sinRuta);
       return false;
     }
@@ -204,7 +251,7 @@ class _GuiaState extends ConsumerState<_Guia> {
   }
 
   void _alLeer(LecturaPosicion lectura) {
-    if (!mounted || _fase == _Fase.llegada) return;
+    if (!mounted || !_enPrimerPlano || _fase != _Fase.guiando) return;
     if (_seguimiento == null && !_calcular(lectura.punto)) return;
     final seguimiento = _seguimiento!..actualizar(lectura);
 
@@ -219,6 +266,7 @@ class _GuiaState extends ConsumerState<_Guia> {
 
     final actual = _seguimiento!;
     if (actual.estado == EstadoSeguimiento.llegada) {
+      _pausar(callar: false);
       HapticFeedback.heavyImpact();
       _anunciar(Textos.of(context).navLlegaste(widget.poi.nombre));
       setState(() => _fase = _Fase.llegada);
@@ -426,9 +474,10 @@ class _GuiaState extends ConsumerState<_Guia> {
           );
 
     final rumboAlObjetivo = seguimiento?.rumboAlObjetivo;
-    final giro = (rumboAlObjetivo == null || _rumbo == null)
+    final rumbo = rumboNavegacion(lectura, _rumbo);
+    final giro = (rumboAlObjetivo == null || rumbo == null)
         ? null
-        : diferenciaAngular(_rumbo!.grados, rumboAlObjetivo);
+        : diferenciaAngular(rumbo, rumboAlObjetivo);
 
     final avisos = <(IconData, String)>[
       if (_ubicacion.simulada) (Icons.science_outlined, txt.navSimulada),
@@ -468,7 +517,7 @@ class _GuiaState extends ConsumerState<_Guia> {
               widget.grafo.accesosDe(widget.poi.id).first.punto,
           posicion: lectura?.punto,
           precision: lectura?.precision,
-          rumbo: _rumbo?.grados ?? lectura?.rumbo,
+          rumbo: rumbo,
         ),
       ),
     };

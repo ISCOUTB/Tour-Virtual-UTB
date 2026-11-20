@@ -1,6 +1,6 @@
 # Realidad aumentada: lo que falta para terminarla
 
-Estado al 19 de noviembre de 2026: **trabajo en desarrollo; falta terminarlo**.
+Estado al 20 de noviembre de 2026: **trabajo en desarrollo; falta validarlo en campo**.
 La rama `frontend/realidad-aumentada-pendiente` conserva el avance para
 retomarlo. El alcance y los criterios de aceptación están en
 [el plan de realidad aumentada](plan-realidad-aumentada.md).
@@ -55,10 +55,10 @@ Lo que hay que confirmar y cómo se sabe que quedó bien:
 - **Teléfonos:** al menos dos Android con GPS y brújula. Con las dos apps
   instaladas: la del tour (`apps/mobile`) y la de levantamiento. En la de
   levantamiento, pestaña **Datos**, escribir **Quién mide**.
-- **Ajustes del teléfono:** ubicación en alta precisión; **tiempo de espera
-  de la pantalla en 2 min o más** (si la pantalla se apaga durante una medida
-  de 60 s, el GPS se corta y la app la rechaza); batería cargada y una batería
-  externa.
+- **Ajustes del teléfono:** ubicación en alta precisión; batería cargada y
+  una batería externa. La app mantiene la pantalla encendida mientras mide.
+  Si se cambia de app o se bloquea el teléfono, cancela la medida de 60 s:
+  hay que repetirla completa al volver.
 - **Brújula:** calibrarla al llegar (mover el teléfono en forma de 8) y cada
   vez que la app diga «calibra en 8».
 - **Yaw de los objetos:** antes de ir, abrir cada panorámica en el visor 360 y
@@ -182,24 +182,21 @@ del levantamiento.
 
 ### App del tour (`packages/tour_virtual`)
 
-1. **Fuera del campus.** `GrafoCampus.ruta` engancha la posición al tramo más
-   cercano, esté donde esté. Desde la casa de alguien calcula una ruta, sale
-   «fuera de ruta» y recalcula sin parar. Falta un estado «estás fuera del
-   campus» (por ejemplo, a más de 150 m del grafo) que ofrezca el mapa o el
-   360, como pide RF-33.
-2. **La pantalla se apaga durante la guía.** No hay nada que la mantenga
-   encendida mientras se guía; con el tiempo de espera normal (30 s) se apaga
-   a mitad de camino. Falta mantenerla encendida solo en la guía (un paquete
-   tipo `wakelock_plus`, verificando versión y licencia).
-3. **La flecha usa solo la brújula.** El plan dice que cuando la persona
-   camina se use el rumbo del GPS, que no se descalibra con el metal. Hoy el
-   plano lo usa solo si no hay brújula, y la flecha sobre la cámara nunca: con
-   la brújula descalibrada la flecha apunta mal. **(campo:** la pestaña Brújula
-   dice cuánto pasa.**)**
-4. **Ciclo de vida de la guía.** La cámara se libera al salir de la app, pero
-   el GPS y la voz no se pausan ni se reanudan explícitamente. Revisar con la
-   lista de la parte 2 y, si hace falta, pausar al ir al fondo y retomar la
-   ruta al volver.
+1. **Fuera del campus (corregido en PR #30).** A más de 150 m del grafo no
+   se inventa una ruta: se ofrece la salida al 360 y se detienen los sensores.
+   Confirmar el margen en campo.
+2. **Pantalla encendida (corregido en PR #30).** La guía y la app de campo
+   usan `wakelock_plus` 1.7.0 (BSD-3-Clause, compatible con Flutter 3.41).
+   Liberan la pantalla al salir o pasar al fondo; la guía también al llegar.
+3. **Rumbo fiable (corregido en PR #30).** Plano y flecha usan el GPS al
+   caminar con buena precisión. Quieto, usan la brújula calibrada. Si falla
+   la brújula y no hay rumbo GPS fiable, no se dibuja una dirección inventada.
+   Confirmar el comportamiento con metal cerca en campo.
+4. **Ciclo de vida (corregido en PR #30).** GPS, brújula y voz se pausan al
+   ir al fondo; la guía retoma su ruta al volver. La app de campo cancela una
+   medición interrumpida y guarda el recorrido en curso. Sigue pendiente
+   comprobar en teléfonos reales la lista de la parte 2. Las aperturas y
+   cierres de cámara se serializan, incluso si se sale mientras se inicializa.
 5. **Analítica de la guía.** RN-10 permite registrar «llegó a la parada N»
    sin coordenadas, y sirve para la métrica de uso de la realidad aumentada.
    Hoy no se registra nada de la guía.
@@ -257,6 +254,19 @@ Los puntos 8 a 13 son trabajo del backend, del panel y del aviso legal; se
 coordinan con quien lleve cada parte.
 
 ## Comprobación de este avance
+
+La revisión del PR #30 añade regresiones de importación con comodines en
+PowerShell, exportaciones acumuladas sin medidas duplicadas, norte recalculado
+con la declinación vigente, mínimo de 8 comprobaciones de brújula, precisión
+de la puerta, GPS fuera del campus, selección del rumbo y pausa/reanudación.
+CI compila los APK de ambas apps y ejecuta también:
+
+```sh
+python -I -m unittest discover -s scripts -p test_grafo_campus.py -v
+```
+
+Verificación local de la revisión: análisis sin errores, 154 pruebas del tour
+aprobadas (8 de integración remota omitidas), 19 de levantamiento y 6 del script.
 
 Desde `apps/mobile`, pasaron las 43 pruebas de:
 

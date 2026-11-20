@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +12,7 @@ import 'package:tour_virtual/datos/subtitulos.dart';
 import 'package:tour_virtual/datos/analitica.dart';
 import 'package:tour_virtual/l10n/textos.dart';
 import 'package:tour_virtual/navegacion/seguimiento.dart';
+import 'package:tour_virtual/navegacion/geo.dart';
 import 'package:tour_virtual/navegacion/sensores.dart';
 import 'package:tour_virtual/navegacion/voz_guia.dart';
 import 'package:tour_virtual/nucleo/errores.dart';
@@ -58,6 +61,16 @@ class UbicacionSinPermiso extends FuenteUbicacion {
   Stream<LecturaPosicion> lecturas() => const Stream.empty();
 }
 
+class UbicacionControlada extends FuenteUbicacion {
+  final cambios = StreamController<LecturaPosicion>.broadcast();
+  @override
+  bool get simulada => false;
+  @override
+  Future<PermisoUbicacion> pedirPermiso() async => PermisoUbicacion.concedido;
+  @override
+  Stream<LecturaPosicion> lecturas() => cambios.stream;
+}
+
 Future<void> montar(
   WidgetTester tester, {
   required FuenteUbicacion ubicacion,
@@ -93,6 +106,60 @@ Future<void> montar(
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('pausa el GPS al ir al fondo y retoma al volver', (tester) async {
+    final ubicacion = UbicacionControlada();
+    await montar(tester, ubicacion: ubicacion, voz: VozMuda());
+    await tester.tap(find.text('Permitir ubicación'));
+    await tester.pump();
+    expect(ubicacion.cambios.hasListener, isTrue);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    // El cierre de un stream async* (RumboSimulado) termina en el event loop.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+    await tester.pump();
+    expect(ubicacion.cambios.hasListener, isFalse);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(ubicacion.cambios.hasListener, isTrue);
+    ubicacion.cambios.add(
+      const LecturaPosicion(
+        punto: UbicacionSimulada.puntoDePartida,
+        precision: 5,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('Faltan'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    expect(ubicacion.cambios.hasListener, isFalse);
+    await ubicacion.cambios.close();
+  });
+
+  testWidgets('fuera del campus ofrece el 360 y deja de recalcular', (
+    tester,
+  ) async {
+    final ubicacion = UbicacionControlada();
+    final voz = VozMuda();
+    await montar(tester, ubicacion: ubicacion, voz: voz);
+    await tester.tap(find.text('Permitir ubicación'));
+    await tester.pump();
+    ubicacion.cambios.add(
+      const LecturaPosicion(punto: PuntoGeo(4.711, -74.0721), precision: 5),
+    );
+    await tester.pump();
+    expect(find.text('Ver en 360°'), findsOneWidget);
+    expect(ubicacion.cambios.hasListener, isFalse);
+    expect(voz.dichos, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await ubicacion.cambios.close();
+  });
 
   testWidgets('pide la ubicación explicando para qué, guía y llega', (
     WidgetTester tester,

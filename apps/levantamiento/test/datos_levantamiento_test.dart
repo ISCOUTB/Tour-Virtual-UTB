@@ -122,6 +122,9 @@ void main() {
   });
 
   group('brújula', () {
+    test('dos comprobaciones no bastan para cumplir RNF-27', () {
+      expect(resumirBrujula([1, 1])!.cumple, isFalse);
+    });
     test('la media circular de 359° y 1° es 0°', () {
       expect(
         diferenciaAngular(0, mediaCircular([359, 1])).abs(),
@@ -169,6 +172,16 @@ void main() {
     const n0 = PuntoGeo(10.3700, -75.4650);
     const n1 = PuntoGeo(10.3705, -75.4650);
     const n2 = PuntoGeo(10.3705, -75.4645);
+
+    test('una puerta con GPS impreciso no aprueba la prueba', () {
+      final prueba = RegistroPrueba.iniciar(_grafoL(), 1, _en(n0.lat, n0.lng))!;
+      for (final l in [..._caminar(n0, n1), ..._caminar(n1, n2)]) {
+        prueba.lectura(l);
+      }
+      prueba.marcarPuerta(_en(n2.lat, n2.lng, precision: 30));
+      expect(prueba.errorLlegada, lessThanOrEqualTo(radioLlegada));
+      expect(prueba.paso, isFalse);
+    });
 
     test('caminando la ruta da la llegada y la prueba pasa', () {
       final grafo = _grafoL();

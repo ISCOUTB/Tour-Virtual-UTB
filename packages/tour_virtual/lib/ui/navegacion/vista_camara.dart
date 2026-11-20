@@ -39,18 +39,21 @@ class VistaCamara extends StatefulWidget {
 class _VistaCamaraState extends State<VistaCamara> with WidgetsBindingObserver {
   CameraController? _control;
   var _fallo = false;
+  var _activa = true;
+  var _sesion = 0;
+  Future<void> _transicion = Future<void>.value();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _abrir();
+    _programarApertura();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _control?.dispose();
+    _cerrar();
     super.dispose();
   }
 
@@ -58,39 +61,63 @@ class _VistaCamaraState extends State<VistaCamara> with WidgetsBindingObserver {
   /// no, Android la deja tomada y otra app no la puede usar.
   @override
   void didChangeAppLifecycleState(AppLifecycleState estado) {
-    final control = _control;
-    if (estado == AppLifecycleState.inactive && control != null) {
-      _control = null;
-      control.dispose();
+    _activa = estado == AppLifecycleState.resumed;
+    if (!_activa) {
+      _cerrar();
       if (mounted) setState(() {});
-    } else if (estado == AppLifecycleState.resumed && _control == null) {
-      _abrir();
+    } else {
+      _programarApertura();
     }
   }
 
-  Future<void> _abrir() async {
+  void _programarApertura() {
+    final sesion = ++_sesion;
+    // No abrir dos cámaras si la app vuelve antes de terminar initialize().
+    _transicion = _transicion.then((_) => _abrir(sesion));
+  }
+
+  void _cerrar() {
+    _sesion++;
+    final control = _control;
+    _control = null;
+    _transicion = _transicion.then((_) => _liberar(control));
+  }
+
+  Future<void> _liberar(CameraController? control) async {
+    try {
+      await control?.dispose();
+    } catch (error) {
+      debugPrint('No se pudo liberar la cámara: $error');
+    }
+  }
+
+  Future<void> _abrir(int sesion) async {
+    if (!mounted || !_activa || sesion != _sesion) return;
+    CameraController? control;
     try {
       final camaras = await availableCameras();
+      if (!mounted || !_activa || sesion != _sesion) return;
       final trasera = camaras
           .where((c) => c.lensDirection == CameraLensDirection.back)
           .firstOrNull;
       if (trasera == null) throw StateError('sin cámara trasera');
       // Media resolución: es para orientarse, no para fotografiar, y la gama
       // baja tiene que mantener 24 fps con la flecha encima.
-      final control = CameraController(
+      control = CameraController(
         trasera,
         ResolutionPreset.medium,
         enableAudio: false,
       );
       await control.initialize();
-      if (!mounted) {
-        await control.dispose();
+      if (!mounted || !_activa || sesion != _sesion) {
+        await _liberar(control);
         return;
       }
       setState(() => _control = control);
     } catch (error) {
+      await _liberar(control);
       debugPrint('Cámara no disponible: $error');
-      if (!mounted) return;
+      if (!mounted || !_activa || sesion != _sesion) return;
       setState(() => _fallo = true);
       widget.alFallar();
     }

@@ -122,6 +122,18 @@ void main() {
   });
 
   group('brújula', () {
+    test('recalibrar no vuelve a restar el sesgo anterior', () {
+      final medidas = <Json>[
+        {
+          'rumbo_tramo': 85,
+          'rumbo_magnetico': 90,
+          'declinacion': -7.7,
+          'error': -2.7,
+        },
+      ];
+      expect(erroresDeBrujula(medidas, -7.7).single, closeTo(-2.7, 1e-9));
+      expect(erroresDeBrujula(medidas, -5).single, closeTo(0, 1e-9));
+    });
     test('dos comprobaciones no bastan para cumplir RNF-27', () {
       expect(resumirBrujula([1, 1])!.cumple, isFalse);
     });

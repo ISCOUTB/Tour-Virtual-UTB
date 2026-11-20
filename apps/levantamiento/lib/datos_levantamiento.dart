@@ -246,6 +246,23 @@ class ResumenBrujula {
   bool get cumple => comprobaciones >= 8 && p95 <= errorRumboMaximo;
 }
 
+/// Las comprobaciones viejas conservan el magnético crudo: después de
+/// corregir la declinación hay que reevaluarlas con el nuevo valor.
+List<double> erroresDeBrujula(Iterable<Json> medidas, double declinacion) => [
+  for (final m in medidas)
+    if (m['rumbo_tramo'] is num && m['rumbo_magnetico'] is num)
+      errorBrujula(
+        (m['rumbo_tramo'] as num).toDouble(),
+        normalizarGrados(
+          (m['rumbo_magnetico'] as num).toDouble() + declinacion,
+        ),
+      )
+    else
+      (m['error'] as num).toDouble() +
+          declinacion -
+          (m['declinacion'] as num? ?? declinacion),
+];
+
 /// Igual que el informe de `scripts/grafo_campus.py`. Nulo con menos de dos.
 ResumenBrujula? resumirBrujula(List<double> errores) {
   if (errores.length < 2) return null;

@@ -936,10 +936,10 @@ class _LevantamientoState extends State<_Levantamiento>
         ? null
         : tramoCercano(grafo, p.punto);
     final ahora = _rumboGeografico;
-    final errores = [
-      for (final b in (_datos['brujula'] as List).cast<Json>())
-        (b['error'] as num).toDouble(),
-    ];
+    final errores = erroresDeBrujula(
+      (_datos['brujula'] as List).cast<Json>(),
+      _declinacion,
+    );
     final resumen = resumirBrujula(errores);
     final String? impide;
     if (cercano == null || p == null) {

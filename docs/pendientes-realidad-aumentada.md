@@ -266,7 +266,7 @@ python -I -m unittest discover -s scripts -p test_grafo_campus.py -v
 ```
 
 Verificación local de la revisión: análisis sin errores, 154 pruebas del tour
-aprobadas (8 de integración remota omitidas), 19 de levantamiento y 6 del script.
+aprobadas (8 de integración remota omitidas), 20 de levantamiento y 7 del script.
 
 Desde `apps/mobile`, pasaron las 43 pruebas de:
 

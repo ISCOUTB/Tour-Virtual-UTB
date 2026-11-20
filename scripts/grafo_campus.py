@@ -185,6 +185,20 @@ def _diferencia(desde: float, hacia: float) -> float:
     return d - 360 if d > 180 else d
 
 
+def errores_brujula(medidas: list[dict], declinacion: float) -> list[float]:
+    """Evaluar siempre con la declinación vigente, sin corregir dos veces."""
+    errores = []
+    for m in medidas:
+        if "rumbo_tramo" in m and "rumbo_magnetico" in m:
+            rumbo = (m["rumbo_magnetico"] + declinacion) % 360
+            ida = _diferencia(m["rumbo_tramo"], rumbo)
+            vuelta = _diferencia((m["rumbo_tramo"] + 180) % 360, rumbo)
+            errores.append(ida if abs(ida) <= abs(vuelta) else vuelta)
+        else:
+            errores.append(m["error"] + declinacion - m.get("declinacion", declinacion))
+    return errores
+
+
 def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[dict],
             declinacion: float) -> str:
     """El estado del levantamiento, en Markdown, para pegarlo en el chat del
@@ -236,7 +250,7 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
 
     # Brújula
     lineas += ["## Brújula (RNF-27: 10° como máximo)", ""]
-    errores = [b["error"] for b in datos["brujula"]]
+    errores = errores_brujula(datos["brujula"], declinacion)
     if len(errores) < 2:
         lineas += [f"{len(errores)} comprobaciones: hacen falta al menos 8, en sitios distintos.", ""]
     else:

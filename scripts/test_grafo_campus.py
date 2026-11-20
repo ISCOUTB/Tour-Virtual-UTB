@@ -43,6 +43,12 @@ class ImportacionTest(unittest.TestCase):
         datos["brujula"] = [{"error": 1}, {"error": 1}]
         self.assertIn("RNF-27 **NO cumple**", grafo.informe(datos, [], [], -7.7))
 
+    def test_recalibrar_no_vuelve_a_restar_el_sesgo_anterior(self):
+        medida = {"rumbo_tramo": 85, "rumbo_magnetico": 90,
+                  "declinacion": -7.7, "error": -2.7}
+        self.assertAlmostEqual(grafo.errores_brujula([medida], -7.7)[0], -2.7)
+        self.assertAlmostEqual(grafo.errores_brujula([medida], -5)[0], 0)
+
     def test_una_puerta_con_gps_impreciso_no_aprueba_la_guia(self):
         datos = grafo.cargar_levantamientos([])
         punto = {"lat": 10.37, "lng": -75.465, "precision": 3}

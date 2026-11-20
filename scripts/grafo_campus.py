@@ -18,17 +18,35 @@ y escribe `packages/tour_virtual/assets/navegacion/grafo_campus.json`:
 
 Es una base de datos derivada de OSM: va bajo ODbL, como el plano.
 
-Uso:  python -I scripts/grafo_campus.py [levantamiento.json ...]
+Uso:
+    python -I scripts/grafo_campus.py [levantamiento.json ...]
+    python -I scripts/grafo_campus.py --informe [--geojson recorridos.geojson] levantamiento.json ...
 
-Cada levantamiento (exportado por la herramienta de la app) reemplaza los
-accesos estimados del lugar que mide por los medidos.
+Los levantamientos son los JSON que exporta la app de levantamiento
+(`apps/levantamiento`). Se pueden pasar varios (un archivo por teléfono o por
+día): se juntan. Con ellos:
+
+- **Entradas:** una entrada medida reemplaza a la estimada con el mismo
+  nombre; una con nombre nuevo se agrega. Queda `verificado: true` solo si
+  pasa el criterio del plan (dos medidas en días distintos, a 5 m o menos
+  entre sí, cada una con precisión de 5 m o mejor). Si no lo pasa pero hay
+  medidas, se usan con `verificado: false`: siguen siendo mejores que el
+  centro del edificio.
+- **Tramos:** cada tramo marcado en el campus cambia el tipo, los escalones y
+  el techado del tramo de OSM más cercano (a 8 m o menos).
+
+Con `--informe` no se escribe el grafo: se imprime en Markdown el estado del
+levantamiento (entradas aceptadas y pendientes, norte de las panorámicas,
+error de la brújula frente a RNF-27, pruebas de la guía) y, con `--geojson`,
+se escriben los recorridos grabados para revisarlos en geojson.io o JOSM.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
-import sys
+import statistics
 from datetime import date
 from pathlib import Path
 
@@ -61,7 +79,213 @@ def clave(lat: float, lng: float) -> tuple[int, int]:
     return round(lat * 1e7), round(lng * 1e7)
 
 
-def main(levantamientos: list[str]) -> None:
+# Criterio de aceptación de una entrada (docs/plan-realidad-aumentada.md, fase 0).
+PRECISION_ACEPTABLE_M = 5.0
+TOLERANCIA_ENTRE_DIAS_M = 5.0
+# Una medida con peor precisión no se usa ni siquiera como provisional.
+PRECISION_PROVISIONAL_M = 15.0
+# Un tramo marcado se aplica al tramo de OSM más cercano solo dentro de esto.
+RADIO_MARCA_TRAMO_M = 8.0
+# RNF-27: error de orientación de 10° como máximo.
+ERROR_RUMBO_MAX = 10.0
+# AD-03: radio de llegada.
+RADIO_LLEGADA_M = 10.0
+
+TIPOS_TRAMO = {"sendero", "via", "escalera", "rampa", "pasillo", "acceso"}
+
+
+def cargar_levantamientos(rutas: list[str]) -> dict[str, list]:
+    """Junta varios JSON de la app. Acepta también el formato 1 (solo
+    accesos, nortes y recorridos)."""
+    juntos: dict[str, list] = {k: [] for k in
+                               ("accesos", "nortes", "tramos", "brujula", "pruebas", "recorridos")}
+    for ruta in rutas:
+        datos = json.loads(Path(ruta).read_text(encoding="utf-8"))
+        for k in juntos:
+            juntos[k].extend(datos.get(k) or [])
+    for k in juntos:
+        juntos[k].sort(key=lambda d: d.get("fecha", ""))
+    return juntos
+
+
+def _promedio(medidas: list[dict]) -> tuple[float, float, float]:
+    """Promedio ponderado por 1/precisión²: las lecturas buenas pesan más."""
+    pesos = [1 / max(m["precision"], 0.5) ** 2 for m in medidas]
+    total = sum(pesos)
+    lat = sum(m["lat"] * w for m, w in zip(medidas, pesos)) / total
+    lng = sum(m["lng"] * w for m, w in zip(medidas, pesos)) / total
+    return lat, lng, statistics.fmean(m["precision"] for m in medidas)
+
+
+def evaluar_acceso(medidas: list[dict]) -> dict:
+    """Decide si las medidas de una entrada pasan el criterio de la fase 0.
+
+    Devuelve `estado` ('aceptado', 'sin_confirmar' o 'sin_medidas_utiles'),
+    el punto a usar, la precisión media, la distancia entre las dos mejores
+    medidas de días distintos y un `motivo` legible. La app aplica la misma
+    regla para mostrar el estado en el campus (datos_levantamiento.dart).
+    """
+    buenas = [m for m in medidas if m["precision"] <= PRECISION_ACEPTABLE_M]
+    mejor_par = None
+    for i, a in enumerate(buenas):
+        for b in buenas[i + 1:]:
+            if a["fecha"][:10] == b["fecha"][:10]:
+                continue
+            d = metros((a["lat"], a["lng"]), (b["lat"], b["lng"]))
+            if mejor_par is None or d < mejor_par[0]:
+                mejor_par = (d, a, b)
+    dias = len({m["fecha"][:10] for m in buenas})
+    if mejor_par and mejor_par[0] <= TOLERANCIA_ENTRE_DIAS_M:
+        d, a, b = mejor_par
+        centro = ((a["lat"] + b["lat"]) / 2, (a["lng"] + b["lng"]) / 2)
+        grupo = [m for m in buenas if metros(centro, (m["lat"], m["lng"])) <= TOLERANCIA_ENTRE_DIAS_M]
+        lat, lng, prec = _promedio(grupo)
+        return {"estado": "aceptado", "lat": lat, "lng": lng, "precision": prec,
+                "entre_dias_m": d, "motivo": f"{len(grupo)} medidas en {dias} días, a {d:.1f} m"}
+    if mejor_par:
+        motivo = f"las medidas de días distintos quedan a {mejor_par[0]:.1f} m (máx. 5): medir otra vez"
+    elif buenas:
+        motivo = "falta una medida en otro día"
+    elif medidas:
+        peor = min(m["precision"] for m in medidas)
+        motivo = f"ninguna medida con precisión de 5 m o mejor (la mejor: ±{peor:.1f} m)"
+    else:
+        motivo = "sin medir"
+    usables = buenas or [m for m in medidas if m["precision"] <= PRECISION_PROVISIONAL_M]
+    if not usables:
+        return {"estado": "sin_medidas_utiles", "motivo": motivo}
+    lat, lng, prec = _promedio(usables)
+    return {"estado": "sin_confirmar", "lat": lat, "lng": lng, "precision": prec,
+            "entre_dias_m": mejor_par[0] if mejor_par else None, "motivo": motivo}
+
+
+def _media_circular(grados: list[float]) -> float:
+    x = sum(math.cos(math.radians(g)) for g in grados)
+    y = sum(math.sin(math.radians(g)) for g in grados)
+    return math.degrees(math.atan2(y, x)) % 360
+
+
+def _diferencia(desde: float, hacia: float) -> float:
+    d = (hacia - desde) % 360
+    return d - 360 if d > 180 else d
+
+
+def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[dict],
+            declinacion: float) -> str:
+    """El estado del levantamiento, en Markdown, para pegarlo en el chat del
+    equipo o en docs/."""
+    lineas = ["# Informe del levantamiento", ""]
+
+    # Entradas
+    por_nombre: dict[tuple[int, str], list[dict]] = {}
+    for m in datos["accesos"]:
+        por_nombre.setdefault((int(m["poi_id"]), m.get("nombre") or ""), []).append(m)
+    esperadas = [(a["poi_id"], a["nombre"]) for a in accesos_grafo]
+    nuevas = [k for k in por_nombre if k not in esperadas]
+    aceptadas = 0
+    filas = []
+    for clave_acceso in esperadas + nuevas:
+        r = evaluar_acceso(por_nombre.get(clave_acceso, []))
+        aceptadas += r["estado"] == "aceptado"
+        marca = {"aceptado": "✅", "sin_confirmar": "🟡", "sin_medidas_utiles": "❌"}[r["estado"]]
+        if not por_nombre.get(clave_acceso):
+            marca = "⬜"
+        nueva = " (nueva)" if clave_acceso in nuevas else ""
+        filas.append(f"| {marca} | {clave_acceso[1]}{nueva} | {len(por_nombre.get(clave_acceso, []))} | {r['motivo']} |")
+    lineas += [f"## Entradas: {aceptadas} de {len(esperadas) + len(nuevas)} aceptadas", "",
+               "Criterio: dos medidas en días distintos, a 5 m o menos entre sí, con precisión de 5 m o mejor.", "",
+               "| | Entrada | Medidas | Estado |", "|---|---|---|---|", *filas, ""]
+
+    # Norte de las panorámicas
+    paradas = {p["id"]: p["nombre"] for p in catalogo if p.get("es_parada")}
+    lineas += ["## Norte de las panorámicas", ""]
+    lineas += ["| Parada | Objeto | Rumbo magnético | Rumbo geográfico | Yaw del objeto | Yaw del norte |",
+               "|---|---|---|---|---|---|"]
+    medidas_norte = {}
+    for n in datos["nortes"]:
+        medidas_norte.setdefault(int(n["poi_id"]), []).append(n)
+    for pid, nombre in sorted(paradas.items()):
+        for n in medidas_norte.get(pid, []) or [None]:
+            if n is None:
+                lineas.append(f"| ⬜ {nombre} | — | — | — | — | — |")
+                continue
+            geo = n.get("rumbo_geografico")
+            if geo is None:
+                geo = (n["rumbo_magnetico"] + declinacion) % 360
+            yaw = n.get("yaw_objeto")
+            norte = "falta el yaw" if yaw is None else f"{(yaw - geo) % 360:.1f}°"
+            lineas.append(f"| {nombre} | {n.get('objeto', '')} | {n['rumbo_magnetico']:.1f}° | {geo:.1f}° | "
+                          f"{'—' if yaw is None else f'{yaw:.1f}°'} | {norte} |")
+    lineas += ["", "Yaw del norte = yaw del objeto en la panorámica − rumbo geográfico del objeto "
+               "(los dos en sentido horario). Es el `rumbo_norte` de la escena.", ""]
+
+    # Brújula
+    lineas += ["## Brújula (RNF-27: 10° como máximo)", ""]
+    errores = [b["error"] for b in datos["brujula"]]
+    if len(errores) < 2:
+        lineas += [f"{len(errores)} comprobaciones: hacen falta al menos 8, en sitios distintos.", ""]
+    else:
+        sesgo = statistics.fmean(errores)
+        residuos = sorted(abs(e - sesgo) for e in errores)
+        p95 = residuos[min(len(residuos) - 1, math.ceil(0.95 * len(residuos)) - 1)]
+        cumple = "cumple" if p95 <= ERROR_RUMBO_MAX else "NO cumple"
+        lineas += [f"- Comprobaciones: {len(errores)}",
+                   f"- Sesgo medio: {sesgo:+.1f}° → declinación sugerida: {declinacion - sesgo:.1f}° "
+                   f"(hoy {declinacion}°). Si el sesgo pasa de 3°, cambiar DECLINACION en este script.",
+                   f"- Error tras corregir el sesgo: p95 {p95:.1f}°, máximo {residuos[-1]:.1f}° → RNF-27 **{cumple}**",
+                   f"- Sin corregir: máximo {max(abs(e) for e in errores):.1f}°",
+                   f"- Con aviso de calibración: {sum(1 for b in datos['brujula'] if b.get('descalibrada'))}", ""]
+
+    # Pruebas de la guía
+    lineas += ["## Pruebas de la guía", ""]
+    if not datos["pruebas"]:
+        lineas += ["Ninguna todavía: hay que caminar las cinco paradas.", ""]
+    else:
+        lineas += ["| Destino | Ruta | Llegada detectada | Error de llegada | Recálculos | Indicaciones mal | Resultado |",
+                   "|---|---|---|---|---|---|---|"]
+        for p in datos["pruebas"]:
+            eventos = p.get("eventos", [])
+            recalculos = sum(1 for e in eventos if e.get("tipo") == "fuera_de_ruta")
+            malas = sum(1 for e in eventos if e.get("tipo") == "indicacion_mala")
+            llegada, puerta = p.get("llegada_app"), p.get("puerta_real")
+            if llegada and puerta:
+                error = metros((llegada["lat"], llegada["lng"]), (puerta["lat"], puerta["lng"]))
+                error_txt = f"{error:.1f} m"
+                ok = error <= RADIO_LLEGADA_M and not malas
+            else:
+                error_txt = "—"
+                ok = False
+            detectada = "sí" if llegada else "no"
+            lineas.append(f"| {p.get('destino', p.get('poi_id'))} | {p.get('metros_ruta', 0):.0f} m | {detectada} | "
+                          f"{error_txt} | {recalculos} | {malas} | {'✅' if ok else '❌'} |")
+        lineas += ["", f"Pasa si la app detecta la llegada a {RADIO_LLEGADA_M:.0f} m o menos de la puerta real "
+                   "y ninguna indicación se marcó como equivocada.", ""]
+
+    # Tramos y recorridos
+    lineas += ["## Tramos y recorridos", "",
+               f"- Tramos marcados: {len(datos['tramos'])} "
+               f"({sum(1 for t in datos['tramos'] if t.get('escalones'))} con escalones, "
+               f"{sum(1 for t in datos['tramos'] if t.get('techado'))} techados, "
+               f"{sum(1 for t in datos['tramos'] if t.get('tipo') == 'rampa')} rampas)",
+               f"- Recorridos grabados: {len(datos['recorridos'])}: "
+               + (", ".join(r.get("etiqueta") or "sin etiqueta" for r in datos["recorridos"]) or "ninguno"),
+               "- Un camino que falta (el puente A3–A5, un pasillo) se graba como recorrido y se "
+               "agrega en OpenStreetMap; `scripts/mapa_campus.py` y este script lo recogen después.", ""]
+    return "\n".join(lineas)
+
+
+def recorridos_geojson(datos: dict[str, list]) -> dict:
+    return {"type": "FeatureCollection", "features": [
+        {"type": "Feature",
+         "properties": {"etiqueta": r.get("etiqueta") or "", "fecha": r.get("fecha", ""),
+                        "puntos": len(r.get("puntos", []))},
+         "geometry": {"type": "LineString",
+                      "coordinates": [[p["lng"], p["lat"]] for p in r.get("puntos", [])]}}
+        for r in datos["recorridos"] if len(r.get("puntos", [])) >= 2]}
+
+
+def main(levantamientos: list[str], solo_informe: bool = False,
+         geojson: str | None = None) -> None:
     plano = json.loads(PLANO.read_text(encoding="utf-8"))
     catalogo = json.loads(CATALOGO.read_text(encoding="utf-8"))
 
@@ -132,6 +356,24 @@ def main(levantamientos: list[str]) -> None:
                 mejor = (i, (lat, lng), d)
         return mejor
 
+    datos = cargar_levantamientos(levantamientos)
+
+    # Tramos marcados en el campus, antes de enganchar las entradas: al partir
+    # un tramo, las dos mitades heredan lo marcado.
+    sin_tramo = []
+    for t in datos["tramos"]:
+        i, _, distancia = proyectar((t["lat"], t["lng"]))
+        if i < 0 or distancia > RADIO_MARCA_TRAMO_M:
+            sin_tramo.append(t)
+            continue
+        e = aristas[i]
+        if t.get("tipo") in TIPOS_TRAMO:
+            e["tipo"] = t["tipo"]
+        if "escalones" in t:
+            e["escalones"] = bool(t["escalones"])
+        if "techado" in t:
+            e["techado"] = bool(t["techado"])
+
     def enganchar(nombre: str, poi: dict, lat: float, lng: float, principal: bool,
                   verificado: bool, fuente: str) -> dict:
         i, punto, distancia = proyectar((lat, lng))
@@ -154,31 +396,42 @@ def main(levantamientos: list[str]) -> None:
                 "principal": principal, "verificado": verificado, "fuente": fuente,
                 "metros_al_camino": round(distancia, 1)}
 
-    medidos: dict[int, list[dict]] = {}
-    for ruta in levantamientos:
-        datos = json.loads(Path(ruta).read_text(encoding="utf-8"))
-        for a in datos.get("accesos", []):
-            medidos.setdefault(int(a["poi_id"]), []).append(a)
-
     poligonos = {f["properties"].get("osm"): f for f in plano["features"]
                  if f["geometry"]["type"] == "Polygon"}
 
-    accesos = []
+    # Las entradas estimadas de cada lugar: la del catálogo y las extra.
+    estimadas: list[tuple[dict, str, float, float, bool, str]] = []
     for poi in catalogo:
         if poi.get("lat") is None:
             continue
-        if poi["id"] in medidos:
-            for j, m in enumerate(medidos[poi["id"]]):
-                accesos.append(enganchar(m.get("nombre") or poi["nombre"], poi, m["lat"], m["lng"],
-                                         j == 0, True, f"levantamiento ±{m.get('precision', '?')} m"))
-            continue
-        accesos.append(enganchar(poi["nombre"], poi, poi["lat"], poi["lng"], True, False,
-                                 f"catálogo: {poi['fuente_posicion']}"))
+        estimadas.append((poi, poi["nombre"], poi["lat"], poi["lng"], True,
+                          f"catálogo: {poi['fuente_posicion']}"))
         for nombre, osm in ACCESOS_EXTRA.get(poi["id"], []):
             anillo = poligonos[osm]["geometry"]["coordinates"][0]
             lat = sum(c[1] for c in anillo) / len(anillo)
             lng = sum(c[0] for c in anillo) / len(anillo)
-            accesos.append(enganchar(nombre, poi, lat, lng, False, False, f"centro de OSM {osm}"))
+            estimadas.append((poi, nombre, lat, lng, False, f"centro de OSM {osm}"))
+
+    # Las medidas reemplazan a la estimada del mismo nombre; un nombre nuevo
+    # es una entrada que el catálogo no tenía.
+    medidas: dict[tuple[int, str], list[dict]] = {}
+    for m in datos["accesos"]:
+        medidas.setdefault((int(m["poi_id"]), m.get("nombre") or ""), []).append(m)
+    por_poi = {p["id"]: p for p in catalogo}
+    conocidas = {(poi["id"], nombre) for poi, nombre, *_ in estimadas}
+    for (pid, nombre) in medidas:
+        if (pid, nombre) not in conocidas and pid in por_poi:
+            poi = por_poi[pid]
+            estimadas.append((poi, nombre or poi["nombre"], poi["lat"], poi["lng"], False, "nueva en el campus"))
+
+    accesos = []
+    for poi, nombre, lat, lng, principal, fuente in estimadas:
+        r = evaluar_acceso(medidas.get((poi["id"], nombre), []))
+        if r["estado"] != "sin_medidas_utiles":
+            lat, lng = r["lat"], r["lng"]
+            fuente = f"levantamiento ±{r['precision']:.1f} m: {r['motivo']}"
+        accesos.append(enganchar(nombre, poi, lat, lng, principal,
+                                 r["estado"] == "aceptado", fuente))
 
     # Componentes conexos: una ruta solo existe dentro de uno.
     vecinos: dict[str, set[str]] = {n: set() for n in por_id}
@@ -209,6 +462,17 @@ def main(levantamientos: list[str]) -> None:
     nodos = {k: n for k, n in nodos.items() if n["id"] in vivos}
     aristas = [e for e in aristas if e["a"] in vivos]
 
+    if solo_informe:
+        print(informe(datos, catalogo, accesos, DECLINACION))
+        if sin_tramo:
+            print(f"\n{len(sin_tramo)} tramos marcados quedaron a más de {RADIO_MARCA_TRAMO_M:.0f} m "
+                  "de cualquier tramo de OSM: falta ese camino en OSM.")
+        if geojson:
+            Path(geojson).write_text(json.dumps(recorridos_geojson(datos), ensure_ascii=False),
+                                     encoding="utf-8")
+            print(f"\nRecorridos en {geojson}")
+        return
+
     salida = {
         "version": date.today().isoformat(),
         "licencia": "ODbL 1.0 — © colaboradores de OpenStreetMap",
@@ -231,8 +495,15 @@ def main(levantamientos: list[str]) -> None:
         print("Accesos fuera del componente principal (sin ruta posible):")
         for a in sueltos:
             print("  ", a["nombre"])
+    if sin_tramo:
+        print(f"{len(sin_tramo)} tramos marcados sin tramo de OSM a {RADIO_MARCA_TRAMO_M:.0f} m (ver --informe)")
     print(SALIDA, f"{SALIDA.stat().st_size // 1024} KB")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    argumentos = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    argumentos.add_argument("levantamientos", nargs="*", help="JSON exportados por la app de levantamiento")
+    argumentos.add_argument("--informe", action="store_true", help="solo imprimir el estado del levantamiento")
+    argumentos.add_argument("--geojson", help="con --informe, dónde escribir los recorridos grabados")
+    a = argumentos.parse_args()
+    main(a.levantamientos, a.informe, a.geojson)

@@ -11,6 +11,7 @@ El tour está diseñado como **un módulo de la app oficial UTB APP**, con su mi
 | **Backend** | [`services/api/`](services/api) | ASP.NET Core (.NET 10), EF Core, PostgreSQL y Storage de Supabase | API de contenido para la app y API de administración para el panel. |
 | **Frontend móvil** | [`packages/tour_virtual/`](packages/tour_virtual) | Flutter, Riverpod, go_router | **El módulo**: todo el tour, listo para incrustarse en la UTB APP. |
 | | [`apps/mobile/`](apps/mobile) | Flutter | App de demostración que abre el módulo, genera el APK y corre las pruebas. |
+| | [`apps/levantamiento/`](apps/levantamiento) | Flutter (Android) | App secundaria del equipo para medir el campus antes de terminar la realidad aumentada. Ver [pendientes](docs/pendientes-realidad-aumentada.md). |
 | **Frontend admin** | [`apps/admin_flutter/`](apps/admin_flutter) | Flutter web, Supabase Auth | Panel para administrar lugares, ubicación, multimedia (360°, fotos, video, audio con idioma y subtítulos), métricas y administradores. |
 
 Además:

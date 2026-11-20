@@ -3,17 +3,21 @@ name: Frontend movil
 # El modulo vive en packages/tour_virtual (lo que se incrusta en la UTB APP) y
 # apps/mobile es la app de demostracion que lo abre, corre las pruebas y
 # genera el APK. Un cambio en cualquiera de los dos verifica ambos.
+# apps/levantamiento es la app secundaria del equipo para medir el campus: usa
+# la lógica de navegación del módulo, así que también se verifica.
 on:
   push:
     branches: [master]
     paths:
       - 'packages/tour_virtual/**'
       - 'apps/mobile/**'
+      - 'apps/levantamiento/**'
       - '.github/workflows/mobile.yml'
   pull_request:
     paths:
       - 'packages/tour_virtual/**'
       - 'apps/mobile/**'
+      - 'apps/levantamiento/**'
       - '.github/workflows/mobile.yml'
 
 # El token de GitHub de estos jobs solo necesita leer el código.
@@ -90,6 +94,34 @@ jobs:
       # Las pruebas del modulo viven aqui: una app que lo usa como dependencia
       # pide sus recursos con el prefijo packages/tour_virtual/, igual que la
       # UTB APP.
+      - name: Pruebas
+        run: flutter test
+
+  levantamiento:
+    name: App de levantamiento (analisis y pruebas)
+    runs-on: ubuntu-latest
+    needs: modulo
+    defaults:
+      run:
+        working-directory: apps/levantamiento
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: 3.47.x
+          cache: true
+
+      - name: Resolver dependencias
+        run: flutter pub get
+
+      - name: Verificar formato
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analisis estatico
+        run: flutter analyze --fatal-infos
+
       - name: Pruebas
         run: flutter test
 

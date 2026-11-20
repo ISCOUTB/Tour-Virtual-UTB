@@ -43,3 +43,8 @@ apps/mobile/android/app/src/assets/mapa_campus.webp
 # las llena scripts/preparar_apk_demo.py.
 /packages/tour_virtual/assets/demo/*/*
 !/packages/tour_virtual/assets/demo/*/.gitkeep
+
+# Datos de campo de la app de levantamiento: tienen recorridos de personas.
+# Al repo solo va el grafo que sale de ellos.
+levantamiento-*.json
+recorridos*.geojson

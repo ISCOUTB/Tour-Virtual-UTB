@@ -12,6 +12,10 @@ enum TipoTramo {
   via,
   escalera,
 
+  /// Marcados en el campus con la app de levantamiento: OSM no los distingue.
+  rampa,
+  pasillo,
+
   /// Del camino a la puerta de un lugar.
   acceso,
   desconocido;

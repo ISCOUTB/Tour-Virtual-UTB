@@ -1,0 +1,3 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Igual que el principal: la herramienta no consume ninguna API. -->
+</manifest>

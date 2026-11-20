@@ -347,7 +347,7 @@ class _GuiaState extends ConsumerState<_Guia> {
       _Fase.guiando => _vistaGuia(txt),
     };
 
-    return ColoredBox(
+    return Material(
       color: ColoresUtb.fondo,
       child: Padding(
         padding: EdgeInsets.fromLTRB(

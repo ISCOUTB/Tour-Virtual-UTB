@@ -16,7 +16,8 @@ dependencies:
     sdk: flutter
   tour_virtual:
     path: ../../packages/tour_virtual
-  # La herramienta de levantamiento guarda sus mediciones en el teléfono.
+  # Las pruebas preparan las preferencias guardadas del módulo. La
+  # herramienta para medir el campus es ahora su propia app: apps/levantamiento.
   shared_preferences: ^2.5.5
 
 dev_dependencies:

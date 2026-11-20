@@ -545,4 +545,131 @@ class TextosTr extends Textos {
 
   @override
   String get ayuda => 'Yardım';
+
+  @override
+  String get comoLlegar => 'Yol tarifi';
+
+  @override
+  String navTitulo(String lugar) {
+    return '$lugar için yol tarifi';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return 'Sizi $lugar konumuna götüreyim';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      'Rehber açıkken telefonunuzun GPS’ini kullanırım. Konumunuz telefondan çıkmaz ve kaydedilmez.';
+
+  @override
+  String get navPermitir => 'Konuma izin ver';
+
+  @override
+  String get navSinPermiso =>
+      'Konum izni olmadan size yol gösteremem. Yeri haritada bulabilir veya 360° görebilirsiniz.';
+
+  @override
+  String get navAbrirAjustes => 'Ayarları aç';
+
+  @override
+  String get navGpsApagado =>
+      'Telefonunuzun konumu kapalı. Açıp tekrar deneyin.';
+
+  @override
+  String get navSimulada => 'Benzetilmiş konum';
+
+  @override
+  String get navBuscando => 'GPS sinyali aranıyor…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return 'Zayıf sinyal (±$metros m). Açık bir alana geçin.';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return '$metros m düz devam edin';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return '$metros m sonra sağa dönün';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return '$metros m sonra sola dönün';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return '$metros m sonra hafif sağa gidin';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return '$metros m sonra hafif sola gidin';
+  }
+
+  @override
+  String get navVuelta => 'Geri dönün';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '$lugar $metros m uzakta';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return '$metros m kaldı · yaklaşık $minutos dk';
+  }
+
+  @override
+  String get navRecalculando => 'Rotadan çıktınız. Yeni rota hesaplanıyor…';
+
+  @override
+  String get navSinEscaleras => 'Merdivensiz';
+
+  @override
+  String get navPlano => 'Harita';
+
+  @override
+  String get navCamara => 'Kamera';
+
+  @override
+  String get navTerminar => 'Bitir';
+
+  @override
+  String navLlegaste(String lugar) {
+    return '$lugar konumuna vardınız';
+  }
+
+  @override
+  String get navVerFicha => 'Ayrıntıları gör';
+
+  @override
+  String get navCamaraAviso => 'Ekrana değil, yola bakın.';
+
+  @override
+  String get navCamaraNoDisponible =>
+      'Kamera açılamadı. Rotayı haritadan izleyin.';
+
+  @override
+  String get navCalibrar =>
+      'Pusula hassas değil: telefonu sekiz çizerek hareket ettirin.';
+
+  @override
+  String navSinRuta(String lugar) {
+    return '$lugar için bir yol bulamadım.';
+  }
+
+  @override
+  String get navAproximada => 'Bu yerin girişi henüz yaklaşık.';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return '$lugar rotasını gösteren harita';
+  }
 }

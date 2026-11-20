@@ -549,4 +549,131 @@ class TextosEs extends Textos {
 
   @override
   String get ayuda => 'Ayuda';
+
+  @override
+  String get comoLlegar => 'Cómo llegar';
+
+  @override
+  String navTitulo(String lugar) {
+    return 'Cómo llegar a $lugar';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return 'Te guío hasta $lugar';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      'Uso el GPS del teléfono mientras la guía está abierta. Tu ubicación no sale del teléfono ni se guarda.';
+
+  @override
+  String get navPermitir => 'Permitir ubicación';
+
+  @override
+  String get navSinPermiso =>
+      'Sin permiso de ubicación no puedo guiarte. Puedes ubicar el lugar en el mapa o verlo en 360°.';
+
+  @override
+  String get navAbrirAjustes => 'Abrir ajustes';
+
+  @override
+  String get navGpsApagado =>
+      'La ubicación del teléfono está apagada. Actívala y vuelve a intentarlo.';
+
+  @override
+  String get navSimulada => 'Ubicación simulada';
+
+  @override
+  String get navBuscando => 'Buscando señal GPS…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return 'Señal débil (±$metros m). Busca un espacio abierto.';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return 'Sigue recto $metros m';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return 'En $metros m, gira a la derecha';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return 'En $metros m, gira a la izquierda';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return 'En $metros m, ve hacia la derecha';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return 'En $metros m, ve hacia la izquierda';
+  }
+
+  @override
+  String get navVuelta => 'Da la vuelta';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '$lugar está a $metros m';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return 'Faltan $metros m · unos $minutos min';
+  }
+
+  @override
+  String get navRecalculando => 'Te saliste de la ruta. Calculo otra…';
+
+  @override
+  String get navSinEscaleras => 'Sin escaleras';
+
+  @override
+  String get navPlano => 'Plano';
+
+  @override
+  String get navCamara => 'Cámara';
+
+  @override
+  String get navTerminar => 'Terminar';
+
+  @override
+  String navLlegaste(String lugar) {
+    return 'Llegaste a $lugar';
+  }
+
+  @override
+  String get navVerFicha => 'Ver la ficha';
+
+  @override
+  String get navCamaraAviso => 'Mira el camino, no la pantalla.';
+
+  @override
+  String get navCamaraNoDisponible =>
+      'No se pudo abrir la cámara. Sigue la ruta en el plano.';
+
+  @override
+  String get navCalibrar =>
+      'La brújula está imprecisa: mueve el teléfono dibujando un ocho.';
+
+  @override
+  String navSinRuta(String lugar) {
+    return 'No encontré un camino hasta $lugar.';
+  }
+
+  @override
+  String get navAproximada => 'La entrada de este lugar aún es aproximada.';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return 'Plano con la ruta hasta $lugar';
+  }
 }

@@ -1013,6 +1013,198 @@ abstract class Textos {
   /// In es, this message translates to:
   /// **'Ayuda'**
   String get ayuda;
+
+  /// Botón de la ficha que abre la guía hasta el lugar (realidad aumentada, RF-26).
+  ///
+  /// In es, this message translates to:
+  /// **'Cómo llegar'**
+  String get comoLlegar;
+
+  /// Título de la pantalla de guía.
+  ///
+  /// In es, this message translates to:
+  /// **'Cómo llegar a {lugar}'**
+  String navTitulo(String lugar);
+
+  /// Antes de pedir la ubicación. Habla Max.
+  ///
+  /// In es, this message translates to:
+  /// **'Te guío hasta {lugar}'**
+  String navPermisoTitulo(String lugar);
+
+  /// Por qué se pide la ubicación y qué se hace con ella (RN-10, Ley 1581).
+  ///
+  /// In es, this message translates to:
+  /// **'Uso el GPS del teléfono mientras la guía está abierta. Tu ubicación no sale del teléfono ni se guarda.'**
+  String get navPermisoTexto;
+
+  /// Botón que pide el permiso de ubicación.
+  ///
+  /// In es, this message translates to:
+  /// **'Permitir ubicación'**
+  String get navPermitir;
+
+  /// Modo degradado (RF-33): sin permiso de ubicación.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin permiso de ubicación no puedo guiarte. Puedes ubicar el lugar en el mapa o verlo en 360°.'**
+  String get navSinPermiso;
+
+  /// Abre los ajustes del sistema para dar el permiso.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir ajustes'**
+  String get navAbrirAjustes;
+
+  /// La ubicación del sistema está apagada.
+  ///
+  /// In es, this message translates to:
+  /// **'La ubicación del teléfono está apagada. Actívala y vuelve a intentarlo.'**
+  String get navGpsApagado;
+
+  /// Etiqueta en escritorio: la posición no es real.
+  ///
+  /// In es, this message translates to:
+  /// **'Ubicación simulada'**
+  String get navSimulada;
+
+  /// Esperando la primera lectura útil del GPS.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscando señal GPS…'**
+  String get navBuscando;
+
+  /// La precisión del GPS es peor que el límite.
+  ///
+  /// In es, this message translates to:
+  /// **'Señal débil (±{metros} m). Busca un espacio abierto.'**
+  String navSenalDebil(int metros);
+
+  /// Indicación: seguir recto.
+  ///
+  /// In es, this message translates to:
+  /// **'Sigue recto {metros} m'**
+  String navRecto(int metros);
+
+  /// Indicación: giro a la derecha.
+  ///
+  /// In es, this message translates to:
+  /// **'En {metros} m, gira a la derecha'**
+  String navDerecha(int metros);
+
+  /// Indicación: giro a la izquierda.
+  ///
+  /// In es, this message translates to:
+  /// **'En {metros} m, gira a la izquierda'**
+  String navIzquierda(int metros);
+
+  /// Indicación: giro suave a la derecha.
+  ///
+  /// In es, this message translates to:
+  /// **'En {metros} m, ve hacia la derecha'**
+  String navLigeraDerecha(int metros);
+
+  /// Indicación: giro suave a la izquierda.
+  ///
+  /// In es, this message translates to:
+  /// **'En {metros} m, ve hacia la izquierda'**
+  String navLigeraIzquierda(int metros);
+
+  /// Indicación: dar media vuelta.
+  ///
+  /// In es, this message translates to:
+  /// **'Da la vuelta'**
+  String get navVuelta;
+
+  /// Indicación: el último tramo hasta el destino.
+  ///
+  /// In es, this message translates to:
+  /// **'{lugar} está a {metros} m'**
+  String navLlegando(String lugar, int metros);
+
+  /// Distancia y tiempo restantes, a paso de persona.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltan {metros} m · unos {minutos} min'**
+  String navFaltan(int metros, int minutos);
+
+  /// La persona se salió de la ruta.
+  ///
+  /// In es, this message translates to:
+  /// **'Te saliste de la ruta. Calculo otra…'**
+  String get navRecalculando;
+
+  /// Interruptor: ruta sin escalones (movilidad reducida).
+  ///
+  /// In es, this message translates to:
+  /// **'Sin escaleras'**
+  String get navSinEscaleras;
+
+  /// Segmento: vista de plano.
+  ///
+  /// In es, this message translates to:
+  /// **'Plano'**
+  String get navPlano;
+
+  /// Segmento: flecha sobre la cámara (RF-28).
+  ///
+  /// In es, this message translates to:
+  /// **'Cámara'**
+  String get navCamara;
+
+  /// Termina la guía.
+  ///
+  /// In es, this message translates to:
+  /// **'Terminar'**
+  String get navTerminar;
+
+  /// Llegada al destino (RF-32).
+  ///
+  /// In es, this message translates to:
+  /// **'Llegaste a {lugar}'**
+  String navLlegaste(String lugar);
+
+  /// Abre la ficha del lugar al llegar.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver la ficha'**
+  String get navVerFicha;
+
+  /// Aviso de seguridad sobre la vista de cámara.
+  ///
+  /// In es, this message translates to:
+  /// **'Mira el camino, no la pantalla.'**
+  String get navCamaraAviso;
+
+  /// Modo degradado: sin cámara.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo abrir la cámara. Sigue la ruta en el plano.'**
+  String get navCamaraNoDisponible;
+
+  /// La brújula da lecturas raras (UC-17, flujo 4a).
+  ///
+  /// In es, this message translates to:
+  /// **'La brújula está imprecisa: mueve el teléfono dibujando un ocho.'**
+  String get navCalibrar;
+
+  /// No hay camino en el grafo hasta el lugar.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontré un camino hasta {lugar}.'**
+  String navSinRuta(String lugar);
+
+  /// La entrada no se ha medido en el campus todavía.
+  ///
+  /// In es, this message translates to:
+  /// **'La entrada de este lugar aún es aproximada.'**
+  String get navAproximada;
+
+  /// Etiqueta para el lector de pantalla del plano con la ruta.
+  ///
+  /// In es, this message translates to:
+  /// **'Plano con la ruta hasta {lugar}'**
+  String navPlanoSemantica(String lugar);
 }
 
 class _TextosDelegate extends LocalizationsDelegate<Textos> {

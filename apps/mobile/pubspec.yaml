@@ -16,6 +16,8 @@ dependencies:
     sdk: flutter
   tour_virtual:
     path: ../../packages/tour_virtual
+  # La herramienta de levantamiento guarda sus mediciones en el teléfono.
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -24,7 +26,6 @@ dev_dependencies:
   # Las pruebas manejan directamente lo que el paquete usa por dentro.
   flutter_riverpod: ^2.6.1
   http: ^1.6.0
-  shared_preferences: ^2.5.5
 
 flutter:
   uses-material-design: true

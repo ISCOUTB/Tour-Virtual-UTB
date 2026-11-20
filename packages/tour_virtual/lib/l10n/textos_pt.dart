@@ -548,6 +548,133 @@ class TextosPt extends Textos {
 
   @override
   String get ayuda => 'Ajuda';
+
+  @override
+  String get comoLlegar => 'Como chegar';
+
+  @override
+  String navTitulo(String lugar) {
+    return 'Como chegar a $lugar';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return 'Eu te guio até $lugar';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      'Uso o GPS do celular enquanto o guia está aberto. Sua localização não sai do celular nem é salva.';
+
+  @override
+  String get navPermitir => 'Permitir localização';
+
+  @override
+  String get navSinPermiso =>
+      'Sem permissão de localização não consigo te guiar. Você pode encontrar o lugar no mapa ou vê-lo em 360°.';
+
+  @override
+  String get navAbrirAjustes => 'Abrir configurações';
+
+  @override
+  String get navGpsApagado =>
+      'A localização do celular está desligada. Ative e tente de novo.';
+
+  @override
+  String get navSimulada => 'Localização simulada';
+
+  @override
+  String get navBuscando => 'Procurando sinal de GPS…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return 'Sinal fraco (±$metros m). Procure um espaço aberto.';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return 'Siga em frente por $metros m';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return 'Em $metros m, vire à direita';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return 'Em $metros m, vire à esquerda';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return 'Em $metros m, siga pela direita';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return 'Em $metros m, siga pela esquerda';
+  }
+
+  @override
+  String get navVuelta => 'Dê meia-volta';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '$lugar está a $metros m';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return 'Faltam $metros m · cerca de $minutos min';
+  }
+
+  @override
+  String get navRecalculando => 'Você saiu da rota. Calculando outra…';
+
+  @override
+  String get navSinEscaleras => 'Sem escadas';
+
+  @override
+  String get navPlano => 'Mapa';
+
+  @override
+  String get navCamara => 'Câmera';
+
+  @override
+  String get navTerminar => 'Encerrar';
+
+  @override
+  String navLlegaste(String lugar) {
+    return 'Você chegou a $lugar';
+  }
+
+  @override
+  String get navVerFicha => 'Ver os detalhes';
+
+  @override
+  String get navCamaraAviso => 'Olhe o caminho, não a tela.';
+
+  @override
+  String get navCamaraNoDisponible =>
+      'Não foi possível abrir a câmera. Siga a rota no mapa.';
+
+  @override
+  String get navCalibrar =>
+      'A bússola está imprecisa: mova o celular desenhando um oito.';
+
+  @override
+  String navSinRuta(String lugar) {
+    return 'Não encontrei um caminho até $lugar.';
+  }
+
+  @override
+  String get navAproximada => 'A entrada deste lugar ainda é aproximada.';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return 'Mapa com a rota até $lugar';
+  }
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -767,4 +894,57 @@ class TextosPtPt extends TextosPt {
   @override
   String get verGuiaDetalle =>
       'O Max volta a explicar como funciona o percurso.';
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return 'Guio-o até $lugar';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      'Uso o GPS do telemóvel enquanto o guia está aberto. A sua localização não sai do telemóvel nem é guardada.';
+
+  @override
+  String get navSinPermiso =>
+      'Sem permissão de localização não o consigo guiar. Pode encontrar o lugar no mapa ou vê-lo em 360°.';
+
+  @override
+  String get navAbrirAjustes => 'Abrir definições';
+
+  @override
+  String get navGpsApagado =>
+      'A localização do telemóvel está desligada. Ative-a e tente novamente.';
+
+  @override
+  String get navBuscando => 'À procura de sinal GPS…';
+
+  @override
+  String get navRecalculando => 'Saiu do percurso. A calcular outro…';
+
+  @override
+  String get navCamara => 'Câmara';
+
+  @override
+  String get navTerminar => 'Terminar';
+
+  @override
+  String navLlegaste(String lugar) {
+    return 'Chegou a $lugar';
+  }
+
+  @override
+  String get navCamaraAviso => 'Olhe para o caminho, não para o ecrã.';
+
+  @override
+  String get navCamaraNoDisponible =>
+      'Não foi possível abrir a câmara. Siga o percurso no mapa.';
+
+  @override
+  String get navCalibrar =>
+      'A bússola está imprecisa: mova o telemóvel desenhando um oito.';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return 'Mapa com o percurso até $lugar';
+  }
 }

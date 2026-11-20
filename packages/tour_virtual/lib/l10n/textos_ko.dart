@@ -529,4 +529,128 @@ class TextosKo extends Textos {
 
   @override
   String get ayuda => '도움말';
+
+  @override
+  String get comoLlegar => '길 안내';
+
+  @override
+  String navTitulo(String lugar) {
+    return '$lugar까지 길 안내';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return '$lugar까지 안내해 드릴게요';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      '안내가 켜져 있는 동안 휴대폰 GPS를 사용합니다. 위치 정보는 휴대폰 밖으로 나가지 않으며 저장되지 않습니다.';
+
+  @override
+  String get navPermitir => '위치 허용';
+
+  @override
+  String get navSinPermiso =>
+      '위치 권한이 없으면 안내할 수 없어요. 지도에서 장소를 찾거나 360°로 볼 수 있습니다.';
+
+  @override
+  String get navAbrirAjustes => '설정 열기';
+
+  @override
+  String get navGpsApagado => '휴대폰 위치가 꺼져 있어요. 켜고 다시 시도해 주세요.';
+
+  @override
+  String get navSimulada => '시뮬레이션 위치';
+
+  @override
+  String get navBuscando => 'GPS 신호를 찾는 중…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return '신호가 약해요(±$metros m). 탁 트인 곳으로 이동해 주세요.';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return '$metros m 직진하세요';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return '$metros m 후 오른쪽으로 도세요';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return '$metros m 후 왼쪽으로 도세요';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return '$metros m 후 오른쪽 방향으로 가세요';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return '$metros m 후 왼쪽 방향으로 가세요';
+  }
+
+  @override
+  String get navVuelta => '되돌아가세요';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '$lugar까지 $metros m 남았어요';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return '$metros m 남음 · 약 $minutos분';
+  }
+
+  @override
+  String get navRecalculando => '경로를 벗어났어요. 새 경로를 찾는 중…';
+
+  @override
+  String get navSinEscaleras => '계단 없이';
+
+  @override
+  String get navPlano => '지도';
+
+  @override
+  String get navCamara => '카메라';
+
+  @override
+  String get navTerminar => '종료';
+
+  @override
+  String navLlegaste(String lugar) {
+    return '$lugar에 도착했어요';
+  }
+
+  @override
+  String get navVerFicha => '상세 정보 보기';
+
+  @override
+  String get navCamaraAviso => '화면 말고 길을 보세요.';
+
+  @override
+  String get navCamaraNoDisponible => '카메라를 열 수 없어요. 지도에서 경로를 따라가세요.';
+
+  @override
+  String get navCalibrar => '나침반이 부정확해요. 휴대폰을 8자 모양으로 움직여 주세요.';
+
+  @override
+  String navSinRuta(String lugar) {
+    return '$lugar까지 가는 길을 찾지 못했어요.';
+  }
+
+  @override
+  String get navAproximada => '이 장소의 입구 위치는 아직 대략적이에요.';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return '$lugar까지의 경로가 표시된 지도';
+  }
 }

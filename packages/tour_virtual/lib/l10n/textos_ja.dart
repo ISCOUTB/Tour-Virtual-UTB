@@ -528,4 +528,127 @@ class TextosJa extends Textos {
 
   @override
   String get ayuda => 'ヘルプ';
+
+  @override
+  String get comoLlegar => '行き方';
+
+  @override
+  String navTitulo(String lugar) {
+    return '$lugarへの行き方';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return '$lugarまでご案内します';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      '案内中だけスマートフォンの GPS を使います。位置情報はスマートフォンの外に送られず、保存もされません。';
+
+  @override
+  String get navPermitir => '位置情報を許可';
+
+  @override
+  String get navSinPermiso => '位置情報の許可がないと案内できません。地図で場所を確認するか、360° で見ることができます。';
+
+  @override
+  String get navAbrirAjustes => '設定を開く';
+
+  @override
+  String get navGpsApagado => 'スマートフォンの位置情報がオフです。オンにしてもう一度お試しください。';
+
+  @override
+  String get navSimulada => 'シミュレーションの位置';
+
+  @override
+  String get navBuscando => 'GPS 信号を探しています…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return '信号が弱いです（±$metros m）。開けた場所に移動してください。';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return '$metros m 直進してください';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return '$metros m 先で右に曲がってください';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return '$metros m 先で左に曲がってください';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return '$metros m 先で右寄りに進んでください';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return '$metros m 先で左寄りに進んでください';
+  }
+
+  @override
+  String get navVuelta => '引き返してください';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '$lugarまであと $metros m です';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return '残り $metros m・約 $minutos 分';
+  }
+
+  @override
+  String get navRecalculando => 'ルートから外れました。別のルートを探しています…';
+
+  @override
+  String get navSinEscaleras => '階段を避ける';
+
+  @override
+  String get navPlano => '地図';
+
+  @override
+  String get navCamara => 'カメラ';
+
+  @override
+  String get navTerminar => '終了';
+
+  @override
+  String navLlegaste(String lugar) {
+    return '$lugarに到着しました';
+  }
+
+  @override
+  String get navVerFicha => '詳細を見る';
+
+  @override
+  String get navCamaraAviso => '画面ではなく足元を見てください。';
+
+  @override
+  String get navCamaraNoDisponible => 'カメラを開けませんでした。地図でルートをたどってください。';
+
+  @override
+  String get navCalibrar => 'コンパスが不正確です。スマートフォンを 8 の字に動かしてください。';
+
+  @override
+  String navSinRuta(String lugar) {
+    return '$lugarまでの道が見つかりませんでした。';
+  }
+
+  @override
+  String get navAproximada => 'この場所の入口はまだおおよその位置です。';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return '$lugarまでのルートを示した地図';
+  }
 }

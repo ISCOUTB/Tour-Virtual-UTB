@@ -68,3 +68,17 @@ flutter test
 Las regresiones cubren la transformación geográfica inversa, el fallo de
 carga, la cancelación mientras carga y la conservación del carrusel, además
 de excluir la referencia del GLB sin modificar su bloque binario.
+
+La comprobación en un Android conectado usa una prueba dentro de Flutter,
+sin inyectar toques en otras apps ni necesitar el permiso `INJECT_EVENTS`:
+
+```sh
+cd apps/mobile
+flutter drive --driver=test_driver/mapa_3d.dart --target=integration_test/mapa_3d_test.dart -d <serial>
+```
+
+Verifica el GLB local, los pines, zoom, giro, la apertura de una ficha y el
+regreso al plano. Captura también texto al 200 %. Las imágenes quedan en
+`.impeccable/review/`. Las preferencias de esa prueba viven en memoria; se
+conservan los datos guardados por la persona. Después de ejecutarla se debe
+reinstalar el APK normal: el comando instala una app de comprobación.

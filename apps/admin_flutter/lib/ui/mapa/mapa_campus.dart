@@ -102,102 +102,119 @@ class _MapaCampusState extends State<MapaCampus> {
   }
 
   Widget _lienzo(PlanoCampus plano) {
-    return LayoutBuilder(builder: (context, constraints) {
-      // El lienzo respeta la proporción del plano; se centra en el espacio.
-      var ancho = constraints.maxWidth;
-      var alto = ancho / plano.proporcion;
-      if (alto > widget.alto) {
-        alto = widget.alto;
-        ancho = alto * plano.proporcion;
-      }
-
-      void colocar(Offset p) {
-        final f = widget.alColocar;
-        if (f == null) return;
-        final n = Offset((p.dx / ancho).clamp(0.0, 1.0).toDouble(),
-            (p.dy / alto).clamp(0.0, 1.0).toDouble());
-        final (lat, lng) = plano.aLatLng(n);
-        f(lat, lng);
-      }
-
-      final pines = <Widget>[];
-      for (final poi in widget.pois) {
-        if (poi.lat == null || poi.lng == null) continue;
-        final n = plano.normalizar(poi.lat!, poi.lng!);
-        if (n == null) continue;
-        final activo = poi.id == widget.seleccionado;
-        final color = AppColors.categoria(poi.categoria);
-        final tam = activo ? 18.0 : 12.0;
-        pines.add(Positioned(
-          left: n.dx * ancho - tam / 2,
-          top: n.dy * alto - tam / 2,
-          child: Tooltip(
-            message: poi.nombre,
-            child: GestureDetector(
-              onTap: widget.alTocarPoi == null
-                  ? null
-                  : () => widget.alTocarPoi!(poi),
-              child: Container(
-                width: tam,
-                height: tam,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: Colors.white, width: activo ? 3 : 2),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x66000000), blurRadius: 3),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ));
-      }
-      final nuevo = widget.pinNuevo;
-      if (nuevo != null) {
-        final n = plano.normalizar(nuevo.$1, nuevo.$2);
-        if (n != null) {
-          pines.add(Positioned(
-            left: n.dx * ancho - 16,
-            top: n.dy * alto - 32,
-            child: const Icon(Icons.location_on,
-                size: 32, color: AppColors.danger),
-          ));
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // El lienzo respeta la proporción del plano; se centra en el espacio.
+        var ancho = constraints.maxWidth;
+        var alto = ancho / plano.proporcion;
+        if (alto > widget.alto) {
+          alto = widget.alto;
+          ancho = alto * plano.proporcion;
         }
-      }
 
-      return Center(
-        child: GestureDetector(
-          onTapDown: widget.alColocar == null
-              ? null
-              : (d) => colocar(d.localPosition),
-          onPanUpdate: widget.alColocar == null
-              ? null
-              : (d) => colocar(d.localPosition),
-          child: MouseRegion(
-            cursor: widget.alColocar == null
-                ? MouseCursor.defer
-                : SystemMouseCursors.precise,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(
-                width: ancho,
-                height: alto,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(painter: _PintorPlano(plano)),
+        void colocar(Offset p) {
+          final f = widget.alColocar;
+          if (f == null) return;
+          final n = Offset(
+            (p.dx / ancho).clamp(0.0, 1.0).toDouble(),
+            (p.dy / alto).clamp(0.0, 1.0).toDouble(),
+          );
+          final (lat, lng) = plano.aLatLng(n);
+          f(lat, lng);
+        }
+
+        final pines = <Widget>[];
+        for (final poi in widget.pois) {
+          if (poi.lat == null || poi.lng == null) continue;
+          final n = plano.normalizar(poi.lat!, poi.lng!);
+          if (n == null) continue;
+          final activo = poi.id == widget.seleccionado;
+          final color = AppColors.categoria(poi.categoria);
+          final tam = activo ? 18.0 : 12.0;
+          pines.add(
+            Positioned(
+              left: n.dx * ancho - tam / 2,
+              top: n.dy * alto - tam / 2,
+              child: Tooltip(
+                message: poi.nombre,
+                child: GestureDetector(
+                  onTap: widget.alTocarPoi == null
+                      ? null
+                      : () => widget.alTocarPoi!(poi),
+                  child: Container(
+                    width: tam,
+                    height: tam,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: activo ? 3 : 2,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x66000000), blurRadius: 3),
+                      ],
                     ),
-                    ...pines,
-                  ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        final nuevo = widget.pinNuevo;
+        if (nuevo != null) {
+          final n = plano.normalizar(nuevo.$1, nuevo.$2);
+          if (n != null) {
+            // La punta del glifo `location_on` queda a 22/24 de su alto, no en el
+            // borde inferior: anclar el borde dejaba la punta ~3 px (unos 4 m
+            // del campus) al norte de la coordenada.
+            const tamPin = 32.0;
+            pines.add(
+              Positioned(
+                left: n.dx * ancho - tamPin / 2,
+                top: n.dy * alto - tamPin * 22 / 24,
+                child: const Icon(
+                  Icons.location_on,
+                  size: tamPin,
+                  color: AppColors.danger,
+                ),
+              ),
+            );
+          }
+        }
+
+        return Center(
+          child: GestureDetector(
+            onTapDown: widget.alColocar == null
+                ? null
+                : (d) => colocar(d.localPosition),
+            onPanUpdate: widget.alColocar == null
+                ? null
+                : (d) => colocar(d.localPosition),
+            child: MouseRegion(
+              cursor: widget.alColocar == null
+                  ? MouseCursor.defer
+                  : SystemMouseCursors.precise,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: ancho,
+                  height: alto,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: CustomPaint(painter: _PintorPlano(plano)),
+                      ),
+                      ...pines,
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
@@ -217,16 +234,20 @@ class _PintorPlano extends CustomPainter {
         for (final p in r.puntos) Offset(p.dx * size.width, p.dy * size.height),
       ], r.esArea);
 
-    void areas(ClaseRasgo clase, Color relleno,
-        {Color? borde, double grosor = 1}) {
+    void areas(
+      ClaseRasgo clase,
+      Color relleno, {
+      Color? borde,
+      double grosor = 1,
+    }) {
       final pintura = Paint()..color = relleno;
       final contorno = borde == null
           ? null
           : (Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = grosor
-            ..strokeJoin = StrokeJoin.round
-            ..color = borde);
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = grosor
+              ..strokeJoin = StrokeJoin.round
+              ..color = borde);
       for (final r in plano.rasgos[clase]!) {
         if (!r.esArea) continue;
         final camino = trazo(r);
@@ -235,8 +256,14 @@ class _PintorPlano extends CustomPainter {
       }
     }
 
-    void lineas(ClaseRasgo clase, Color color, double grosor,
-        {double? trazoDe, double? huecoDe, StrokeCap punta = StrokeCap.round}) {
+    void lineas(
+      ClaseRasgo clase,
+      Color color,
+      double grosor, {
+      double? trazoDe,
+      double? huecoDe,
+      StrokeCap punta = StrokeCap.round,
+    }) {
       final pintura = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = grosor
@@ -260,8 +287,12 @@ class _PintorPlano extends CustomPainter {
 
     canvas.drawRect(Offset.zero & size, Paint()..color = _C.tierra);
     areas(ClaseRasgo.zona, _C.zona);
-    areas(ClaseRasgo.campus, _C.campus,
-        borde: _C.bordeCampus, grosor: ancho(1.5));
+    areas(
+      ClaseRasgo.campus,
+      _C.campus,
+      borde: _C.bordeCampus,
+      grosor: ancho(1.5),
+    );
     areas(ClaseRasgo.verde, _C.verde);
     areas(ClaseRasgo.arboles, _C.arboles);
     areas(ClaseRasgo.agua, _C.agua);
@@ -269,17 +300,29 @@ class _PintorPlano extends CustomPainter {
     areas(ClaseRasgo.cancha, _C.cancha, borde: _C.bordeCancha);
     areas(ClaseRasgo.plazoleta, _C.plazoleta);
 
-    lineas(ClaseRasgo.viaPrincipal, _C.bordeViaPrincipal,
-        ancho(8 + 2 * 1.2, minimo: 3));
+    lineas(
+      ClaseRasgo.viaPrincipal,
+      _C.bordeViaPrincipal,
+      ancho(8 + 2 * 1.2, minimo: 3),
+    );
     lineas(ClaseRasgo.via, _C.bordeVia, ancho(5 + 2 * 1.2, minimo: 3));
     lineas(ClaseRasgo.viaPrincipal, _C.viaPrincipal, ancho(8, minimo: 2));
     lineas(ClaseRasgo.via, _C.via, ancho(5, minimo: 2));
-    lineas(ClaseRasgo.sendero, _C.sendero, ancho(1.4),
-        trazoDe: ancho(2.5, minimo: 3), huecoDe: ancho(1.5, minimo: 2));
-    lineas(ClaseRasgo.escalera, _C.sendero, ancho(2.6, minimo: 3),
-        trazoDe: ancho(0.6),
-        huecoDe: ancho(0.5),
-        punta: StrokeCap.butt);
+    lineas(
+      ClaseRasgo.sendero,
+      _C.sendero,
+      ancho(1.4),
+      trazoDe: ancho(2.5, minimo: 3),
+      huecoDe: ancho(1.5, minimo: 2),
+    );
+    lineas(
+      ClaseRasgo.escalera,
+      _C.sendero,
+      ancho(2.6, minimo: 3),
+      trazoDe: ancho(0.6),
+      huecoDe: ancho(0.5),
+      punta: StrokeCap.butt,
+    );
     areas(ClaseRasgo.edificio, _C.edificio, borde: _C.bordeEdificio);
   }
 

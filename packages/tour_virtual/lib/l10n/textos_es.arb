@@ -278,5 +278,11 @@
   "navAproximada": "La entrada de este lugar aún es aproximada.",
   "@navAproximada": {"description": "La entrada no se ha medido en el campus todavía."},
   "navPlanoSemantica": "Plano con la ruta hasta {lugar}",
-  "@navPlanoSemantica": {"description": "Etiqueta para el lector de pantalla del plano con la ruta.", "placeholders": {"lugar": {"type": "String"}}}
+  "@navPlanoSemantica": {"description": "Etiqueta para el lector de pantalla del plano con la ruta.", "placeholders": {"lugar": {"type": "String"}}},
+  "verMapa3d": "Ver mapa en 3D",
+  "verMapa2d": "Volver al mapa 2D",
+  "mapa3dDescripcion": "Maqueta 3D del campus. Toca una parada para ver su ficha.",
+  "mapa3dNoDisponible": "No se pudo abrir el mapa 3D. Puedes seguir en el plano o intentarlo de nuevo.",
+  "creditoModelo3d": "Modelo 3D: ElMapita UTB",
+  "mapa3dCargando": "Cargando el mapa 3D"
 }

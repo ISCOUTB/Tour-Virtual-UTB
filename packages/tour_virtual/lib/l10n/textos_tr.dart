@@ -672,4 +672,24 @@ class TextosTr extends Textos {
   String navPlanoSemantica(String lugar) {
     return '$lugar rotasını gösteren harita';
   }
+
+  @override
+  String get verMapa3d => '3B haritayı göster';
+
+  @override
+  String get verMapa2d => '2B haritaya dön';
+
+  @override
+  String get mapa3dDescripcion =>
+      'Kampüsün 3B modeli. Ayrıntılar için bir durağa dokunun.';
+
+  @override
+  String get mapa3dNoDisponible =>
+      '3B harita açılamadı. 2B haritayı kullanabilir veya tekrar deneyebilirsiniz.';
+
+  @override
+  String get creditoModelo3d => '3B model: ElMapita UTB';
+
+  @override
+  String get mapa3dCargando => '3B harita yükleniyor';
 }

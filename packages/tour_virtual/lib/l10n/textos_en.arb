@@ -181,5 +181,11 @@
   "navCalibrar": "The compass is inaccurate: move your phone in a figure eight.",
   "navSinRuta": "I couldn’t find a way to {lugar}.",
   "navAproximada": "This place’s entrance is still approximate.",
-  "navPlanoSemantica": "Map with the route to {lugar}"
+  "navPlanoSemantica": "Map with the route to {lugar}",
+  "verMapa3d": "View 3D map",
+  "verMapa2d": "Return to 2D map",
+  "mapa3dDescripcion": "3D campus model. Tap a stop to view its details.",
+  "mapa3dNoDisponible": "The 3D map could not open. You can use the 2D map or try again.",
+  "creditoModelo3d": "3D model: ElMapita UTB",
+  "mapa3dCargando": "Loading the 3D map"
 }

@@ -648,4 +648,22 @@ class TextosZh extends Textos {
   String navPlanoSemantica(String lugar) {
     return '显示前往$lugar路线的地图';
   }
+
+  @override
+  String get verMapa3d => '查看3D地图';
+
+  @override
+  String get verMapa2d => '返回2D地图';
+
+  @override
+  String get mapa3dDescripcion => '校园3D模型。点按站点可查看详情。';
+
+  @override
+  String get mapa3dNoDisponible => '无法打开3D地图。您可以使用2D地图或重试。';
+
+  @override
+  String get creditoModelo3d => '3D模型：ElMapita UTB';
+
+  @override
+  String get mapa3dCargando => '正在加载3D地图';
 }

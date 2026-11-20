@@ -181,5 +181,11 @@
   "navCalibrar": "指南针不准：请将手机按 8 字形移动。",
   "navSinRuta": "没有找到前往{lugar}的路线。",
   "navAproximada": "此地点的入口位置仍是大概位置。",
-  "navPlanoSemantica": "显示前往{lugar}路线的地图"
+  "navPlanoSemantica": "显示前往{lugar}路线的地图",
+  "verMapa3d": "查看3D地图",
+  "verMapa2d": "返回2D地图",
+  "mapa3dDescripcion": "校园3D模型。点按站点可查看详情。",
+  "mapa3dNoDisponible": "无法打开3D地图。您可以使用2D地图或重试。",
+  "creditoModelo3d": "3D模型：ElMapita UTB",
+  "mapa3dCargando": "正在加载3D地图"
 }

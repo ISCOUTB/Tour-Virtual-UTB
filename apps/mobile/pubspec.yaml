@@ -27,6 +27,9 @@ dev_dependencies:
   # Las pruebas manejan directamente lo que el paquete usa por dentro.
   flutter_riverpod: ^2.6.1
   http: ^1.6.0
+  integration_test:
+    sdk: flutter
+  webview_flutter: 4.13.0
 
 flutter:
   uses-material-design: true

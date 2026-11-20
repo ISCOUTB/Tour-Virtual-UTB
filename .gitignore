@@ -48,3 +48,7 @@ apps/mobile/android/app/src/assets/mapa_campus.webp
 # Al repo solo va el grafo que sale de ellos.
 levantamiento-*.json
 recorridos*.geojson
+
+# Maqueta institucional de ElMapita: scripts/preparar_modelo3d.py la descarga
+# y prepara; se empaqueta en el APK, sin versionar el binario.
+/packages/tour_virtual/assets/mapa3d/*.glb

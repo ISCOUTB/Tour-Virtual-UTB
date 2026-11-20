@@ -181,5 +181,11 @@
   "navCalibrar": "La boussole est imprécise : bougez le téléphone en dessinant un huit.",
   "navSinRuta": "Je n’ai pas trouvé de chemin vers {lugar}.",
   "navAproximada": "L’entrée de ce lieu est encore approximative.",
-  "navPlanoSemantica": "Plan avec l’itinéraire vers {lugar}"
+  "navPlanoSemantica": "Plan avec l’itinéraire vers {lugar}",
+  "verMapa3d": "Voir la carte en 3D",
+  "verMapa2d": "Revenir à la carte 2D",
+  "mapa3dDescripcion": "Maquette 3D du campus. Touchez une étape pour voir sa fiche.",
+  "mapa3dNoDisponible": "Impossible d’ouvrir la carte 3D. Vous pouvez utiliser la carte 2D ou réessayer.",
+  "creditoModelo3d": "Modèle 3D : ElMapita UTB",
+  "mapa3dCargando": "Chargement de la carte 3D"
 }

@@ -554,4 +554,132 @@ class TextosFr extends Textos {
 
   @override
   String get ayuda => 'Aide';
+
+  @override
+  String get comoLlegar => 'Itinéraire';
+
+  @override
+  String navTitulo(String lugar) {
+    return 'Itinéraire vers $lugar';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return 'Je vous guide jusqu’à $lugar';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      'J’utilise le GPS du téléphone tant que le guidage est ouvert. Votre position ne quitte pas le téléphone et n’est pas enregistrée.';
+
+  @override
+  String get navPermitir => 'Autoriser la position';
+
+  @override
+  String get navSinPermiso =>
+      'Sans l’autorisation de position, je ne peux pas vous guider. Vous pouvez trouver le lieu sur le plan ou le voir en 360°.';
+
+  @override
+  String get navAbrirAjustes => 'Ouvrir les réglages';
+
+  @override
+  String get navGpsApagado =>
+      'La localisation du téléphone est désactivée. Activez-la et réessayez.';
+
+  @override
+  String get navSimulada => 'Position simulée';
+
+  @override
+  String get navBuscando => 'Recherche du signal GPS…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return 'Signal faible (±$metros m). Allez dans un espace dégagé.';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return 'Continuez tout droit sur $metros m';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return 'Dans $metros m, tournez à droite';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return 'Dans $metros m, tournez à gauche';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return 'Dans $metros m, serrez à droite';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return 'Dans $metros m, serrez à gauche';
+  }
+
+  @override
+  String get navVuelta => 'Faites demi-tour';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '$lugar est à $metros m';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return 'Encore $metros m · environ $minutos min';
+  }
+
+  @override
+  String get navRecalculando =>
+      'Vous avez quitté l’itinéraire. Je cherche un autre…';
+
+  @override
+  String get navSinEscaleras => 'Sans escaliers';
+
+  @override
+  String get navPlano => 'Plan';
+
+  @override
+  String get navCamara => 'Caméra';
+
+  @override
+  String get navTerminar => 'Terminer';
+
+  @override
+  String navLlegaste(String lugar) {
+    return 'Vous êtes arrivé à $lugar';
+  }
+
+  @override
+  String get navVerFicha => 'Voir la fiche';
+
+  @override
+  String get navCamaraAviso => 'Regardez le chemin, pas l’écran.';
+
+  @override
+  String get navCamaraNoDisponible =>
+      'Impossible d’ouvrir la caméra. Suivez l’itinéraire sur le plan.';
+
+  @override
+  String get navCalibrar =>
+      'La boussole est imprécise : bougez le téléphone en dessinant un huit.';
+
+  @override
+  String navSinRuta(String lugar) {
+    return 'Je n’ai pas trouvé de chemin vers $lugar.';
+  }
+
+  @override
+  String get navAproximada => 'L’entrée de ce lieu est encore approximative.';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return 'Plan avec l’itinéraire vers $lugar';
+  }
 }

@@ -30,6 +30,12 @@ dependencies:
   # just_audio no trae implementación para Windows: sin esta, cada audio
   # falla con MissingPluginException en el escritorio de desarrollo.
   just_audio_windows: ^0.2.3
+  geolocator: ^14.1.2
+  camera: ^0.12.0+2
+  flutter_tts: ^4.2.5
+  dchs_motion_sensors: 2.0.2
+  # 1.7 conserva compatibilidad con Flutter 3.41 y el GPS del módulo.
+  wakelock_plus: 1.7.0
 
 dev_dependencies:
   flutter_test:
@@ -50,6 +56,8 @@ flutter:
     # Max, la mascota de la UTB: ilustraciones de la guía de inicio, la
     # cabecera y el cierre (lib/ui/comunes/ilustracion_max.dart).
     - assets/max/
+    # Grafo peatonal y accesos para la navegación (scripts/grafo_campus.py).
+    - assets/navegacion/
     # Medios del APK de demostración que funciona sin red
     # (ContenidoLocal(medios: FuenteMedio.empaquetados)). En el repositorio van
     # vacías: son panorámicas y narraciones institucionales, y las llena

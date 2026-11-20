@@ -1,0 +1,30 @@
+name: utb_levantamiento
+description: >-
+  App secundaria del equipo para medir el campus antes de terminar la
+  realidad aumentada: entradas, tramos del grafo, norte de las panorámicas,
+  error de la brújula y pruebas de la guía a pie. No es para visitantes y no
+  se publica. Usa la misma lógica de navegación que el módulo
+  (packages/tour_virtual), así lo que se prueba en el campus es lo que corre
+  en la app.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  tour_virtual:
+    path: ../../packages/tour_virtual
+  # Las medidas se guardan en el teléfono hasta que se copian para el equipo.
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

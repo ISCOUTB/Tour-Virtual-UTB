@@ -526,4 +526,126 @@ class TextosZh extends Textos {
 
   @override
   String get ayuda => '帮助';
+
+  @override
+  String get comoLlegar => '怎么去';
+
+  @override
+  String navTitulo(String lugar) {
+    return '前往$lugar';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return '我带你去$lugar';
+  }
+
+  @override
+  String get navPermisoTexto => '导航开启时我会使用手机的 GPS。你的位置不会离开手机，也不会被保存。';
+
+  @override
+  String get navPermitir => '允许使用位置';
+
+  @override
+  String get navSinPermiso => '没有位置权限我就无法为你导航。你可以在地图上找到这个地点，或以 360° 查看。';
+
+  @override
+  String get navAbrirAjustes => '打开设置';
+
+  @override
+  String get navGpsApagado => '手机定位已关闭。请打开后重试。';
+
+  @override
+  String get navSimulada => '模拟位置';
+
+  @override
+  String get navBuscando => '正在搜索 GPS 信号…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return '信号较弱（±$metros 米）。请到开阔处。';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return '直行 $metros 米';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return '$metros 米后右转';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return '$metros 米后左转';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return '$metros 米后靠右走';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return '$metros 米后靠左走';
+  }
+
+  @override
+  String get navVuelta => '请掉头';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '距离$lugar还有 $metros 米';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return '还剩 $metros 米 · 约 $minutos 分钟';
+  }
+
+  @override
+  String get navRecalculando => '你偏离了路线，正在重新规划…';
+
+  @override
+  String get navSinEscaleras => '避开楼梯';
+
+  @override
+  String get navPlano => '地图';
+
+  @override
+  String get navCamara => '相机';
+
+  @override
+  String get navTerminar => '结束';
+
+  @override
+  String navLlegaste(String lugar) {
+    return '你已到达$lugar';
+  }
+
+  @override
+  String get navVerFicha => '查看详情';
+
+  @override
+  String get navCamaraAviso => '请看路，不要看屏幕。';
+
+  @override
+  String get navCamaraNoDisponible => '无法打开相机。请在地图上跟随路线。';
+
+  @override
+  String get navCalibrar => '指南针不准：请将手机按 8 字形移动。';
+
+  @override
+  String navSinRuta(String lugar) {
+    return '没有找到前往$lugar的路线。';
+  }
+
+  @override
+  String get navAproximada => '此地点的入口位置仍是大概位置。';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return '显示前往$lugar路线的地图';
+  }
 }

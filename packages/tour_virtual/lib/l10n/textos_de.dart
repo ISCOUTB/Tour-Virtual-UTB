@@ -553,4 +553,132 @@ class TextosDe extends Textos {
 
   @override
   String get ayuda => 'Hilfe';
+
+  @override
+  String get comoLlegar => 'Route';
+
+  @override
+  String navTitulo(String lugar) {
+    return 'Route zu $lugar';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return 'Ich führe dich zu $lugar';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      'Ich nutze das GPS deines Handys, solange die Führung offen ist. Dein Standort verlässt das Handy nicht und wird nicht gespeichert.';
+
+  @override
+  String get navPermitir => 'Standort erlauben';
+
+  @override
+  String get navSinPermiso =>
+      'Ohne Standortfreigabe kann ich dich nicht führen. Du kannst den Ort auf der Karte finden oder in 360° ansehen.';
+
+  @override
+  String get navAbrirAjustes => 'Einstellungen öffnen';
+
+  @override
+  String get navGpsApagado =>
+      'Der Standort deines Handys ist aus. Schalte ihn ein und versuche es erneut.';
+
+  @override
+  String get navSimulada => 'Simulierter Standort';
+
+  @override
+  String get navBuscando => 'GPS-Signal wird gesucht…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return 'Schwaches Signal (±$metros m). Geh an eine offene Stelle.';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return '$metros m geradeaus';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return 'In $metros m rechts abbiegen';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return 'In $metros m links abbiegen';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return 'In $metros m leicht rechts';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return 'In $metros m leicht links';
+  }
+
+  @override
+  String get navVuelta => 'Bitte wenden';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '$lugar ist $metros m entfernt';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return 'Noch $metros m · etwa $minutos Min.';
+  }
+
+  @override
+  String get navRecalculando =>
+      'Du hast die Route verlassen. Ich berechne eine neue…';
+
+  @override
+  String get navSinEscaleras => 'Ohne Treppen';
+
+  @override
+  String get navPlano => 'Karte';
+
+  @override
+  String get navCamara => 'Kamera';
+
+  @override
+  String get navTerminar => 'Beenden';
+
+  @override
+  String navLlegaste(String lugar) {
+    return 'Du bist bei $lugar angekommen';
+  }
+
+  @override
+  String get navVerFicha => 'Details ansehen';
+
+  @override
+  String get navCamaraAviso => 'Schau auf den Weg, nicht aufs Display.';
+
+  @override
+  String get navCamaraNoDisponible =>
+      'Die Kamera ließ sich nicht öffnen. Folge der Route auf der Karte.';
+
+  @override
+  String get navCalibrar =>
+      'Der Kompass ist ungenau: Bewege das Handy in einer Acht.';
+
+  @override
+  String navSinRuta(String lugar) {
+    return 'Ich habe keinen Weg zu $lugar gefunden.';
+  }
+
+  @override
+  String get navAproximada => 'Der Eingang dieses Ortes ist noch ungefähr.';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return 'Karte mit der Route zu $lugar';
+  }
 }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Herramienta interna del equipo: solo en español. -->
+<resources>
+    <string name="app_name">Levantamiento UTB</string>
+</resources>

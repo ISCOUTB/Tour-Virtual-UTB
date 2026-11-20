@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/textos.dart';
 import '../loading_screen.dart';
 import '../recorrido_screen.dart';
+import '../ui/navegacion/pantalla_navegacion.dart';
 import '../ui/comunes/transiciones.dart';
 import '../ui/inicio/pantalla_tour.dart';
 import 'tema.dart';
@@ -12,6 +13,10 @@ abstract final class Rutas {
   static const carga = '/';
   static const inicio = '/inicio';
   static const recorrido = '/recorrido';
+  static const navegar = '/navegar';
+
+  /// Guía a pie hasta un lugar (realidad aumentada, RF-26).
+  static String haciaNavegacion(int poiId) => '$navegar/$poiId';
 
   /// Enlace al recorrido de un lugar, opcionalmente entrando por una escena.
   static String haciaRecorrido(int lugarId, {int? escenaId}) {
@@ -71,6 +76,15 @@ GoRouter crearEnrutador({String? ubicacionInicial}) => GoRouter(
               ? const _RutaInvalida()
               : RecorridoScreen(lugarId: lugarId, escenaInicialId: escenaId),
         );
+      },
+    ),
+    GoRoute(
+      path: '${Rutas.navegar}/:poiId',
+      builder: (context, state) {
+        final poiId = int.tryParse(state.pathParameters['poiId'] ?? '');
+        return poiId == null
+            ? const _RutaInvalida()
+            : PantallaNavegacion(poiId: poiId);
       },
     ),
   ],

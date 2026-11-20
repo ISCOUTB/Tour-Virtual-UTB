@@ -3,17 +3,25 @@ name: Frontend movil
 # El modulo vive en packages/tour_virtual (lo que se incrusta en la UTB APP) y
 # apps/mobile es la app de demostracion que lo abre, corre las pruebas y
 # genera el APK. Un cambio en cualquiera de los dos verifica ambos.
+# apps/levantamiento es la app secundaria del equipo para medir el campus: usa
+# la lógica de navegación del módulo, así que también se verifica.
 on:
   push:
     branches: [master]
     paths:
       - 'packages/tour_virtual/**'
       - 'apps/mobile/**'
+      - 'apps/levantamiento/**'
+      - 'scripts/grafo_campus.py'
+      - 'scripts/test_grafo_campus.py'
       - '.github/workflows/mobile.yml'
   pull_request:
     paths:
       - 'packages/tour_virtual/**'
       - 'apps/mobile/**'
+      - 'apps/levantamiento/**'
+      - 'scripts/grafo_campus.py'
+      - 'scripts/test_grafo_campus.py'
       - '.github/workflows/mobile.yml'
 
 # El token de GitHub de estos jobs solo necesita leer el código.
@@ -27,6 +35,16 @@ permissions:
 # Se sube cuando se sepa que version usa la UTB APP.
 
 jobs:
+  grafo:
+    name: Importar datos de campo (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -I -m unittest discover -s scripts -p test_grafo_campus.py -v
+
   modulo:
     name: Modulo (formato, codigo generado y analisis)
     runs-on: ubuntu-latest
@@ -93,13 +111,44 @@ jobs:
       - name: Pruebas
         run: flutter test
 
-  compilar-android:
-    name: APK de debug
+  levantamiento:
+    name: App de levantamiento (analisis y pruebas)
     runs-on: ubuntu-latest
-    needs: app
+    needs: modulo
     defaults:
       run:
-        working-directory: apps/mobile
+        working-directory: apps/levantamiento
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: 3.47.x
+          cache: true
+
+      - name: Resolver dependencias
+        run: flutter pub get
+
+      - name: Verificar formato
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analisis estatico
+        run: flutter analyze --fatal-infos
+
+      - name: Pruebas
+        run: flutter test
+
+  compilar-android:
+    name: APK de debug (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    needs: [app, levantamiento]
+    strategy:
+      matrix:
+        app: [mobile, levantamiento]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
 
@@ -119,6 +168,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          name: ${{ matrix.app }}-debug-apk
+          path: apps/${{ matrix.app }}/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7

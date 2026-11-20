@@ -542,4 +542,131 @@ class TextosEn extends Textos {
 
   @override
   String get ayuda => 'Help';
+
+  @override
+  String get comoLlegar => 'Get directions';
+
+  @override
+  String navTitulo(String lugar) {
+    return 'Directions to $lugar';
+  }
+
+  @override
+  String navPermisoTitulo(String lugar) {
+    return 'I’ll guide you to $lugar';
+  }
+
+  @override
+  String get navPermisoTexto =>
+      'I use your phone’s GPS while the guide is open. Your location never leaves your phone and is not stored.';
+
+  @override
+  String get navPermitir => 'Allow location';
+
+  @override
+  String get navSinPermiso =>
+      'Without location permission I can’t guide you. You can find the place on the map or see it in 360°.';
+
+  @override
+  String get navAbrirAjustes => 'Open settings';
+
+  @override
+  String get navGpsApagado =>
+      'Your phone’s location is turned off. Turn it on and try again.';
+
+  @override
+  String get navSimulada => 'Simulated location';
+
+  @override
+  String get navBuscando => 'Looking for GPS signal…';
+
+  @override
+  String navSenalDebil(int metros) {
+    return 'Weak signal (±$metros m). Move to an open space.';
+  }
+
+  @override
+  String navRecto(int metros) {
+    return 'Go straight for $metros m';
+  }
+
+  @override
+  String navDerecha(int metros) {
+    return 'In $metros m, turn right';
+  }
+
+  @override
+  String navIzquierda(int metros) {
+    return 'In $metros m, turn left';
+  }
+
+  @override
+  String navLigeraDerecha(int metros) {
+    return 'In $metros m, bear right';
+  }
+
+  @override
+  String navLigeraIzquierda(int metros) {
+    return 'In $metros m, bear left';
+  }
+
+  @override
+  String get navVuelta => 'Turn around';
+
+  @override
+  String navLlegando(String lugar, int metros) {
+    return '$lugar is $metros m away';
+  }
+
+  @override
+  String navFaltan(int metros, int minutos) {
+    return '$metros m to go · about $minutos min';
+  }
+
+  @override
+  String get navRecalculando => 'You left the route. Finding a new one…';
+
+  @override
+  String get navSinEscaleras => 'Avoid stairs';
+
+  @override
+  String get navPlano => 'Map';
+
+  @override
+  String get navCamara => 'Camera';
+
+  @override
+  String get navTerminar => 'End';
+
+  @override
+  String navLlegaste(String lugar) {
+    return 'You’ve arrived at $lugar';
+  }
+
+  @override
+  String get navVerFicha => 'See the details';
+
+  @override
+  String get navCamaraAviso => 'Watch the path, not the screen.';
+
+  @override
+  String get navCamaraNoDisponible =>
+      'The camera couldn’t be opened. Follow the route on the map.';
+
+  @override
+  String get navCalibrar =>
+      'The compass is inaccurate: move your phone in a figure eight.';
+
+  @override
+  String navSinRuta(String lugar) {
+    return 'I couldn’t find a way to $lugar.';
+  }
+
+  @override
+  String get navAproximada => 'This place’s entrance is still approximate.';
+
+  @override
+  String navPlanoSemantica(String lugar) {
+    return 'Map with the route to $lugar';
+  }
 }

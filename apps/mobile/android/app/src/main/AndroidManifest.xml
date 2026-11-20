@@ -3,6 +3,14 @@
          Antes solo estaba declarado en el manifest de debug, por lo que un APK de
          release no alcanzaba la red. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Guía a pie por el campus (realidad aumentada). La posición se pide
+         solo mientras la guía está abierta y nunca sale del teléfono (RN-10). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- La flecha sobre la cámara (RF-28). No graba ni guarda imágenes. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
 
     <application
         android:label="@string/app_name"

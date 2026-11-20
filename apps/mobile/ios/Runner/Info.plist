@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Para guiarte a pie por el campus de la UTB. Tu ubicación no sale del teléfono ni se guarda.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Para mostrar la flecha de la guía sobre la imagen de la cámara. No se graban ni se guardan imágenes.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

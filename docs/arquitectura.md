@@ -44,7 +44,7 @@ El esfuerzo estimado pasa de 10 a 14–16 semanas.
 
 ### Inconsistencia resuelta
 
-Los mockups del panel administrativo mencionan «configurar navegación y visualización AR». El documento de MVP descartó explícitamente la realidad aumentada en favor del recorrido 360 por escenas panorámicas (Ruta A). **Se mantiene 360.** Cualquier funcionalidad AR se trata como fase posterior con su propio análisis.
+Los mockups del panel administrativo mencionan «configurar navegación y visualización AR». El documento de MVP descartó la realidad aumentada en favor del recorrido 360 por escenas panorámicas (Ruta A), pero el SRS v3.1 la deja en alcance (F-06, RF-26 a RF-34) y se resolvió a favor del SRS (ver la tabla de contradicciones arriba). **El 360 se mantiene y la realidad aumentada se suma:** cómo se construye está en [plan-realidad-aumentada.md](plan-realidad-aumentada.md) y lo que falta, en [pendientes-realidad-aumentada.md](pendientes-realidad-aumentada.md).
 
 ---
 

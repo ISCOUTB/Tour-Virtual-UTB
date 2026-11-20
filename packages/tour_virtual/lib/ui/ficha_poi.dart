@@ -7,6 +7,7 @@ import '../datos/analitica.dart';
 import '../datos/modelos/modelos.dart';
 import '../datos/progreso.dart';
 import '../datos/proveedores.dart';
+import '../navegacion/grafo_campus.dart';
 import '../l10n/textos.dart';
 import '../nucleo/errores.dart';
 import '../nucleo/idiomas.dart';
@@ -53,6 +54,10 @@ Future<void> abrirPoi(
         Rutas.haciaRecorrido(poi.lugarId, escenaId: poi.escenaPrincipalId),
       );
     },
+    alComoLlegar: () {
+      Navigator.of(context).pop();
+      context.push(Rutas.haciaNavegacion(poi.id));
+    },
   );
 
   // El cierre se muestra al salir de la ficha y no encima de ella: apilar dos
@@ -81,6 +86,7 @@ Future<void> mostrarFichaPoi(
   required int numero,
   required int total,
   required VoidCallback alVerEn360,
+  VoidCallback? alComoLlegar,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -97,6 +103,7 @@ Future<void> mostrarFichaPoi(
         total: total,
         control: control,
         alVerEn360: alVerEn360,
+        alComoLlegar: alComoLlegar,
       ),
     ),
   );
@@ -109,6 +116,7 @@ class _FichaPoi extends ConsumerWidget {
     required this.total,
     required this.control,
     required this.alVerEn360,
+    this.alComoLlegar,
   });
 
   final Poi poi;
@@ -116,6 +124,10 @@ class _FichaPoi extends ConsumerWidget {
   final int total;
   final ScrollController control;
   final VoidCallback alVerEn360;
+
+  /// Guía a pie hasta el lugar. Solo para las paradas con entrada en el
+  /// grafo peatonal.
+  final VoidCallback? alComoLlegar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -230,6 +242,23 @@ class _FichaPoi extends ConsumerWidget {
           )
         else
           RecuadroInfo(icono: Icons.threesixty_rounded, texto: txt.sin360),
+        if (alComoLlegar != null &&
+            actual.esParada &&
+            (ref
+                    .watch(grafoCampusProvider)
+                    .valueOrNull
+                    ?.tieneAcceso(actual.id) ??
+                false)) ...[
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: alComoLlegar,
+            icon: const Icon(Icons.directions_walk_rounded),
+            label: Text(txt.comoLlegar),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
+          ),
+        ],
 
         const SizedBox(height: 28),
         ...detalle.when(

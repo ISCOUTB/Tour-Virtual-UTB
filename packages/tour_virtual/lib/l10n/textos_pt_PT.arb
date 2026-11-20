@@ -56,5 +56,19 @@
   "guiaMapa": "Encontre cada paragem no mapa do campus.",
   "guiaAudio": "Ouça a história de cada lugar no seu idioma.",
   "guiaExplorar": "Explorar por conta própria",
-  "verGuiaDetalle": "O Max volta a explicar como funciona o percurso."
+  "verGuiaDetalle": "O Max volta a explicar como funciona o percurso.",
+  "navPermisoTitulo": "Guio-o até {lugar}",
+  "navPermisoTexto": "Uso o GPS do telemóvel enquanto o guia está aberto. A sua localização não sai do telemóvel nem é guardada.",
+  "navSinPermiso": "Sem permissão de localização não o consigo guiar. Pode encontrar o lugar no mapa ou vê-lo em 360°.",
+  "navAbrirAjustes": "Abrir definições",
+  "navGpsApagado": "A localização do telemóvel está desligada. Ative-a e tente novamente.",
+  "navBuscando": "À procura de sinal GPS…",
+  "navRecalculando": "Saiu do percurso. A calcular outro…",
+  "navCamara": "Câmara",
+  "navTerminar": "Terminar",
+  "navLlegaste": "Chegou a {lugar}",
+  "navCamaraAviso": "Olhe para o caminho, não para o ecrã.",
+  "navCamaraNoDisponible": "Não foi possível abrir a câmara. Siga o percurso no mapa.",
+  "navCalibrar": "A bússola está imprecisa: mova o telemóvel desenhando um oito.",
+  "navPlanoSemantica": "Mapa com o percurso até {lugar}"
 }

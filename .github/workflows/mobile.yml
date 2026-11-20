@@ -14,6 +14,8 @@ on:
       - 'apps/levantamiento/**'
       - 'scripts/grafo_campus.py'
       - 'scripts/test_grafo_campus.py'
+      - 'scripts/preparar_modelo3d.py'
+      - 'scripts/test_modelo3d.py'
       - '.github/workflows/mobile.yml'
   pull_request:
     paths:
@@ -22,6 +24,8 @@ on:
       - 'apps/levantamiento/**'
       - 'scripts/grafo_campus.py'
       - 'scripts/test_grafo_campus.py'
+      - 'scripts/preparar_modelo3d.py'
+      - 'scripts/test_modelo3d.py'
       - '.github/workflows/mobile.yml'
 
 # El token de GitHub de estos jobs solo necesita leer el código.
@@ -43,7 +47,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: python -I -m unittest discover -s scripts -p test_grafo_campus.py -v
+      - run: python -I -m unittest discover -s scripts -p 'test_*.py' -v
 
   modulo:
     name: Modulo (formato, codigo generado y analisis)
@@ -164,6 +168,8 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      - name: Preparar maqueta 3D del campus
+        run: python ../../scripts/preparar_modelo3d.py
       - run: flutter build apk --debug
 
       - uses: actions/upload-artifact@v4

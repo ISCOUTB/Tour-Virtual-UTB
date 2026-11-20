@@ -181,5 +181,11 @@
   "navCalibrar": "Der Kompass ist ungenau: Bewege das Handy in einer Acht.",
   "navSinRuta": "Ich habe keinen Weg zu {lugar} gefunden.",
   "navAproximada": "Der Eingang dieses Ortes ist noch ungefähr.",
-  "navPlanoSemantica": "Karte mit der Route zu {lugar}"
+  "navPlanoSemantica": "Karte mit der Route zu {lugar}",
+  "verMapa3d": "3D-Karte anzeigen",
+  "verMapa2d": "Zur 2D-Karte zurückkehren",
+  "mapa3dDescripcion": "3D-Modell des Campus. Tippen Sie auf eine Station, um Details zu sehen.",
+  "mapa3dNoDisponible": "Die 3D-Karte konnte nicht geöffnet werden. Nutzen Sie die 2D-Karte oder versuchen Sie es erneut.",
+  "creditoModelo3d": "3D-Modell: ElMapita UTB",
+  "mapa3dCargando": "3D-Karte wird geladen"
 }

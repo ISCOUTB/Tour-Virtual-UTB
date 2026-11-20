@@ -1205,6 +1205,42 @@ abstract class Textos {
   /// In es, this message translates to:
   /// **'Plano con la ruta hasta {lugar}'**
   String navPlanoSemantica(String lugar);
+
+  /// No description provided for @verMapa3d.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver mapa en 3D'**
+  String get verMapa3d;
+
+  /// No description provided for @verMapa2d.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver al mapa 2D'**
+  String get verMapa2d;
+
+  /// No description provided for @mapa3dDescripcion.
+  ///
+  /// In es, this message translates to:
+  /// **'Maqueta 3D del campus. Toca una parada para ver su ficha.'**
+  String get mapa3dDescripcion;
+
+  /// No description provided for @mapa3dNoDisponible.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo abrir el mapa 3D. Puedes seguir en el plano o intentarlo de nuevo.'**
+  String get mapa3dNoDisponible;
+
+  /// No description provided for @creditoModelo3d.
+  ///
+  /// In es, this message translates to:
+  /// **'Modelo 3D: ElMapita UTB'**
+  String get creditoModelo3d;
+
+  /// No description provided for @mapa3dCargando.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando el mapa 3D'**
+  String get mapa3dCargando;
 }
 
 class _TextosDelegate extends LocalizationsDelegate<Textos> {

@@ -154,6 +154,10 @@ flutter test                                                 # incluye integraci
 
 ## Pendiente, del lado de la UTB
 
+La vista 3D opcional del mapa necesita preparar la maqueta antes de compilar
+y permitir el servidor local del visor en Android/iOS. Los recursos y la
+configuración de loopback están descritos en [mapa-3d.md](mapa-3d.md).
+
 | Decisión | Afecta a |
 |---|---|
 | Nube o local | La línea de `fuente`. Si es nube, quién aloja la API, la base y el almacenamiento. |

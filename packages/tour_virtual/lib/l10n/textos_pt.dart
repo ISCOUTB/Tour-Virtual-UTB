@@ -675,6 +675,26 @@ class TextosPt extends Textos {
   String navPlanoSemantica(String lugar) {
     return 'Mapa com a rota até $lugar';
   }
+
+  @override
+  String get verMapa3d => 'Ver mapa em 3D';
+
+  @override
+  String get verMapa2d => 'Voltar ao mapa 2D';
+
+  @override
+  String get mapa3dDescripcion =>
+      'Maquete 3D do campus. Toque em uma parada para ver os detalhes.';
+
+  @override
+  String get mapa3dNoDisponible =>
+      'Não foi possível abrir o mapa 3D. Você pode usar o mapa 2D ou tentar novamente.';
+
+  @override
+  String get creditoModelo3d => 'Modelo 3D: ElMapita UTB';
+
+  @override
+  String get mapa3dCargando => 'Carregando o mapa 3D';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

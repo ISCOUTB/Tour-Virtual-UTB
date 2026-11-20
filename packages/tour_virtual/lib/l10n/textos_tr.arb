@@ -181,5 +181,11 @@
   "navCalibrar": "Pusula hassas değil: telefonu sekiz çizerek hareket ettirin.",
   "navSinRuta": "{lugar} için bir yol bulamadım.",
   "navAproximada": "Bu yerin girişi henüz yaklaşık.",
-  "navPlanoSemantica": "{lugar} rotasını gösteren harita"
+  "navPlanoSemantica": "{lugar} rotasını gösteren harita",
+  "verMapa3d": "3B haritayı göster",
+  "verMapa2d": "2B haritaya dön",
+  "mapa3dDescripcion": "Kampüsün 3B modeli. Ayrıntılar için bir durağa dokunun.",
+  "mapa3dNoDisponible": "3B harita açılamadı. 2B haritayı kullanabilir veya tekrar deneyebilirsiniz.",
+  "creditoModelo3d": "3B model: ElMapita UTB",
+  "mapa3dCargando": "3B harita yükleniyor"
 }

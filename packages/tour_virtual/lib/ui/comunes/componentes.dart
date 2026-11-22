@@ -145,6 +145,7 @@ class BotonCircular extends StatelessWidget {
     required this.alTocar,
     this.tamano = MedidasUtb.toque,
     this.activo,
+    this.solido = false,
   });
 
   final IconData icono;
@@ -157,6 +158,10 @@ class BotonCircular extends StatelessWidget {
   /// Para los botones que encienden y apagan algo: el lector de pantalla
   /// anuncia el estado y el botón se rellena de azul cuando está activo.
   final bool? activo;
+
+  /// Grafito opaco en vez de negro translúcido: sobre el mapa, lo de
+  /// debajo se transparentaba y ensuciaba el botón.
+  final bool solido;
 
   @override
   Widget build(BuildContext context) {
@@ -178,6 +183,8 @@ class BotonCircular extends StatelessWidget {
           // opacidad se perdía.
           color: encendido
               ? ColoresUtb.azul
+              : solido
+              ? ColoresUtb.superficie
               : Colors.black.withValues(
                   alpha: paleta.altoContraste ? 0.85 : 0.6,
                 ),

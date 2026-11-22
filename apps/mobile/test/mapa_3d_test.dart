@@ -35,7 +35,10 @@ void main() {
     expect(Georreferencia3d.norteCamara, inInclusiveRange(130, 145));
   });
 
-  Future<void> montar(WidgetTester tester, Future<String> recursos) async {
+  Future<void> montar(
+    WidgetTester tester,
+    Future<RecursosMapa3d> recursos,
+  ) async {
     base.usarTelefono(tester);
     await tester.pumpWidget(
       ProviderScope(
@@ -56,7 +59,7 @@ void main() {
   testWidgets('si falta la maqueta conserva el plano y permite reintentar', (
     tester,
   ) async {
-    final recurso = Completer<String>();
+    final recurso = Completer<RecursosMapa3d>();
     await montar(tester, recurso.future);
     await tester.tap(find.byTooltip('Ver mapa en 3D'));
     await tester.pump();
@@ -73,7 +76,7 @@ void main() {
   testWidgets(
     'se puede cancelar el 3D mientras carga, sin perder la selección',
     (tester) async {
-      final recurso = Completer<String>();
+      final recurso = Completer<RecursosMapa3d>();
       await montar(tester, recurso.future);
       final paginas = tester
           .widget<PageView>(find.byType(PageView))

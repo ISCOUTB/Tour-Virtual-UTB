@@ -377,6 +377,9 @@ class TextosIt extends Textos {
   String get girarDerecha => 'Ruota a destra';
 
   @override
+  String get orientarNorte => 'Orienta a nord';
+
+  @override
   String get sinEscenas => 'Questo percorso non ha ancora scene pubblicate.';
 
   @override

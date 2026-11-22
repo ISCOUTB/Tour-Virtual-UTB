@@ -61,7 +61,7 @@ class HttpMedioRepository implements MedioRepository {
             'TextoAlt': textoAlt.trim(),
           if (idioma != null && idioma.isNotEmpty) 'Idioma': idioma,
         },
-        files: [archivo, if (subtitulos != null) subtitulos],
+        files: [archivo, ?subtitulos],
       ));
 
   @override

@@ -372,6 +372,9 @@ class TextosTr extends Textos {
   String get girarDerecha => 'Sağa döndür';
 
   @override
+  String get orientarNorte => 'Kuzeye çevir';
+
+  @override
   String get sinEscenas => 'Bu turda henüz yayımlanmış sahne yok.';
 
   @override

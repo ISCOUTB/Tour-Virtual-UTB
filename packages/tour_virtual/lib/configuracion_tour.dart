@@ -49,6 +49,7 @@ class ConfiguracionTour {
     this.audiencia,
     this.alSalir,
     this.analitica = ConsentimientoAnalitica.preguntar,
+    this.modoCampo = false,
   });
 
   /// La de la app de demostración: `DATOS=demo` y `MEDIOS_DEMO` eligen el
@@ -58,6 +59,7 @@ class ConfiguracionTour {
         ? const ContenidoLocal(medios: Configuracion.mediosDemo)
         : ContenidoRemoto(urlApi: Configuracion.apiBaseUrl),
     lugarId: Configuracion.lugarPorDefecto,
+    modoCampo: Configuracion.modoCampo,
   );
 
   final FuenteContenido fuente;
@@ -86,6 +88,12 @@ class ConfiguracionTour {
   /// y el módulo no vuelve a preguntar. Con [ContenidoLocal] nunca se envía
   /// nada: no hay API.
   final ConsentimientoAnalitica analitica;
+
+  /// Compilación del equipo para probar la guía en el campus: la guía muestra
+  /// su diagnóstico y deja corregir allí mismo lo que salga mal (la puerta
+  /// real, un tramo, un camino que falta, la brújula). Ver
+  /// docs/pendientes-realidad-aumentada.md. La UTB APP nunca lo activa.
+  final bool modoCampo;
 
   bool get esLocal => fuente is ContenidoLocal;
 }

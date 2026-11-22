@@ -1,19 +1,19 @@
 # Realidad aumentada: lo que falta para terminarla
 
-Estado al 20 de noviembre de 2026: **trabajo en desarrollo; falta validarlo en campo**.
-La rama `frontend/realidad-aumentada-pendiente` conserva el avance para
-retomarlo. El alcance y los criterios de aceptación están en
+Estado al 22 de noviembre de 2026: **lista para la prueba en el campus del
+lunes 23**, con la guía en **modo campo**: lo que salga mal se corrige allí
+mismo desde el teléfono. El alcance y los criterios de aceptación están en
 [el plan de realidad aumentada](plan-realidad-aumentada.md).
 
-Este documento tiene tres partes:
+Este documento tiene estas partes:
 
+0. [La prueba del lunes con el modo campo](#0-la-prueba-del-lunes-con-el-modo-campo):
+   qué instalar, qué probar y cómo corregir en el momento.
 1. [El plan de campo](#1-el-plan-de-campo-ir-a-la-u-con-la-app-de-levantamiento):
-   ir a la universidad y confirmar los puntos con la app secundaria
-   `apps/levantamiento`.
+   medir el campus con la app secundaria `apps/levantamiento`.
 2. [Las pruebas en teléfonos reales](#2-pruebas-en-teléfonos-reales) de la app
    del tour.
-3. [Lo que falta en el código](#3-lo-que-falta-en-el-código), encontrado al
-   revisar la rama, más allá del trabajo de campo.
+3. [Lo que falta en el código](#3-lo-que-falta-en-el-código).
 
 Al final, [cuándo está terminada](#4-cuándo-está-terminada).
 
@@ -29,6 +29,104 @@ Al final, [cuándo está terminada](#4-cuándo-está-terminada).
   lo que falta: [levantamiento/campo-2026-11.md](levantamiento/campo-2026-11.md).
 - App de levantamiento separada (`apps/levantamiento`) para el trabajo de
   campo, con la misma lógica de navegación que la app.
+
+---
+
+## 0. La prueba del lunes con el modo campo
+
+### Qué es
+
+La app del tour compilada con `--dart-define=CAMPO=true`. La guía funciona
+igual que para un visitante, más una barra naranja abajo con el diagnóstico
+y dos botones, **Estoy en la puerta** y **Corregir**. Cada corrección cambia
+el grafo **en el teléfono, al momento**: la ruta se recalcula sin salir de
+la pantalla y la corrección se guarda aunque se cierre la app. Con
+**Copiar** y **Pegar** pasan a los otros teléfonos. Después,
+`scripts/grafo_campus.py` las lleva al grafo oficial.
+
+En modo campo, **Cómo llegar** aparece en los 26 lugares, no solo en las
+paradas, para probar y corregir todas las entradas. El visitante nunca ve
+nada de esto: la UTB APP no activa el modo.
+
+### Instalar (el domingo)
+
+```sh
+python scripts/preparar_apk_demo.py --campo
+# o, sin medios: cd apps/mobile && flutter build apk --release --dart-define=DATOS=demo --dart-define=CAMPO=true
+```
+
+Instalar el APK en todos los teléfonos. En cada uno: ubicación en alta
+precisión y la brújula calibrada (dibujar un ocho). En la guía,
+**Corregir → Quién corrige**: el nombre va en cada corrección.
+
+### La barra de diagnóstico
+
+`MODO CAMPO · ±4 m · brújula · campo 33 µT · ajuste 2.5° · radio 10 m · puerta a 42 m · sendero · 3 corr.`
+
+- **±4 m**: precisión del GPS. Con más de ±15 m no se puede marcar una puerta.
+- **brújula / rumbo GPS / sin rumbo**: de dónde sale la flecha. Caminando,
+  del GPS. Quieto, de la brújula. «Sin rumbo» significa brújula interferida.
+- **campo 33 µT**: lo que mide el magnetómetro. En el campus el campo real es
+  33 µT (WMM2025). Muy lejos de eso, hay metal cerca o falta calibrar.
+- **puerta a N m**: en línea recta hasta la entrada a la que va la guía.
+- **sendero / escalera+escalones / acceso**: el tramo por el que vas.
+
+### Qué probar y cómo corregir
+
+Las cinco paradas desde la portería, y luego entre paradas. Una persona
+guía; otra mira la barra y corrige.
+
+| Si pasa esto | Se hace esto |
+|---|---|
+| La guía dice que llegaste y la puerta está más allá (o no lo dice nunca) | En la puerta real, **Estoy en la puerta**: 10 s quieto. Anota la prueba y ofrece **Mover aquí**. Si el lugar tiene varias entradas, pregunta cuál es, o si es una nueva. |
+| Manda por un camino cerrado, privado o que no existe | **Corregir → Por este tramo no se puede pasar**. El tramo se ve en naranja en el plano antes de confirmar. |
+| El tramo tiene escalones y no lo sabía (o al revés) | **Corregir → Este tramo tiene / no tiene escalones**. Así se confirman las tres «rampas con escalones» del levantamiento. |
+| Falta un camino (da un rodeo) | **Corregir → Grabar un camino que falta**, caminarlo de un camino del mapa a otro, **Terminar camino**. Se une por sus puntas. Candidatos: Zona T → Rectoría, Portería → Cancha de fútbol, A2 → Biblioteca. |
+| La flecha de la cámara apunta mal estando quieto | **Corregir → La flecha apunta mal**: sobre el tramo naranja, teléfono vertical, cámara hacia donde sigue el camino, **Calibrar**. Si sale más de 40°, pregunta: casi siempre es no estar apuntando o tener metal cerca. |
+| La flecha desaparece quieto («sin rumbo») con la brújula calibrada | **Corregir → Detector de metal**: estricto (±35 %) → amplio (±60 %) → apagado (rango mundial). |
+| Llega demasiado lejos o demasiado cerca | **Corregir → Radio de llegada** (el plan dice 10 m). |
+| Cualquier otra cosa | **Corregir → Anotar un problema**: queda con la posición. |
+
+Lo deshecho (botón ↶ en la lista) se deshace también en los demás teléfonos
+al pegar. Los ajustes de radio, detector y brújula reemplazan al anterior.
+
+### Compartir entre teléfonos
+
+**Corregir → Copiar**, pegarlo en el grupo; en los demás teléfonos, copiar el
+mensaje y **Pegar** (acepta el texto con lo que tenga alrededor). Se unen sin
+duplicar. La app de levantamiento también tiene **Pegar correcciones de la
+guía** en su pestaña Datos: su prueba de la guía camina con el grafo
+corregido.
+
+### Después: al grafo oficial
+
+Guardar el texto copiado de **un** teléfono que tenga todo pegado como
+`scripts/datos/campo/correcciones-2026-11-23.json` y:
+
+```sh
+python -I scripts/grafo_campus.py --informe "scripts/datos/campo/*.json"   # resumen, pruebas y notas
+python -I scripts/grafo_campus.py "scripts/datos/campo/*.json"             # grafo nuevo
+python -I scripts/aplicar_pines.py scripts/datos/campo/ajustes-entradas.json scripts/datos/campo/correcciones-2026-11-23.json
+```
+
+Una entrada corregida en el campus manda sobre el ajuste de la foto
+satelital. Los tramos y caminos se aplican por geometría, no por id. El
+ajuste de brújula y el detector solo se informan: se pasan a `DECLINACION`
+si varios teléfonos coinciden. Después se compila un APK nuevo para que
+el grafo corregido llegue a todos.
+
+### Calibración hecha antes de ir
+
+- **Declinación −8,5°** (era −7,7°): WMM2025 de NOAA/NGA en el campus para
+  noviembre de 2026. Baja unos 0,02° por año.
+- **Campo magnético 33 µT**. La brújula se da por interferida si se aparta
+  más del 35 %. Antes valía cualquier cosa entre 20 y 75 µT: una reja que lo
+  llevaba a 60 pasaba por buena.
+- Auditoría del grafo: las cinco paradas tienen ruta normal desde la
+  portería y entre ellas, y ruta sin escaleras. Sin escaleras, entre
+  Biblioteca y Puente hay un rodeo de 321 m frente a 88 m en línea recta: lo
+  causan las tres «rampas con escalones» sin confirmar. Edificio A2,
+  Cafetería y Solo Café no tienen ruta sin escaleras.
 
 ---
 
@@ -202,8 +300,9 @@ del levantamiento.
 5. **Analítica de la guía.** RN-10 permite registrar «llegó a la parada N»
    sin coordenadas, y sirve para la métrica de uso de la realidad aumentada.
    Hoy no se registra nada de la guía.
-6. **Declinación y radio.** La declinación (−7,7°) y el radio de llegada
-   (10 m) están fijos; se confirman con el levantamiento. **(campo)**
+6. **Declinación y radio.** Declinación −8,5° (WMM2025) y radio de 10 m. En
+   modo campo los dos se ajustan en el momento y quedan registrados.
+   **(campo)**
 7. **Tipos de tramo.** `TipoTramo` ya acepta `rampa` y `pasillo`, que marca
    la app de levantamiento. El plano de la ruta no los distingue; opcional:
    dibujar distinto las escaleras y las rampas.
@@ -221,7 +320,8 @@ existe todavía en la API ni en la base:
 11. **RF-34:** el grafo va empaquetado en el APK. Falta servirlo con versión
     desde el Storage, a través de la API, y que la app lo guarde en caché y
     use el más nuevo (AD-06, DT-03). Mientras tanto, cada cambio del grafo
-    exige un APK nuevo.
+    exige un APK nuevo. Para el equipo lo cubre el modo campo; para los
+    visitantes sigue faltando.
 
 ### Panel de administración (`apps/admin_flutter`)
 

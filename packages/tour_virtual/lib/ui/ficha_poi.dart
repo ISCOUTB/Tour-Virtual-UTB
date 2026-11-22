@@ -7,7 +7,7 @@ import '../datos/analitica.dart';
 import '../datos/modelos/modelos.dart';
 import '../datos/progreso.dart';
 import '../datos/proveedores.dart';
-import '../navegacion/grafo_campus.dart';
+import '../navegacion/modo_campo.dart';
 import '../l10n/textos.dart';
 import '../nucleo/errores.dart';
 import '../nucleo/idiomas.dart';
@@ -242,12 +242,11 @@ class _FichaPoi extends ConsumerWidget {
           )
         else
           RecuadroInfo(icono: Icons.threesixty_rounded, texto: txt.sin360),
+        // En el modo campo, todos los lugares con entrada: el equipo prueba y
+        // corrige las 27, no solo las de las paradas.
         if (alComoLlegar != null &&
-            actual.esParada &&
-            (ref
-                    .watch(grafoCampusProvider)
-                    .valueOrNull
-                    ?.tieneAcceso(actual.id) ??
+            (actual.esParada || ref.watch(modoCampoProvider)) &&
+            (ref.watch(grafoGuiaProvider).valueOrNull?.tieneAcceso(actual.id) ??
                 false)) ...[
           const SizedBox(height: 10),
           OutlinedButton.icon(

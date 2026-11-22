@@ -11,8 +11,10 @@ import '../../datos/modelos/modelos.dart';
 import '../../datos/plano_campus.dart';
 import '../../datos/proveedores.dart';
 import '../../l10n/textos.dart';
+import '../../navegacion/correcciones.dart';
 import '../../navegacion/geo.dart';
 import '../../navegacion/grafo_campus.dart';
+import '../../navegacion/modo_campo.dart';
 import '../../navegacion/pantalla_activa.dart';
 import '../../navegacion/seguimiento.dart';
 import '../../navegacion/sensores.dart';
@@ -25,6 +27,8 @@ import '../ficha_poi.dart';
 import '../vista_async.dart';
 import 'plano_ruta.dart';
 import 'vista_camara.dart';
+
+part 'campo_guia.dart';
 
 /// Guía a pie hasta un lugar del campus (F-06, RF-26 a RF-34).
 ///
@@ -44,8 +48,12 @@ class PantallaNavegacion extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lugar = ref.watch(configuracionTourProvider).lugarId;
     final pois = ref.watch(poisProvider(lugar));
-    final grafo = ref.watch(grafoCampusProvider);
+    final grafo = ref.watch(grafoGuiaProvider);
     final plano = ref.watch(planoCampusProvider);
+    final modoCampo = ref.watch(modoCampoProvider);
+    final radio = modoCampo
+        ? ref.watch(correccionesCampoProvider).radioLlegada
+        : null;
     return Scaffold(
       body: VistaAsync<(List<Poi>, GrafoCampus, PlanoCampus)>(
         valor: switch ((pois, grafo, plano)) {
@@ -76,6 +84,8 @@ class PantallaNavegacion extends ConsumerWidget {
             paradas: [...lista.where((p) => p.esParada)],
             grafo: grafoCampus,
             plano: planoCampus,
+            modoCampo: modoCampo,
+            radioLlegada: radio ?? SeguimientoRuta.radioPorDefecto,
           );
         },
       ),
@@ -101,12 +111,18 @@ class _Guia extends ConsumerStatefulWidget {
     required this.paradas,
     required this.grafo,
     required this.plano,
+    this.modoCampo = false,
+    this.radioLlegada = SeguimientoRuta.radioPorDefecto,
   });
 
   final Poi poi;
   final List<Poi> paradas;
+
+  /// En el modo campo cambia con cada corrección: la ruta se recalcula.
   final GrafoCampus grafo;
   final PlanoCampus plano;
+  final bool modoCampo;
+  final double radioLlegada;
 
   @override
   ConsumerState<_Guia> createState() => _GuiaState();
@@ -126,7 +142,7 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
 
   // Se leen una vez al montar: en dispose ya no se puede usar ref.
   late final FuenteUbicacion _ubicacion;
-  late final FuenteRumbo _fuenteRumbo;
+  late FuenteRumbo _fuenteRumbo;
   late final VozGuia _voz;
   StreamSubscription<LecturaPosicion>? _subPosicion;
   StreamSubscription<LecturaRumbo>? _subRumbo;
@@ -135,13 +151,75 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
   LecturaRumbo? _rumbo;
   Maniobra? _anunciada;
 
+  // Modo campo (ver campo_guia.dart).
+  /// Última posición, también después de la llegada: para marcar la puerta.
+  LecturaPosicion? _posicionCampo;
+
+  /// Dónde dio la app la llegada.
+  PuntoGeo? _llegadaApp;
+  final _oyentesCampo = <void Function(LecturaPosicion)>[];
+
+  /// Camino que se está grabando, o nulo.
+  List<PuntoGeo>? _trazo;
+
+  /// Tramo que se va a corregir, resaltado en el plano.
+  List<PuntoGeo> _resaltado = const [];
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _ubicacion = ref.read(fuenteUbicacionProvider);
-    _fuenteRumbo = ref.read(fuenteRumboProvider(widget.grafo.declinacion));
+    _fuenteRumbo = ref.read(fuenteRumboProvider(_ajusteBrujula(widget.grafo)));
     _voz = ref.read(vozGuiaProvider);
+  }
+
+  /// Para la extensión del modo campo, que no puede llamar a setState.
+  void _refrescar(VoidCallback cambio) => setState(cambio);
+
+  static AjusteBrujula _ajusteBrujula(GrafoCampus g) => (
+    declinacion: g.declinacion,
+    campoEsperado: g.campoMagnetico,
+    tolerancia: g.toleranciaCampo,
+  );
+
+  @override
+  void didUpdateWidget(_Guia anterior) {
+    super.didUpdateWidget(anterior);
+    if (anterior.grafo == widget.grafo &&
+        anterior.radioLlegada == widget.radioLlegada) {
+      return;
+    }
+    final ajuste = _ajusteBrujula(widget.grafo);
+    if (ajuste != _ajusteBrujula(anterior.grafo)) {
+      _fuenteRumbo = ref.read(fuenteRumboProvider(ajuste));
+      if (_subRumbo != null) {
+        final viejo = _subRumbo!;
+        _subRumbo = null;
+        _cancelacion = Future.wait<void>([_cancelacion, viejo.cancel()]);
+        _suscribirBrujula(_sesion);
+      }
+    }
+    // Una corrección de campo cambió el grafo: ruta nueva desde donde está.
+    // Después del cuadro, porque puede cambiar de fase.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _rehacerRuta());
+  }
+
+  void _rehacerRuta() {
+    if (!mounted) return;
+    final ultima = _seguimiento?.ultima ?? _posicionCampo;
+    if (ultima == null || _seguimiento == null) return;
+    if (_fase == _Fase.llegada) {
+      // En el campo, tras mover la puerta se vuelve a guiar hacia la nueva.
+      if (!widget.modoCampo) return;
+      _llegadaApp = null;
+      setState(() => _fase = _Fase.guiando);
+    } else if (_fase != _Fase.guiando) {
+      return;
+    }
+    _anunciada = null;
+    _seguimiento = null;
+    _alLeer(ultima);
   }
 
   @override
@@ -199,7 +277,9 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     unawaited(_pantalla.cambiar(true));
     _subPosicion = _ubicacion.lecturas().listen(
       (lectura) {
-        if (sesion == _sesion) _alLeer(lectura);
+        if (sesion != _sesion) return;
+        if (widget.modoCampo) _alLeerCampo(lectura);
+        _alLeer(lectura);
       },
       onError: (Object error) {
         if (sesion != _sesion) return;
@@ -210,6 +290,10 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
         }
       },
     );
+    _suscribirBrujula(sesion);
+  }
+
+  void _suscribirBrujula(int sesion) {
     _subRumbo = _fuenteRumbo.lecturas().listen(
       (r) {
         if (!mounted || !_enPrimerPlano || sesion != _sesion) return;
@@ -246,7 +330,7 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     if (ubicacion is UbicacionSimulada && _seguimiento == null) {
       ubicacion.camino = ruta.puntos;
     }
-    _seguimiento = SeguimientoRuta(ruta);
+    _seguimiento = SeguimientoRuta(ruta, radio: widget.radioLlegada);
     return true;
   }
 
@@ -266,7 +350,14 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
 
     final actual = _seguimiento!;
     if (actual.estado == EstadoSeguimiento.llegada) {
-      _pausar(callar: false);
+      if (widget.modoCampo) {
+        // En el campo los sensores siguen: hay que poder decir «la puerta
+        // real es aquí» si la llegada salió antes o después.
+        _llegadaApp = lectura.punto;
+        unawaited(_pantalla.cambiar(true));
+      } else {
+        _pausar(callar: false);
+      }
       HapticFeedback.heavyImpact();
       _anunciar(Textos.of(context).navLlegaste(widget.poi.nombre));
       setState(() => _fase = _Fase.llegada);
@@ -430,6 +521,10 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 12),
             Expanded(child: contenido),
+            if (widget.modoCampo) ...[
+              const SizedBox(height: 8),
+              _BarraCampo(guia: this),
+            ],
           ],
         ),
       ),
@@ -518,6 +613,8 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
           posicion: lectura?.punto,
           precision: lectura?.precision,
           rumbo: rumbo,
+          resaltado: _resaltado,
+          trazo: _trazo ?? const [],
         ),
       ),
     };

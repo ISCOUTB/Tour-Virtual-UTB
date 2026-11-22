@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tour_virtual/configuracion_tour.dart';
 import 'package:tour_virtual/datos/modelos/modelos.dart';
 import 'package:tour_virtual/datos/preferencias.dart';
 import 'package:tour_virtual/datos/proveedores.dart';
@@ -13,6 +14,8 @@ import 'package:tour_virtual/datos/repositorio_contenido.dart';
 import 'package:tour_virtual/datos/subtitulos.dart';
 import 'package:tour_virtual/datos/analitica.dart';
 import 'package:tour_virtual/l10n/textos.dart';
+import 'package:tour_virtual/navegacion/correcciones.dart';
+import 'package:tour_virtual/navegacion/modo_campo.dart';
 import 'package:tour_virtual/navegacion/seguimiento.dart';
 import 'package:tour_virtual/navegacion/geo.dart';
 import 'package:tour_virtual/navegacion/sensores.dart';
@@ -92,6 +95,7 @@ Future<void> montar(
   WidgetTester tester, {
   required FuenteUbicacion ubicacion,
   required VozGuia voz,
+  bool modoCampo = false,
 }) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1.0;
@@ -103,6 +107,10 @@ Future<void> montar(
           const Preferencias(idioma: Locale('es')),
         ),
         repositorioContenidoProvider.overrideWithValue(RepositorioFalso()),
+        if (modoCampo)
+          configuracionTourProvider.overrideWithValue(
+            const ConfiguracionTour(fuente: ContenidoLocal(), modoCampo: true),
+          ),
         fuenteUbicacionProvider.overrideWithValue(ubicacion),
         fuenteRumboProvider.overrideWith((ref, _) => RumboSimulado(90)),
         vozGuiaProvider.overrideWithValue(voz),
@@ -152,9 +160,117 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.textContaining('Faltan'), findsOneWidget);
+    // El visitante nunca ve las herramientas del equipo.
+    expect(find.textContaining('MODO CAMPO'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     expect(ubicacion.cambios.hasListener, isFalse);
+    await ubicacion.cambios.close();
+  });
+
+  testWidgets(
+    'en el modo campo, mover la puerta recalcula la guía al momento',
+    (tester) async {
+      final ubicacion = UbicacionControlada();
+      await montar(
+        tester,
+        ubicacion: ubicacion,
+        voz: VozMuda(),
+        modoCampo: true,
+      );
+      await tester.tap(find.text('Permitir ubicación'));
+      await tester.pump();
+      const aqui = UbicacionSimulada.puntoDePartida;
+      ubicacion.cambios.add(const LecturaPosicion(punto: aqui, precision: 4));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('Faltan'), findsOneWidget);
+      expect(find.textContaining('MODO CAMPO'), findsOneWidget);
+      expect(find.text('Corregir'), findsOneWidget);
+      expect(find.text('Estoy en la puerta'), findsOneWidget);
+
+      // Otro teléfono dice que la puerta de la Biblioteca es justo aquí: al
+      // pegarlo, la guía cambia de destino sin salir de la pantalla y llega.
+      final contenedor = ProviderScope.containerOf(
+        tester.element(find.byType(PantallaNavegacion)),
+      );
+      final entrada = contenedor
+          .read(grafoGuiaProvider)
+          .requireValue
+          .accesosDe(1)
+          .firstWhere((a) => a.principal);
+      contenedor
+          .read(correccionesCampoProvider.notifier)
+          .agregar(
+            CorreccionEntrada(
+              id: 'prueba',
+              fecha: DateTime(2026, 11, 23),
+              poiId: 1,
+              nombre: entrada.nombre,
+              punto: aqui,
+            ),
+          );
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.text('Llegaste a Biblioteca'), findsWidgets);
+      // Tras la llegada siguen los sensores: se puede marcar la puerta real.
+      expect(ubicacion.cambios.hasListener, isTrue);
+      expect(find.text('Estoy en la puerta'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 1));
+      await ubicacion.cambios.close();
+    },
+  );
+
+  testWidgets('«Estoy en la puerta» mide 10 s y mueve la entrada aquí', (
+    tester,
+  ) async {
+    final ubicacion = UbicacionControlada();
+    await montar(tester, ubicacion: ubicacion, voz: VozMuda(), modoCampo: true);
+    await tester.tap(find.text('Permitir ubicación'));
+    await tester.pump();
+    // Unos 40 m al este de la portería, sobre el campus.
+    final puerta = PuntoGeo(
+      UbicacionSimulada.puntoDePartida.lat,
+      UbicacionSimulada.puntoDePartida.lng + 0.00036,
+    );
+    ubicacion.cambios.add(LecturaPosicion(punto: puerta, precision: 4));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.text('Estoy en la puerta'));
+    await tester.pump();
+    expect(find.text('Quieto en la puerta real'), findsOneWidget);
+    for (var s = 0; s < 11; s++) {
+      ubicacion.cambios.add(LecturaPosicion(punto: puerta, precision: 4));
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('de donde estás'), findsOneWidget);
+    await tester.tap(find.text('Mover aquí'));
+    await tester.pump(const Duration(milliseconds: 100));
+    // La Biblioteca tiene dos entradas: pregunta cuál, la más cercana arriba.
+    expect(find.text('¿Qué entrada es esta?'), findsOneWidget);
+    expect(find.text('Es otra entrada, nueva'), findsOneWidget);
+    await tester.tap(find.textContaining('hoy a').first);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    final contenedor = ProviderScope.containerOf(
+      tester.element(find.byType(PantallaNavegacion)),
+    );
+    final tipos = contenedor
+        .read(correccionesCampoProvider)
+        .vigentes
+        .map((c) => c.tipo);
+    expect(tipos, ['prueba', 'entrada']);
+    expect(find.text('Llegaste a Biblioteca'), findsWidgets);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
     await ubicacion.cambios.close();
   });
 

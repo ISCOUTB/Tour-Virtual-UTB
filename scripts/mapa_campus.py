@@ -137,7 +137,7 @@ CATALOGO = [
         "estacion": 5,
         "descripcion": "Más que una biblioteca: concentración, disciplina, "
         "tecnología y construcción de sueños.",
-        "posicion": ("osm", "way/97546334"),
+        "posicion": ("equipo", 10.3699308, -75.4651281),
     },
     {
         "id": 2,
@@ -148,7 +148,7 @@ CATALOGO = [
         "descripcion": "Un punto que conecta espacios, personas y recorridos "
         "dentro del campus. Cada trayecto en la UTB hace parte de una "
         "experiencia que conecta tu presente con lo que quieres construir.",
-        "posicion": ("entre", "way/238258177", "way/992473927"),
+        "posicion": ("equipo", 10.3693299, -75.4646038),
     },
     {
         "id": 3,
@@ -162,7 +162,7 @@ CATALOGO = [
         # En el edificio de la Zona T: su puerta da a la plazoleta. La leyenda
         # (marcador 10, por el ajuste afin) la ponia 20 m al oeste, sobre una
         # canchita.
-        "posicion": ("equipo", 10.3692651, -75.4655196),
+        "posicion": ("equipo", 10.3692929, -75.4660428),
     },
     {
         "id": 4,
@@ -173,7 +173,7 @@ CATALOGO = [
         "descripcion": "Punto de encuentro, pausa y conexión. Un lugar para "
         "compartir con otros estudiantes, conversar y disfrutar los espacios "
         "que hacen del campus una comunidad.",
-        "posicion": ("osm", "way/1563809308"),
+        "posicion": ("equipo", 10.3695983, -75.4657454),
     },
     {
         "id": 5,
@@ -185,52 +185,52 @@ CATALOGO = [
         "el deporte, la disciplina, el trabajo en equipo y las experiencias "
         "que se construyen más allá del aula.",
         # OSM la llama «Cancha de Beisbol» desde 2011; la leyenda, softbol.
-        "posicion": ("osm", "way/97546336"),
+        "posicion": ("equipo", 10.3698371, -75.4658858),
     },
     # --- Lugares del campus, todavia sin panoramica ni medios ---------------
-    {"nombre": "Edificio A1", "categoria": "Academico", "posicion": ("osm", "way/97546323")},
-    {"nombre": "Edificio A2", "categoria": "Academico", "posicion": ("osm", "way/1563809302")},
-    {"nombre": "Edificio A3", "categoria": "Academico", "posicion": ("osm", "way/238258177")},
-    {"nombre": "Edificio A4", "categoria": "Academico", "posicion": ("osm", "way/1563809309")},
-    {"nombre": "Edificio A5", "categoria": "Academico", "posicion": ("osm", "way/992473927")},
-    {"nombre": "Edificio Alcatraz", "categoria": "Academico", "posicion": ("leyenda", 3)},
-    {"nombre": "Auditorio", "categoria": "Cultura", "posicion": ("leyenda", 1)},
+    {"nombre": "Edificio A1", "categoria": "Academico", "posicion": ("equipo", 10.3699525, -75.4654466)},
+    {"nombre": "Edificio A2", "categoria": "Academico", "posicion": ("equipo", 10.3705033, -75.4656954)},
+    {"nombre": "Edificio A3", "categoria": "Academico", "posicion": ("equipo", 10.3693457, -75.4646923)},
+    {"nombre": "Edificio A4", "categoria": "Academico", "posicion": ("equipo", 10.3694377, -75.4646386)},
+    {"nombre": "Edificio A5", "categoria": "Academico", "posicion": ("equipo", 10.3691514, -75.4646644)},
+    {"nombre": "Edificio Alcatraz", "categoria": "Academico", "posicion": ("equipo", 10.3704508, -75.4653829)},
+    {"nombre": "Auditorio", "categoria": "Cultura", "posicion": ("equipo", 10.3704466, -75.4658228)},
     {
         "nombre": "Plaza Maloca",
         "categoria": "Cultura",
         "estacion": 2,
         # La leyenda escribe «Maloka»; el guion, «Plaza Maloca».
-        "posicion": ("leyenda", 4),
+        "posicion": ("equipo", 10.3702309, -75.4657558),
     },
-    {"nombre": "Rectoría", "categoria": "Administrativo", "posicion": ("leyenda", 6)},
+    {"nombre": "Rectoría", "categoria": "Administrativo", "posicion": ("equipo", 10.3696445, -75.4652676)},
     {
         "nombre": "Laboratorio El Patio",
         "categoria": "Academico",
         "estacion": 6,
-        "posicion": ("leyenda", 16),
+        "posicion": ("equipo", 10.3697995, -75.465167),
     },
     {
         "nombre": "Centro de Cuidado Integral (QUID)",
         "categoria": "Bienestar",
-        "posicion": ("leyenda", 8),
+        "posicion": ("equipo", 10.3692698, -75.4658852),
     },
     {
         "nombre": "Centro Deportivo y Cultural",
         "categoria": "Deporte",
-        "posicion": ("leyenda", 9),
+        "posicion": ("equipo", 10.3694196, -75.4657638),
     },
     {"nombre": "Cancha de fútbol", "categoria": "Deporte", "posicion": ("osm", "way/97546338")},
-    {"nombre": "Salas de estudio", "categoria": "Recursos", "posicion": ("osm", "way/1563809304")},
-    {"nombre": "Cafetería", "categoria": "Servicios", "posicion": ("osm", "way/1563809303")},
-    {"nombre": "Tienda", "categoria": "Servicios", "posicion": ("osm", "way/1563809310")},
-    {"nombre": "Cajero automático", "categoria": "Servicios", "posicion": ("osm", "node/14234939099")},
+    {"nombre": "Salas de estudio", "categoria": "Recursos", "posicion": ("equipo", 10.3704736, -75.4653829)},
+    {"nombre": "Cafetería", "categoria": "Servicios", "posicion": ("equipo", 10.3704828, -75.4655097)},
+    {"nombre": "Tienda", "categoria": "Servicios", "posicion": ("equipo", 10.3694262, -75.464639)},
+    {"nombre": "Cajero automático", "categoria": "Servicios", "posicion": ("equipo", 10.3705445, -75.4659509)},
     # --- Estaciones del guion marcadas por el equipo ------------------------
     {
         "nombre": "Pasillo de la conexión",
         "categoria": "Administrativo",
         "estacion": 1,
         # En la glorieta junto al Edificio A2, la llegada desde el SITM.
-        "posicion": ("equipo", 10.3707567, -75.4659942),
+        "posicion": ("equipo", 10.3704479, -75.4657786),
     },
     {
         "nombre": "Solo Café",
@@ -240,7 +240,7 @@ CATALOGO = [
         "también transforman la experiencia universitaria. Aquí nacen "
         "amistades, proyectos y networking.",
         # Sobre el edificio que OSM tiene como cafeteria (way/1563809317).
-        "posicion": ("equipo", 10.3702285, -75.4655508),
+        "posicion": ("equipo", 10.3702256, -75.4654775),
     },
     {
         "nombre": "La Placita",
@@ -248,7 +248,7 @@ CATALOGO = [
         "estacion": 4,
         "descripcion": "Inspirada en las plazas del Caribe. Un espacio creado "
         "para compartir, desconectarse y sentirse en casa dentro de la UTB.",
-        "posicion": ("equipo", 10.3704913, -75.4654840),
+        "posicion": ("equipo", 10.3702491, -75.4653206),
     },
     {
         "nombre": "QuantaLab",
@@ -257,7 +257,7 @@ CATALOGO = [
         "descripcion": "Laboratorio de analítica, IA y datos. El futuro "
         "pertenece a quienes saben interpretar información y tomar decisiones.",
         # En el Edificio A5.
-        "posicion": ("equipo", 10.3690907, -75.4646518),
+        "posicion": ("equipo", 10.3691307, -75.4646339),
     },
 ]
 

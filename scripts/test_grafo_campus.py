@@ -64,6 +64,35 @@ class ImportacionTest(unittest.TestCase):
             self.assertIn("27 aceptadas", log.getvalue())
             self.assertEqual(salida.read_text(encoding="utf-8"), "grafo previo")
 
+    def test_el_volcado_de_android_se_lee_como_un_levantamiento(self):
+        medida = {"poi_id": 1, "nombre": "Biblioteca", "lat": 10.37,
+                  "lng": -75.465, "precision": 3, "fecha": "2026-11-21T09:00:00"}
+        with tempfile.TemporaryDirectory() as carpeta:
+            ruta = Path(carpeta) / "kevin.json"
+            ruta.write_text(json.dumps({"flutter.levantamiento.datos": json.dumps(
+                {"formato": 2, "accesos": [medida]})}), encoding="utf-8")
+            datos = grafo.cargar_levantamientos([str(ruta)])
+        self.assertEqual(datos["accesos"], [medida])
+
+    def test_un_ajuste_manual_manda_sobre_las_medidas_y_verifica(self):
+        medida = {"poi_id": 4, "nombre": "Zona T", "lat": 10.3696, "lng": -75.4658,
+                  "precision": 3, "fecha": "2026-11-21T09:00:00"}
+        ajuste = {"formato": grafo.FORMATO_AJUSTES, "generado": "2026-11-21T22:00:00Z",
+                  "entradas": [{"poi_id": 4, "nombre": "Zona T", "lat": 10.3695,
+                                "lng": -75.4657, "principal": True, "nota": "puerta norte"}]}
+        with tempfile.TemporaryDirectory() as carpeta:
+            raiz = Path(carpeta)
+            (raiz / "jose.json").write_text(json.dumps({"accesos": [medida]}), encoding="utf-8")
+            (raiz / "ajustes.json").write_text(json.dumps(ajuste), encoding="utf-8")
+            salida = raiz / "grafo.json"
+            with patch.object(grafo, "SALIDA", salida), contextlib.redirect_stdout(io.StringIO()):
+                grafo.main([str(raiz / "*.json")])
+            zona_t = next(a for a in json.loads(salida.read_text(encoding="utf-8"))["accesos"]
+                          if a["nombre"] == "Zona T")
+        self.assertTrue(zona_t["verificado"])
+        self.assertAlmostEqual(zona_t["lat"], 10.3695, places=6)
+        self.assertIn("puerta norte", zona_t["fuente"])
+
 
 if __name__ == "__main__":
     unittest.main()

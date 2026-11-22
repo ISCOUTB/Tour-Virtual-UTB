@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ajustar entradas del campus · Tour Virtual UTB</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root { --fondo:#0f1420; --panel:#171e2e; --borde:#2a3448; --texto:#e8ecf4; --suave:#9aa6bd;
+          --azul:#4c8dff; --verde:#3ecf8e; --ambar:#f5b642; --rojo:#ff6b6b; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--fondo); color:var(--texto);
+              font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  #app { display:grid; grid-template-columns:360px 1fr; height:100vh; }
+  #lado { display:flex; flex-direction:column; border-right:1px solid var(--borde); background:var(--panel); min-height:0; }
+  #cabeza { padding:14px 16px 10px; border-bottom:1px solid var(--borde); }
+  h1 { font-size:16px; margin:0 0 4px; }
+  .suave { color:var(--suave); font-size:12.5px; }
+  #progreso { margin-top:8px; font-weight:600; }
+  #lista { overflow:auto; flex:1; padding:6px 0; }
+  .grupo { padding:10px 16px 4px; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--suave); }
+  .item { padding:8px 16px; cursor:pointer; border-left:3px solid transparent; }
+  .item:hover { background:#1d2638; }
+  .item.activo { background:#22304a; border-left-color:var(--azul); }
+  .fila { display:flex; align-items:center; gap:8px; }
+  .nombre { flex:1; font-weight:500; }
+  .chip { font-size:11px; padding:1px 7px; border-radius:99px; border:1px solid var(--borde); color:var(--suave); white-space:nowrap; }
+  .chip.confirmado { color:var(--verde); border-color:var(--verde); }
+  .chip.movido { color:var(--azul); border-color:var(--azul); }
+  .motivo { font-size:12px; color:var(--ambar); margin-top:2px; }
+  #detalle { border-top:1px solid var(--borde); padding:12px 16px; }
+  #detalle h2 { font-size:15px; margin:0 0 6px; }
+  .botones { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  button { font:inherit; padding:7px 12px; border-radius:8px; border:1px solid var(--borde); background:#232d42; color:var(--texto); cursor:pointer; }
+  button:hover { background:#2b3852; }
+  button.principal { background:var(--azul); border-color:var(--azul); color:#fff; }
+  button.principal:hover { filter:brightness(1.1); }
+  textarea { width:100%; margin-top:8px; background:#10172a; color:var(--texto); border:1px solid var(--borde); border-radius:8px; padding:6px 8px; font:inherit; resize:vertical; min-height:40px; }
+  label { display:flex; gap:6px; align-items:center; margin-top:8px; font-size:13px; }
+  #pie { padding:12px 16px; border-top:1px solid var(--borde); }
+  #mapa { height:100vh; }
+  .leyenda { background:rgba(15,20,32,.88); color:var(--texto); padding:8px 10px; border-radius:8px; font-size:12px; line-height:1.6; }
+  .punto { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .etq { background:rgba(15,20,32,.85); color:#fff; border:0; box-shadow:none; font-size:11px; padding:1px 5px; }
+  .etq:before { display:none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="lado">
+    <div id="cabeza">
+      <h1>Ajustar entradas del campus</h1>
+      <div class="suave">Arrastra el pin azul a la puerta real sobre la foto satelital y toca «Confirmar». Los puntos de colores son las medidas del GPS. Se guarda solo en este navegador.</div>
+      <div id="progreso"></div>
+    </div>
+    <div id="lista"></div>
+    <div id="detalle"></div>
+    <div id="pie">
+      <button class="principal" id="descargar">Descargar ajustes-entradas.json</button>
+      <div class="suave" style="margin-top:6px">Guárdalo junto a los levantamientos (carpeta <b>campo</b> del repo).</div>
+    </div>
+  </aside>
+  <div id="mapa"></div>
+</div>
+<script>
+const DATOS = __DATOS__;
+const COLORES = { jose:'#ff6b6b', kevin:'#f5b642', laura:'#c77dff' };
+// La clave cambia con los datos: una herramienta nueva no hereda lo guardado de otra.
+const CLAVE = 'utb.ajustes.entradas.' + DATOS.generado + '.' + DATOS.entradas.length + '.' + (DATOS.firma || '');
+
+let estado = {};
+try { estado = JSON.parse(localStorage.getItem(CLAVE) || '{}'); } catch (e) { estado = {}; }
+function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} }
+
+const clave = e => e.poi_id + '|' + e.nombre;
+function info(e) {
+  const k = clave(e);
+  if (!estado[k]) estado[k] = { lat: e.propuesta[0], lng: e.propuesta[1], estado: 'pendiente', nota: '',
+                                pinAparte: !!e.pin, pin: e.pin ? [e.pin.lat, e.pin.lng] : undefined };
+  return estado[k];
+}
+
+// Mapa
+const mapa = L.map('mapa', { maxZoom: 22, zoomControl: true }).setView([10.37, -75.4655], 18);
+const satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxNativeZoom: 19, maxZoom: 22, attribution: 'Imágenes © Esri, Maxar, Earthstar Geographics' }).addTo(mapa);
+const calles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  { maxNativeZoom: 19, maxZoom: 22, attribution: '© colaboradores de OpenStreetMap' });
+const capaEdificios = L.layerGroup(DATOS.edificios.map(([n, anillo]) =>
+  L.polygon(anillo, { color: '#ffffff', weight: 1, opacity: .7, fillOpacity: 0 }).bindTooltip(n || '', { sticky: true }))).addTo(mapa);
+const capaCaminos = L.layerGroup(DATOS.tramos.map(([a, b, tipo, esc]) =>
+  L.polyline([a, b], { color: esc ? '#ff9f43' : '#4c8dff', weight: 3, opacity: .85, dashArray: tipo === 'via' ? '6 6' : null }))).addTo(mapa);
+const capaRecorridos = L.layerGroup(DATOS.recorridos.map(([n, pts]) =>
+  L.polyline(pts, { color: '#3ecf8e', weight: 2, opacity: .7 }).bindTooltip('Recorrido: ' + n, { sticky: true })));
+L.control.layers({ 'Satélite': satelite, 'Calles (OSM)': calles },
+  { 'Edificios (OSM)': capaEdificios, 'Caminos del grafo': capaCaminos, 'Recorridos grabados': capaRecorridos },
+  { collapsed: false }).addTo(mapa);
+
+const leyenda = L.control({ position: 'bottomright' });
+leyenda.onAdd = () => {
+  const d = L.DomUtil.create('div', 'leyenda');
+  d.innerHTML = '<div><span class="punto" style="background:#4c8dff"></span>Entrada propuesta (arrastrable)</div>' +
+    '<div><span class="punto" style="background:#ffffff;border:2px solid #666"></span>Punto anterior (estimado)</div>' +
+    Object.entries(COLORES).map(([q, c]) => `<div><span class="punto" style="background:${c}"></span>Medida de ${q}</div>`).join('') +
+    '<div><span class="punto" style="background:#3ecf8e"></span>Pin del lugar (si va aparte)</div>' +
+    '<div><span style="display:inline-block;width:18px;border-top:3px solid #ff9f43;margin-right:6px;vertical-align:middle"></span>Tramo con escalones</div>';
+  return d;
+};
+leyenda.addTo(mapa);
+
+const capaFoco = L.layerGroup().addTo(mapa);
+let activo = null;
+let marcador = null, marcadorPin = null;
+
+const iconoEntrada = L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+  html: '<div style="width:22px;height:22px;border-radius:50%;background:#4c8dff;border:3px solid #fff;box-shadow:0 0 0 2px #4c8dff"></div>' });
+const iconoPin = L.divIcon({ className: '', iconSize: [18, 18], iconAnchor: [9, 9],
+  html: '<div style="width:18px;height:18px;border-radius:4px;background:#3ecf8e;border:3px solid #fff"></div>' });
+
+function metros(a, b) {
+  const la = (a[0] + b[0]) / 2 * Math.PI / 180;
+  return Math.hypot((a[0] - b[0]) * 111320, (a[1] - b[1]) * 111320 * Math.cos(la));
+}
+
+function enfocar(e) {
+  activo = e;
+  capaFoco.clearLayers();
+  const s = info(e);
+  L.circleMarker(e.estimado, { radius: 6, color: '#666', weight: 2, fillColor: '#fff', fillOpacity: 1 })
+    .bindTooltip('Punto anterior', { direction: 'top' }).addTo(capaFoco);
+  for (const m of e.medidas) {
+    L.circleMarker([m.lat, m.lng], { radius: 6, color: '#000', weight: 1, fillColor: COLORES[m.quien] || '#aaa', fillOpacity: .95 })
+      .bindTooltip(`${m.quien} · ±${m.prec} m · ${m.fecha.slice(0, 16).replace('T', ' ')}`, { direction: 'top' }).addTo(capaFoco);
+    L.circle([m.lat, m.lng], { radius: m.prec, color: COLORES[m.quien] || '#aaa', weight: 1, opacity: .5, fillOpacity: .05, interactive: false }).addTo(capaFoco);
+  }
+  marcador = L.marker([s.lat, s.lng], { draggable: true, icon: iconoEntrada, zIndexOffset: 1000, autoPan: true }).addTo(capaFoco);
+  marcador.bindTooltip(e.nombre, { permanent: true, direction: 'right', offset: [12, 0], className: 'etq' });
+  marcador.on('dragend', () => {
+    const p = marcador.getLatLng();
+    s.lat = p.lat; s.lng = p.lng; s.estado = 'movido'; guardar(); pintarLista(); pintarDetalle();
+  });
+  marcadorPin = null;
+  if (e.principal && s.pinAparte) {
+    if (!s.pin) s.pin = poiDe(e) ? [poiDe(e).lat, poiDe(e).lng] : [s.lat, s.lng];
+    marcadorPin = L.marker(s.pin, { draggable: true, icon: iconoPin, zIndexOffset: 900 }).addTo(capaFoco);
+    marcadorPin.bindTooltip('Pin del lugar', { direction: 'top' });
+    marcadorPin.on('dragend', () => { const p = marcadorPin.getLatLng(); s.pin = [p.lat, p.lng]; guardar(); });
+  }
+  const puntos = [[s.lat, s.lng], e.estimado, ...e.medidas.map(m => [m.lat, m.lng])];
+  mapa.fitBounds(L.latLngBounds(puntos).pad(0.6), { maxZoom: 20 });
+  pintarLista(); pintarDetalle();
+}
+
+function poiDe(e) { return DATOS.pois.find(p => p.id === e.poi_id); }
+
+function pintarDetalle() {
+  const d = document.getElementById('detalle');
+  if (!activo) { d.innerHTML = '<div class="suave">Elige una entrada de la lista.</div>'; return; }
+  const e = activo, s = info(e);
+  const mov = metros([s.lat, s.lng], e.estimado).toFixed(0);
+  const medidas = e.medidas.length
+    ? `${e.medidas.length} medidas${e.dispersion != null ? `, separadas hasta ${e.dispersion} m` : ''}`
+    : 'Sin medidas: ubícala tú sobre la foto';
+  d.innerHTML = `
+    <h2>${e.nombre}${e.principal ? '' : ' <span class="chip">entrada secundaria</span>'}</h2>
+    <div class="suave">${medidas} · a ${mov} m del punto anterior</div>
+    ${e.motivo.length ? `<div class="motivo">${e.motivo.join(' · ')}</div>` : ''}
+    ${e.principal ? `<label><input type="checkbox" id="pinAparte" ${s.pinAparte ? 'checked' : ''}> El pin del lugar en el mapa va en otro sitio (no en esta entrada)</label>` : ''}
+    <textarea id="nota" placeholder="Nota (opcional): p. ej. «puerta del lado de la cancha»">${s.nota || ''}</textarea>
+    <div class="botones">
+      <button class="principal" id="confirmar">Confirmar aquí</button>
+      <button id="propuesta">Volver a la propuesta</button>
+      <button id="siguiente">Siguiente →</button>
+    </div>`;
+  document.getElementById('nota').oninput = ev => { s.nota = ev.target.value; guardar(); };
+  document.getElementById('confirmar').onclick = () => {
+    if (s.estado === 'pendiente') s.estado = 'confirmado';
+    s.revisado = true; guardar(); siguiente();
+  };
+  document.getElementById('propuesta').onclick = () => {
+    s.lat = e.propuesta[0]; s.lng = e.propuesta[1]; s.estado = 'pendiente'; s.revisado = false; guardar(); enfocar(e);
+  };
+  document.getElementById('siguiente').onclick = siguiente;
+  const caja = document.getElementById('pinAparte');
+  if (caja) caja.onchange = ev => { s.pinAparte = ev.target.checked; if (!s.pinAparte) delete s.pin; guardar(); enfocar(e); };
+}
+
+function ordenadas() {
+  const revisar = DATOS.entradas.filter(e => e.motivo.length);
+  const resto = DATOS.entradas.filter(e => !e.motivo.length);
+  return { revisar, resto };
+}
+
+function siguiente() {
+  const todas = [...ordenadas().revisar, ...ordenadas().resto];
+  const i = todas.indexOf(activo);
+  const pendiente = todas.slice(i + 1).concat(todas.slice(0, i + 1)).find(e => !info(e).revisado);
+  if (pendiente) enfocar(pendiente); else { pintarLista(); pintarDetalle(); }
+}
+
+function pintarLista() {
+  const { revisar, resto } = ordenadas();
+  const fila = e => {
+    const s = info(e);
+    const chip = s.revisado ? (s.estado === 'movido' ? '<span class="chip movido">movida</span>' : '<span class="chip confirmado">confirmada</span>')
+                            : '<span class="chip">pendiente</span>';
+    return `<div class="item ${e === activo ? 'activo' : ''}" data-k="${clave(e)}">
+      <div class="fila"><span class="nombre">${e.nombre}</span>${chip}</div>
+      ${e.motivo.length ? `<div class="motivo">${e.motivo.join(' · ')}</div>` : ''}</div>`;
+  };
+  document.getElementById('lista').innerHTML =
+    `<div class="grupo">Revisar con cuidado (${revisar.length})</div>` + revisar.map(fila).join('') +
+    `<div class="grupo">Confirmar que están bien (${resto.length})</div>` + resto.map(fila).join('');
+  for (const el of document.querySelectorAll('.item')) {
+    el.onclick = () => enfocar(DATOS.entradas.find(e => clave(e) === el.dataset.k));
+  }
+  const hechas = DATOS.entradas.filter(e => info(e).revisado).length;
+  document.getElementById('progreso').textContent = `${hechas} de ${DATOS.entradas.length} revisadas`;
+}
+
+document.getElementById('descargar').onclick = () => {
+  const faltan = DATOS.entradas.filter(e => !info(e).revisado).map(e => e.nombre);
+  if (faltan.length && !confirm(`Faltan ${faltan.length} por revisar (${faltan.slice(0, 4).join(', ')}${faltan.length > 4 ? '…' : ''}). ¿Descargar igual? Las que falten no se usan.`)) return;
+  const salida = {
+    formato: 'ajustes-entradas-1',
+    generado: new Date().toISOString(),
+    nota: 'Entradas revisadas a mano sobre la foto satelital, con las medidas del levantamiento a la vista.',
+    entradas: DATOS.entradas.filter(e => info(e).revisado).map(e => {
+      const s = info(e);
+      return { poi_id: e.poi_id, nombre: e.nombre, lat: +s.lat.toFixed(7), lng: +s.lng.toFixed(7),
+               estado: s.estado, nota: (s.nota || '').trim(), principal: e.principal,
+               pin: e.principal && s.pinAparte && s.pin ? { lat: +s.pin[0].toFixed(7), lng: +s.pin[1].toFixed(7) } : null };
+    }),
+  };
+  const blob = new Blob([JSON.stringify(salida, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'ajustes-entradas.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+pintarLista();
+pintarDetalle();
+enfocar(ordenadas().revisar[0] || DATOS.entradas[0]);
+</script>
+</body>
+</html>

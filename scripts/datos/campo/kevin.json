@@ -1,0 +1,188 @@
+{
+ "formato": 2,
+ "medidor": "kevin",
+ "nota": "Levantamiento del 20 y 21 de noviembre de 2026. Sin recorridos ni eventos de las pruebas (llevan la traza de quien camina). Las fechas son las del teléfono: ver docs/levantamiento/campo-2026-11.md.",
+ "accesos": [
+  {
+   "poi_id": 25,
+   "nombre": "La Placita",
+   "lat": 10.370247287324766,
+   "lng": -75.46531859765345,
+   "precision": 4.0,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 33,
+   "fecha": "2026-11-21T09:23:20.902655"
+  },
+  {
+   "poi_id": 6,
+   "nombre": "Edificio A1",
+   "lat": 10.369995235146318,
+   "lng": -75.46543898172042,
+   "precision": 3.9,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 28,
+   "fecha": "2026-11-21T09:58:09.881443"
+  },
+  {
+   "poi_id": 6,
+   "nombre": "Edificio A1",
+   "lat": 10.369988257369842,
+   "lng": -75.46546373117889,
+   "precision": 3.6,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 28,
+   "fecha": "2026-11-22T10:00:29.220320"
+  },
+  {
+   "poi_id": 25,
+   "nombre": "La Placita",
+   "lat": 10.370242770809032,
+   "lng": -75.46532250355085,
+   "precision": 3.8,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 33,
+   "fecha": "2026-11-22T10:02:47.896769"
+  },
+  {
+   "poi_id": 1,
+   "nombre": "Biblioteca",
+   "lat": 10.369967298022491,
+   "lng": -75.46505835222732,
+   "precision": 3.2,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 3,
+   "fecha": "2026-11-22T10:20:48.964544"
+  },
+  {
+   "poi_id": 1,
+   "nombre": "Biblioteca",
+   "lat": 10.369930074331679,
+   "lng": -75.46517386643693,
+   "precision": 3.7,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 14,
+   "fecha": "2026-11-23T10:26:00.410286"
+  },
+  {
+   "poi_id": 1,
+   "nombre": "Biblioteca, segunda entrada",
+   "lat": 10.370305671890403,
+   "lng": -75.46528772995426,
+   "precision": 4.3,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 6,
+   "fecha": "2026-11-23T10:30:55.716978"
+  },
+  {
+   "poi_id": 1,
+   "nombre": "Biblioteca, segunda entrada",
+   "lat": 10.370297160736365,
+   "lng": -75.46528977814272,
+   "precision": 4.4,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 6,
+   "fecha": "2026-11-24T10:33:06.649299"
+  },
+  {
+   "poi_id": 11,
+   "nombre": "Edificio Alcatraz",
+   "lat": 10.370429751874596,
+   "lng": -75.46537621489674,
+   "precision": 4.3,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 13,
+   "fecha": "2026-11-22T10:51:36.755063"
+  },
+  {
+   "poi_id": 11,
+   "nombre": "Edificio Alcatraz",
+   "lat": 10.370521758104658,
+   "lng": -75.46529929043106,
+   "precision": 5.2,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 16,
+   "fecha": "2026-11-23T10:57:18.960014"
+  },
+  {
+   "poi_id": 5,
+   "nombre": "Cancha de softbol",
+   "lat": 10.369847933389497,
+   "lng": -75.46588693330733,
+   "precision": 3.5,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 55,
+   "fecha": "2026-11-24T11:39:01.534174"
+  },
+  {
+   "poi_id": 5,
+   "nombre": "Cancha de softbol",
+   "lat": 10.369826461589254,
+   "lng": -75.46589437851459,
+   "precision": 3.2,
+   "lecturas": 29,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 53,
+   "fecha": "2026-11-25T11:41:29.681682"
+  },
+  {
+   "poi_id": 18,
+   "nombre": "Cancha de fútbol",
+   "lat": 10.370187376079938,
+   "lng": -75.46613036951284,
+   "precision": 3.1,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 63,
+   "fecha": "2026-11-25T11:43:32.853566"
+  },
+  {
+   "poi_id": 18,
+   "nombre": "Cancha de fútbol",
+   "lat": 10.370175474753232,
+   "lng": -75.46616269550468,
+   "precision": 3.9,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 59,
+   "fecha": "2026-11-26T11:44:44.253393"
+  },
+  {
+   "poi_id": 3,
+   "nombre": "Enfermería",
+   "lat": 10.3693463667169,
+   "lng": -75.46602848941352,
+   "precision": 3.6,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 56,
+   "fecha": "2026-11-26T11:47:40.006095"
+  },
+  {
+   "poi_id": 3,
+   "nombre": "Enfermería",
+   "lat": 10.369299282863652,
+   "lng": -75.46602870992037,
+   "precision": 4.8,
+   "lecturas": 30,
+   "descartadas": 0,
+   "distancia_al_estimado_m": 56,
+   "fecha": "2026-11-27T11:51:07.811470"
+  }
+ ],
+ "nortes": [],
+ "tramos": [],
+ "brujula": [],
+ "pruebas": [],
+ "recorridos": []
+}

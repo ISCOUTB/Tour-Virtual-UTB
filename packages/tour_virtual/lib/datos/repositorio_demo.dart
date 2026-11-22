@@ -118,8 +118,8 @@ class RepositorioDemo implements RepositorioContenido {
       descripcion:
           'Más que una biblioteca: concentración, disciplina, tecnología y '
           'construcción de sueños.',
-      lat: 10.3699965,
-      lng: -75.4650668,
+      lat: 10.3699308,
+      lng: -75.4651281,
       escenaPrincipalId: 1,
       audiencias: _todas,
     ),
@@ -132,8 +132,8 @@ class RepositorioDemo implements RepositorioContenido {
           'Un punto que conecta espacios, personas y recorridos dentro del '
           'campus. Cada trayecto en la UTB hace parte de una experiencia que '
           'conecta tu presente con lo que quieres construir.',
-      lat: 10.3692169,
-      lng: -75.4647217,
+      lat: 10.3693299,
+      lng: -75.4646038,
       escenaPrincipalId: 2,
       audiencias: _todas,
     ),
@@ -146,8 +146,8 @@ class RepositorioDemo implements RepositorioContenido {
           'Bienestar y cuidado integral. Un espacio para atender tu salud, '
           'recibir orientación y recordar que cuidar de ti también hace parte'
           ' de la experiencia universitaria.',
-      lat: 10.3692651,
-      lng: -75.4655196,
+      lat: 10.3692929,
+      lng: -75.4660428,
       escenaPrincipalId: 3,
       audiencias: _todas,
     ),
@@ -160,8 +160,8 @@ class RepositorioDemo implements RepositorioContenido {
           'Punto de encuentro, pausa y conexión. Un lugar para compartir con '
           'otros estudiantes, conversar y disfrutar los espacios que hacen '
           'del campus una comunidad.',
-      lat: 10.3691852,
-      lng: -75.4655576,
+      lat: 10.3695983,
+      lng: -75.4657454,
       escenaPrincipalId: 4,
       audiencias: _todas,
     ),
@@ -174,8 +174,8 @@ class RepositorioDemo implements RepositorioContenido {
           'El campus también se vive en movimiento. Espacio para el deporte, '
           'la disciplina, el trabajo en equipo y las experiencias que se '
           'construyen más allá del aula.',
-      lat: 10.3695823,
-      lng: -75.4663148,
+      lat: 10.3698371,
+      lng: -75.4658858,
       escenaPrincipalId: 5,
       audiencias: _todas,
     ),
@@ -184,8 +184,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Edificio A1',
       categoria: 'Academico',
-      lat: 10.3697646,
-      lng: -75.465347,
+      lat: 10.3699525,
+      lng: -75.4654466,
       audiencias: _todas,
     ),
     Poi(
@@ -193,8 +193,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Edificio A2',
       categoria: 'Academico',
-      lat: 10.3707763,
-      lng: -75.4656241,
+      lat: 10.3705033,
+      lng: -75.4656954,
       audiencias: _todas,
     ),
     Poi(
@@ -202,8 +202,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Edificio A3',
       categoria: 'Academico',
-      lat: 10.3692983,
-      lng: -75.4648329,
+      lat: 10.3693457,
+      lng: -75.4646923,
       audiencias: _todas,
     ),
     Poi(
@@ -211,8 +211,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Edificio A4',
       categoria: 'Academico',
-      lat: 10.3695805,
-      lng: -75.4645402,
+      lat: 10.3694377,
+      lng: -75.4646386,
       audiencias: _todas,
     ),
     Poi(
@@ -220,8 +220,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Edificio A5',
       categoria: 'Academico',
-      lat: 10.3691355,
-      lng: -75.4646105,
+      lat: 10.3691514,
+      lng: -75.4646644,
       audiencias: _todas,
     ),
     Poi(
@@ -229,8 +229,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Edificio Alcatraz',
       categoria: 'Academico',
-      lat: 10.3703807,
-      lng: -75.4652636,
+      lat: 10.3704508,
+      lng: -75.4653829,
       audiencias: _todas,
     ),
     Poi(
@@ -238,8 +238,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Auditorio',
       categoria: 'Cultura',
-      lat: 10.3705694,
-      lng: -75.4657944,
+      lat: 10.3704466,
+      lng: -75.4658228,
       audiencias: _todas,
     ),
     Poi(
@@ -247,8 +247,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Plaza Maloca',
       categoria: 'Cultura',
-      lat: 10.3700456,
-      lng: -75.4657625,
+      lat: 10.3702309,
+      lng: -75.4657558,
       audiencias: _todas,
     ),
     Poi(
@@ -256,8 +256,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Rectoría',
       categoria: 'Administrativo',
-      lat: 10.3695939,
-      lng: -75.4652554,
+      lat: 10.3696445,
+      lng: -75.4652676,
       audiencias: _todas,
     ),
     Poi(
@@ -265,8 +265,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Laboratorio El Patio',
       categoria: 'Academico',
-      lat: 10.3696815,
-      lng: -75.4650578,
+      lat: 10.3697995,
+      lng: -75.465167,
       audiencias: _todas,
     ),
     Poi(
@@ -274,8 +274,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Centro de Cuidado Integral (QUID)',
       categoria: 'Bienestar',
-      lat: 10.3690673,
-      lng: -75.4658707,
+      lat: 10.3692698,
+      lng: -75.4658852,
       audiencias: _todas,
     ),
     Poi(
@@ -283,8 +283,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Centro Deportivo y Cultural',
       categoria: 'Deporte',
-      lat: 10.3692615,
-      lng: -75.4656845,
+      lat: 10.3694196,
+      lng: -75.4657638,
       audiencias: _todas,
     ),
     Poi(
@@ -301,8 +301,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Salas de estudio',
       categoria: 'Recursos',
-      lat: 10.3705483,
-      lng: -75.4654429,
+      lat: 10.3704736,
+      lng: -75.4653829,
       audiencias: _todas,
     ),
     Poi(
@@ -310,8 +310,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Cafetería',
       categoria: 'Servicios',
-      lat: 10.37042,
-      lng: -75.4653547,
+      lat: 10.3704828,
+      lng: -75.4655097,
       audiencias: _todas,
     ),
     Poi(
@@ -319,8 +319,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Tienda',
       categoria: 'Servicios',
-      lat: 10.3692206,
-      lng: -75.4661076,
+      lat: 10.3694262,
+      lng: -75.464639,
       audiencias: _todas,
     ),
     Poi(
@@ -328,8 +328,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Cajero automático',
       categoria: 'Servicios',
-      lat: 10.3705307,
-      lng: -75.4659036,
+      lat: 10.3705445,
+      lng: -75.4659509,
       audiencias: _todas,
     ),
     Poi(
@@ -337,8 +337,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Pasillo de la conexión',
       categoria: 'Administrativo',
-      lat: 10.3707567,
-      lng: -75.4659942,
+      lat: 10.3704479,
+      lng: -75.4657786,
       audiencias: _todas,
     ),
     Poi(
@@ -350,8 +350,8 @@ class RepositorioDemo implements RepositorioContenido {
           'Espacio de conexión, ideas y conversaciones que también '
           'transforman la experiencia universitaria. Aquí nacen amistades, '
           'proyectos y networking.',
-      lat: 10.3702285,
-      lng: -75.4655508,
+      lat: 10.3702256,
+      lng: -75.4654775,
       audiencias: _todas,
     ),
     Poi(
@@ -362,8 +362,8 @@ class RepositorioDemo implements RepositorioContenido {
       descripcion:
           'Inspirada en las plazas del Caribe. Un espacio creado para '
           'compartir, desconectarse y sentirse en casa dentro de la UTB.',
-      lat: 10.3704913,
-      lng: -75.465484,
+      lat: 10.3702491,
+      lng: -75.4653206,
       audiencias: _todas,
     ),
     Poi(
@@ -374,8 +374,8 @@ class RepositorioDemo implements RepositorioContenido {
       descripcion:
           'Laboratorio de analítica, IA y datos. El futuro pertenece a '
           'quienes saben interpretar información y tomar decisiones.',
-      lat: 10.3690907,
-      lng: -75.4646518,
+      lat: 10.3691307,
+      lng: -75.4646339,
       audiencias: _todas,
     ),
   ];

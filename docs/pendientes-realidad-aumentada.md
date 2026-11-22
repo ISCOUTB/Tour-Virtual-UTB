@@ -23,8 +23,10 @@ Al final, [cuándo está terminada](#4-cuándo-está-terminada).
   grafo), seguimiento, recálculo y guía por voz.
 - Vista del plano y flecha sobre la cámara, usando GPS y brújula.
 - Permisos de ubicación y cámara, traducciones y pruebas de navegación.
-- Grafo peatonal inicial sacado de OSM: 194 nodos, 207 tramos, 27 entradas,
-  **ninguna verificada**.
+- Grafo peatonal sacado de OSM y corregido con el levantamiento del 20 y 21
+  de noviembre: 198 nodos, 211 tramos, **27 entradas verificadas** a mano
+  sobre la foto satelital, escaleras y rampas marcadas en el campus. Detalle y
+  lo que falta: [levantamiento/campo-2026-11.md](levantamiento/campo-2026-11.md).
 - App de levantamiento separada (`apps/levantamiento`) para el trabajo de
   campo, con la misma lógica de navegación que la app.
 

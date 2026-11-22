@@ -175,6 +175,17 @@ class GrafoCampus {
   List<AccesoLugar> accesosDe(int poiId) =>
       accesos.where((a) => a.poiId == poiId).toList();
 
+  /// Metros de [p] al camino más cercano del grafo. Más de
+  /// [distanciaMaximaEntrada] es estar fuera del campus.
+  double distanciaAlCamino(PuntoGeo p) {
+    var minimo = double.infinity;
+    for (final t in tramos) {
+      final d = proyectarEnTramo(p, nodos[t.a]!, nodos[t.b]!).metros;
+      if (d < minimo) minimo = d;
+    }
+    return minimo;
+  }
+
   /// Si se puede llegar a un lugar con la guía.
   bool tieneAcceso(int poiId) => accesos.any((a) => a.poiId == poiId);
 

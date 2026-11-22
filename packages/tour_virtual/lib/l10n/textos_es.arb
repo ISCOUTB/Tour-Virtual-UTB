@@ -277,6 +277,8 @@
   "@navCalibrar": {"description": "La brújula da lecturas raras (UC-17, flujo 4a)."},
   "navSinRuta": "No encontré un camino hasta {lugar}.",
   "@navSinRuta": {"description": "No hay camino en el grafo hasta el lugar.", "placeholders": {"lugar": {"type": "String"}}},
+  "navFueraDelCampus": "Estás fuera del campus. La guía funciona dentro de la UTB: ábrela cuando llegues.",
+  "@navFueraDelCampus": {"description": "La persona está a más de 150 m del grafo del campus: la guía no inventa una ruta (RF-33)."},
   "navAproximada": "La entrada de este lugar aún es aproximada.",
   "@navAproximada": {"description": "La entrada no se ha medido en el campus todavía."},
   "navPlanoSemantica": "Plano con la ruta hasta {lugar}",

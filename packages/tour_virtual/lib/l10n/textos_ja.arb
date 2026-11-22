@@ -181,6 +181,7 @@
   "navCamaraNoDisponible": "カメラを開けませんでした。地図でルートをたどってください。",
   "navCalibrar": "コンパスが不正確です。スマートフォンを 8 の字に動かしてください。",
   "navSinRuta": "{lugar}までの道が見つかりませんでした。",
+  "navFueraDelCampus": "キャンパスの外にいます。案内はUTBの中で使えます。着いたら開いてください。",
   "navAproximada": "この場所の入口はまだおおよその位置です。",
   "navPlanoSemantica": "{lugar}までのルートを示した地図",
   "verMapa3d": "3Dマップを表示",

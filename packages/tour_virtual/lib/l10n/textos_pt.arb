@@ -181,6 +181,7 @@
   "navCamaraNoDisponible": "Não foi possível abrir a câmera. Siga a rota no mapa.",
   "navCalibrar": "A bússola está imprecisa: mova o celular desenhando um oito.",
   "navSinRuta": "Não encontrei um caminho até {lugar}.",
+  "navFueraDelCampus": "Você está fora do campus. O guia funciona dentro da UTB: abra-o quando chegar.",
   "navAproximada": "A entrada deste lugar ainda é aproximada.",
   "navPlanoSemantica": "Mapa com a rota até {lugar}",
   "verMapa3d": "Ver mapa em 3D",

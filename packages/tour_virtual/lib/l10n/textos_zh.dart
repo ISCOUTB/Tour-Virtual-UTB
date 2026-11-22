@@ -645,6 +645,9 @@ class TextosZh extends Textos {
   }
 
   @override
+  String get navFueraDelCampus => '你在校园外。导航只在UTB校内可用：到达后再打开。';
+
+  @override
   String get navAproximada => '此地点的入口位置仍是大概位置。';
 
   @override

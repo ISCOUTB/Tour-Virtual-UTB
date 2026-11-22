@@ -12,6 +12,11 @@ final modoCampoProvider = Provider<bool>(
   (ref) => ref.watch(configuracionTourProvider).modoCampo,
 );
 
+/// Ensayo del modo campo: la guía camina sola por la ruta con una posición
+/// simulada, para practicar las correcciones lejos del campus. Solo en
+/// memoria: al cerrar la app vuelve el GPS.
+final ensayoCampoProvider = StateProvider<bool>((ref) => false);
+
 /// Las correcciones de la guía guardadas en este teléfono.
 class CorreccionesNotifier extends Notifier<CorreccionesCampo> {
   static const _clave = 'tourVirtual.campo.correcciones.v1';
@@ -27,6 +32,14 @@ class CorreccionesNotifier extends Notifier<CorreccionesCampo> {
     if (!ref.watch(modoCampoProvider)) return const CorreccionesCampo();
     _prefs = _abrir();
     _cargar();
+    // Lo practicado en un ensayo no se guarda: al apagarlo vuelve lo de
+    // antes. Si no, el lunes se mezclaban las pruebas de la casa.
+    ref.listen(ensayoCampoProvider, (antes, ahora) {
+      if (antes == true && !ahora) {
+        state = const CorreccionesCampo();
+        _cargar();
+      }
+    });
     return const CorreccionesCampo();
   }
 
@@ -50,11 +63,18 @@ class CorreccionesNotifier extends Notifier<CorreccionesCampo> {
     if (guardadas != null) state = guardadas.unir(state);
   }
 
+  /// En un ensayo las correcciones se aplican, pero no se guardan.
+  bool get enEnsayo => ref.read(ensayoCampoProvider);
+
   Future<void> _guardar() async {
+    if (enEnsayo) return;
+    // El texto se toma ahora: mientras se espera el almacén puede llegar otra
+    // corrección (por ejemplo, ya en un ensayo) que no debe guardarse.
+    final texto = state.exportar();
     final prefs = await _prefs;
     if (prefs == null) return;
     try {
-      await prefs.setString(_clave, state.exportar());
+      await prefs.setString(_clave, texto);
     } catch (error) {
       debugPrint('No se guardaron las correcciones: $error');
     }

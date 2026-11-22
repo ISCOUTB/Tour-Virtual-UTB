@@ -80,6 +80,8 @@ class PantallaNavegacion extends ConsumerWidget {
             return Center(child: Text(Textos.of(context).falloSinContenido));
           }
           return _Guia(
+            // El ensayo cambia la fuente de la posición: guía nueva.
+            key: ValueKey(ref.watch(ensayoCampoProvider)),
             poi: poi,
             paradas: [...lista.where((p) => p.esParada)],
             grafo: grafoCampus,
@@ -100,6 +102,9 @@ enum _Fase {
   gpsApagado,
   guiando,
   sinRuta,
+
+  /// A más de [GrafoCampus.distanciaMaximaEntrada] de cualquier camino.
+  fueraDelCampus,
   llegada,
 }
 
@@ -107,6 +112,7 @@ enum _Vista { plano, camara }
 
 class _Guia extends ConsumerStatefulWidget {
   const _Guia({
+    super.key,
     required this.poi,
     required this.paradas,
     required this.grafo,
@@ -323,12 +329,16 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     );
     if (ruta == null) {
       _pausar();
-      setState(() => _fase = _Fase.sinRuta);
+      // Desde la casa, «no encontré un camino» parecía un fallo.
+      final lejos =
+          widget.grafo.distanciaAlCamino(desde) >
+          GrafoCampus.distanciaMaximaEntrada;
+      setState(() => _fase = lejos ? _Fase.fueraDelCampus : _Fase.sinRuta);
       return false;
     }
     final ubicacion = _ubicacion;
-    if (ubicacion is UbicacionSimulada && _seguimiento == null) {
-      ubicacion.camino = ruta.puntos;
+    if (ubicacion is UbicacionSimulada) {
+      ubicacion.seguir(ruta.puntos, desde: desde);
     }
     _seguimiento = SeguimientoRuta(ruta, radio: widget.radioLlegada);
     return true;
@@ -470,6 +480,13 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
         pose: PoseMax.pensativo,
         titulo: txt.navTitulo(lugar),
         texto: txt.navSinRuta(lugar),
+        principal: (txt.volver, _salir),
+        secundaria: _salidaAl360(txt),
+      ),
+      _Fase.fueraDelCampus => _Panel(
+        pose: PoseMax.mapa,
+        titulo: txt.navTitulo(lugar),
+        texto: txt.navFueraDelCampus,
         principal: (txt.volver, _salir),
         secundaria: _salidaAl360(txt),
       ),

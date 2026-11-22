@@ -648,6 +648,9 @@ class TextosJa extends Textos {
   }
 
   @override
+  String get navFueraDelCampus => 'キャンパスの外にいます。案内はUTBの中で使えます。着いたら開いてください。';
+
+  @override
   String get navAproximada => 'この場所の入口はまだおおよその位置です。';
 
   @override

@@ -161,7 +161,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.textContaining('Faltan'), findsOneWidget);
     // El visitante nunca ve las herramientas del equipo.
-    expect(find.textContaining('MODO CAMPO'), findsNothing);
+    expect(find.text('Corregir'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     expect(ubicacion.cambios.hasListener, isFalse);
@@ -185,9 +185,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.textContaining('Faltan'), findsOneWidget);
-      expect(find.textContaining('MODO CAMPO'), findsOneWidget);
+      expect(find.textContaining('GPS ±4 m'), findsOneWidget);
       expect(find.text('Corregir'), findsOneWidget);
-      expect(find.text('Estoy en la puerta'), findsOneWidget);
 
       // Otro teléfono dice que la puerta de la Biblioteca es justo aquí: al
       // pegarlo, la guía cambia de destino sin salir de la pantalla y llega.
@@ -216,7 +215,7 @@ void main() {
       expect(find.text('Llegaste a Biblioteca'), findsWidgets);
       // Tras la llegada siguen los sensores: se puede marcar la puerta real.
       expect(ubicacion.cambios.hasListener, isTrue);
-      expect(find.text('Estoy en la puerta'), findsOneWidget);
+      expect(find.textContaining('¿No es la puerta?'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 1));
@@ -224,7 +223,7 @@ void main() {
     },
   );
 
-  testWidgets('«Estoy en la puerta» mide 10 s y mueve la entrada aquí', (
+  testWidgets('«Estoy en la puerta» mide 10 s, mueve la entrada y se deshace', (
     tester,
   ) async {
     final ubicacion = UbicacionControlada();
@@ -240,24 +239,26 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
+    // Un solo camino: Corregir → Estoy en la puerta → 10 s quieto. Sin
+    // preguntas: se mueve la entrada más cercana y el aviso trae «Deshacer».
+    await tester.tap(find.text('Corregir'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('¿Qué está mal?'), findsOneWidget);
     await tester.tap(find.text('Estoy en la puerta'));
-    await tester.pump();
-    expect(find.text('Quieto en la puerta real'), findsOneWidget);
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Quieto en la puerta'), findsOneWidget);
     for (var s = 0; s < 11; s++) {
       ubicacion.cambios.add(LecturaPosicion(punto: puerta, precision: 4));
       await tester.pump(const Duration(seconds: 1));
     }
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.textContaining('de donde estás'), findsOneWidget);
-    await tester.tap(find.text('Mover aquí'));
-    await tester.pump(const Duration(milliseconds: 100));
-    // La Biblioteca tiene dos entradas: pregunta cuál, la más cercana arriba.
-    expect(find.text('¿Qué entrada es esta?'), findsOneWidget);
-    expect(find.text('Es otra entrada, nueva'), findsOneWidget);
-    await tester.tap(find.textContaining('hoy a').first);
     for (var i = 0; i < 5; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 100));
     }
+    expect(find.textContaining('movida'), findsOneWidget);
 
     final contenedor = ProviderScope.containerOf(
       tester.element(find.byType(PantallaNavegacion)),
@@ -269,8 +270,58 @@ void main() {
     expect(tipos, ['prueba', 'entrada']);
     expect(find.text('Llegaste a Biblioteca'), findsWidgets);
 
+    await tester.tap(find.text('Deshacer'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      contenedor.read(correccionesCampoProvider).vigentes.map((c) => c.tipo),
+      ['prueba'],
+    );
+
     await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump(const Duration(seconds: 1));
+    // El tramo resaltado se limpia a los 6 s.
+    await tester.pump(const Duration(seconds: 7));
+    await ubicacion.cambios.close();
+  });
+
+  testWidgets('«Por aquí no se pasa» cambia la ruta y se deshace', (
+    tester,
+  ) async {
+    final ubicacion = UbicacionControlada();
+    await montar(tester, ubicacion: ubicacion, voz: VozMuda(), modoCampo: true);
+    await tester.tap(find.text('Permitir ubicación'));
+    await tester.pump();
+    const aqui = LecturaPosicion(
+      punto: UbicacionSimulada.puntoDePartida,
+      precision: 4,
+    );
+    ubicacion.cambios.add(aqui);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    String faltan() => tester.widget<Text>(find.textContaining('Faltan')).data!;
+    final antes = faltan();
+
+    await tester.tap(find.text('Corregir'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.tap(find.text('Por aquí no se pasa'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    ubicacion.cambios.add(aqui);
+    await tester.pump(const Duration(milliseconds: 100));
+    // Cerrar el tramo por el que manda la guía obliga a otro camino.
+    expect(faltan(), isNot(antes));
+    expect(find.textContaining('cerrado'), findsOneWidget);
+
+    await tester.tap(find.text('Deshacer'));
+    await tester.pump(const Duration(milliseconds: 100));
+    ubicacion.cambios.add(aqui);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(faltan(), antes);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 7));
     await ubicacion.cambios.close();
   });
 
@@ -286,6 +337,8 @@ void main() {
       const LecturaPosicion(punto: PuntoGeo(4.711, -74.0721), precision: 5),
     );
     await tester.pump();
+    // Desde otra ciudad no es «no encontré un camino»: está fuera del campus.
+    expect(find.textContaining('Estás fuera del campus'), findsOneWidget);
     expect(find.text('Ver en 360°'), findsOneWidget);
     expect(ubicacion.cambios.hasListener, isFalse);
     expect(voz.dichos, isEmpty);

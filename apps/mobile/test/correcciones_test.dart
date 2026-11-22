@@ -1,7 +1,11 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tour_virtual/configuracion_tour.dart';
 import 'package:tour_virtual/navegacion/correcciones.dart';
 import 'package:tour_virtual/navegacion/geo.dart';
 import 'package:tour_virtual/navegacion/grafo_campus.dart';
+import 'package:tour_virtual/navegacion/modo_campo.dart';
 import 'package:tour_virtual/navegacion/sensores.dart';
 
 import 'navegacion_test.dart' show desplazar, grafoEnL, origen;
@@ -216,6 +220,46 @@ void main() {
       isNotNull,
     );
   });
+
+  test(
+    'lo corregido en un ensayo no se guarda y se descarta al apagarlo',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final contenedor = ProviderContainer(
+        overrides: [
+          configuracionTourProvider.overrideWithValue(
+            const ConfiguracionTour(fuente: ContenidoLocal(), modoCampo: true),
+          ),
+        ],
+      );
+      addTearDown(contenedor.dispose);
+      final notifier = contenedor.read(correccionesCampoProvider.notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      notifier.agregar(CorreccionNota(id: 'real', fecha: fecha, texto: 'x'));
+      contenedor.read(ensayoCampoProvider.notifier).state = true;
+      notifier.agregar(CorreccionNota(id: 'ensayo', fecha: fecha, texto: 'y'));
+      // Se aplica para practicar…
+      expect(
+        contenedor.read(correccionesCampoProvider).vigentes.map((c) => c.id),
+        ['real', 'ensayo'],
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final guardado = (await SharedPreferences.getInstance()).getString(
+        'tourVirtual.campo.correcciones.v1',
+      );
+      // …pero no llega al teléfono.
+      expect(guardado, contains('"real"'));
+      expect(guardado, isNot(contains('"ensayo"')));
+
+      contenedor.read(ensayoCampoProvider.notifier).state = false;
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(
+        contenedor.read(correccionesCampoProvider).vigentes.map((c) => c.id),
+        ['real'],
+      );
+    },
+  );
 
   group('entre teléfonos', () {
     final entrada = CorreccionEntrada(

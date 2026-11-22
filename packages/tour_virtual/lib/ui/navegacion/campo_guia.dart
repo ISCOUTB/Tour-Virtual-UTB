@@ -1,16 +1,24 @@
 part of 'pantalla_navegacion.dart';
 
-// Modo campo de la guía: diagnóstico y correcciones hechas en el campus.
+// Modo campo de la guía: corregir en el campus lo que salga mal.
 //
-// Es una herramienta del equipo para la prueba en la universidad, no del
-// visitante: solo existe con `--dart-define=CAMPO=true` y sus textos van en
-// español, como los de la app de levantamiento, en vez de en los .arb.
+// Herramienta del equipo para la prueba en la universidad, no del visitante:
+// solo existe con `--dart-define=CAMPO=true` y sus textos van en español,
+// como los de la app de levantamiento, en vez de en los .arb.
+//
+// Pensado para usarse caminando y sin leer instrucciones: se dice qué está
+// mal en palabras de la calle («por aquí no se pasa»), se aplica al momento
+// y se puede deshacer. Sin diálogos de confirmación: el aviso de abajo trae
+// «Deshacer», y el tramo afectado se ve en naranja en el plano.
 
 /// Con peor precisión, una lectura no entra en un promedio.
 const _precisionUtil = 15.0;
 
 /// Segundos quieto para marcar una puerta.
 const _segundosPuerta = 10;
+
+/// A esta distancia o menos, la entrada de la guía ya estaba bien.
+const _entradaBien = 4.0;
 
 extension _Campo on _GuiaState {
   CorreccionesNotifier get _correcciones =>
@@ -35,22 +43,20 @@ extension _Campo on _GuiaState {
     if (_fase == _Fase.llegada && mounted) _refrescar(() {});
   }
 
-  /// El tramo de la ruta más cercano a la posición: el que se va a corregir,
-  /// con sus extremos en el grafo (no el pedazo que recorre la ruta).
+  /// El tramo por el que la guía te está mandando ahora: el que lleva al
+  /// próximo punto de la ruta, con sus extremos en el grafo (no el pedazo
+  /// que recorre la ruta). Antes era el más cercano a la posición, y justo
+  /// después de una esquina era el que quedaba atrás: «por aquí no se pasa»
+  /// cerraba el camino ya recorrido.
   ({TramoCampus tramo, PuntoGeo desde, PuntoGeo hasta, double rumbo})?
   _tramoActual() {
-    final ruta = _seguimiento?.ruta, aqui = _aqui;
-    if (ruta == null || aqui == null || ruta.tramos.isEmpty) return null;
-    var mejor = 0;
-    var distancia = double.infinity;
-    for (var i = 0; i < ruta.puntos.length - 1; i++) {
-      final d = proyectarEnTramo(aqui, ruta.puntos[i], ruta.puntos[i + 1]);
-      if (d.metros < distancia) {
-        distancia = d.metros;
-        mejor = i;
-      }
+    final seguimiento = _seguimiento;
+    final ruta = seguimiento?.ruta;
+    if (seguimiento == null || ruta == null || ruta.tramos.isEmpty) {
+      return null;
     }
-    final tramo = ruta.tramos[mejor];
+    final i = (seguimiento.objetivo - 1).clamp(0, ruta.tramos.length - 1);
+    final tramo = ruta.tramos[i];
     final desde = widget.grafo.nodos[tramo.a],
         hasta = widget.grafo.nodos[tramo.b];
     if (desde == null || hasta == null) return null;
@@ -59,8 +65,41 @@ extension _Campo on _GuiaState {
       desde: desde,
       hasta: hasta,
       // En el sentido de la ruta, para calibrar la brújula.
-      rumbo: rumboGrados(ruta.puntos[mejor], ruta.puntos[mejor + 1]),
+      rumbo: rumboGrados(ruta.puntos[i], ruta.puntos[i + 1]),
     );
+  }
+
+  /// Aplica [c] y lo dice abajo con «Deshacer». [resaltar] se ve en naranja
+  /// en el plano mientras dura el aviso.
+  void _hecho(
+    Correccion c,
+    String texto, {
+    List<PuntoGeo> resaltar = const [],
+  }) {
+    _correcciones.agregar(c);
+    if (!mounted) return;
+    _refrescar(() => _resaltado = resaltar);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(texto),
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
+          margin: _sobreLaBarra(),
+          // Con acción, Flutter lo deja fijo hasta tocarlo: tapaba la barra.
+          persist: false,
+          action: SnackBarAction(
+            label: 'Deshacer',
+            onPressed: () => _correcciones.anular(c.id),
+          ),
+        ),
+      );
+    Future<void>.delayed(const Duration(seconds: 6), () {
+      if (mounted && _resaltado == resaltar) {
+        _refrescar(() => _resaltado = const []);
+      }
+    });
   }
 
   void _avisarCampo(String texto) {
@@ -68,81 +107,27 @@ extension _Campo on _GuiaState {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text(texto), duration: const Duration(seconds: 5)),
+        SnackBar(
+          content: Text(texto),
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
+          margin: _sobreLaBarra(),
+        ),
       );
   }
 
-  /// Confirmación abajo y sin oscurecer: el tramo resaltado del plano tiene
-  /// que verse mientras se decide. Un diálogo al centro lo tapaba.
-  Future<bool> _confirmarSobrePlano(
-    String titulo,
-    String texto, {
-    String accion = 'Aplicar',
-  }) async =>
-      await showModalBottomSheet<bool>(
-        context: context,
-        barrierColor: Colors.transparent,
-        builder: (context) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(titulo, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 6),
-                Text(texto),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancelar'),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: Text(accion),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ) ??
-      false;
-
-  Future<bool> _confirmarCampo(
-    String titulo,
-    String texto, {
-    String accion = 'Aplicar',
-  }) async =>
-      await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(titulo),
-          content: Text(texto),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(accion),
-            ),
-          ],
-        ),
-      ) ??
-      false;
+  /// Los avisos flotan sobre la barra de campo: abajo tapaban «Corregir» y
+  /// no se podía corregir otra cosa seguido.
+  EdgeInsets _sobreLaBarra() => EdgeInsets.fromLTRB(
+    16,
+    0,
+    16,
+    MediaQuery.paddingOf(context).bottom + 12 + 76,
+  );
 
   /// Promedia el GPS durante [_segundosPuerta] segundos, quieto. Pesa cada
   /// lectura por su precisión. Nulo si se canceló o no hubo señal útil.
-  Future<({PuntoGeo punto, double precision})?> _medirAqui(
-    String titulo,
-  ) async {
+  Future<({PuntoGeo punto, double precision})?> _medirAqui() async {
     final muestras = <LecturaPosicion>[];
     void oyente(LecturaPosicion l) {
       if (l.precision <= _precisionUtil) muestras.add(l);
@@ -152,18 +137,15 @@ extension _Campo on _GuiaState {
     final completa = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _DialogoMedicion(
-        titulo: titulo,
-        segundos: _segundosPuerta,
-        muestras: () => muestras,
-      ),
+      builder: (_) =>
+          _DialogoMedicion(segundos: _segundosPuerta, muestras: () => muestras),
     );
     _oyentesCampo.remove(oyente);
     if (completa != true) return null;
     if (muestras.length < 3) {
       _avisarCampo(
-        'Solo ${muestras.length} lecturas con ±${_precisionUtil.round()} m o '
-        'mejor. Busca cielo abierto y repite.',
+        'GPS débil (${muestras.length} lecturas buenas). Sal a cielo abierto '
+        'y vuelve a intentarlo.',
       );
       return null;
     }
@@ -181,42 +163,6 @@ extension _Campo on _GuiaState {
     );
   }
 
-  /// «Estoy en la puerta»: mide la puerta real, anota la prueba y, si la
-  /// entrada de la guía está lejos, ofrece moverla aquí.
-  Future<void> _estoyEnLaPuerta() async {
-    final destino = _seguimiento?.ruta.destino;
-    if (destino == null) return;
-    final medida = await _medirAqui('Quieto en la puerta real');
-    if (medida == null || !mounted) return;
-    final prueba = CorreccionPrueba(
-      id: nuevoIdCorreccion(),
-      fecha: DateTime.now(),
-      autor: _autor,
-      poiId: widget.poi.id,
-      puerta: medida.punto,
-      destino: destino.punto,
-      llegadaApp: _llegadaApp,
-    );
-    _correcciones.agregar(prueba);
-    // Con dos entradas, la ruta puede ir a la otra: se compara con la más
-    // cercana a donde está la persona.
-    final cercana = _entradasPorCercania(medida.punto).first;
-    final error = distanciaMetros(cercana.punto, medida.punto);
-    final llegada = _llegadaApp == null
-        ? 'La guía no había dado la llegada.'
-        : 'La guía dio la llegada a '
-              '${distanciaMetros(_llegadaApp!, medida.punto).round()} m de aquí.';
-    final mover = await _confirmarCampo(
-      error <= 3 ? 'La entrada está bien' : 'Entrada a ${error.round()} m',
-      'La entrada «${cercana.nombre}» de la guía está a ${error.round()} m '
-      'de donde estás (±${medida.precision.round()} m). $llegada\n\n'
-      '¿Mover una entrada aquí?',
-      accion: 'Mover aquí',
-    );
-    if (!mover || !mounted) return;
-    await _guardarEntrada(medida.punto, medida.precision);
-  }
-
   List<AccesoLugar> _entradasPorCercania(PuntoGeo punto) =>
       widget.grafo.accesosDe(widget.poi.id)..sort(
         (a, b) => distanciaMetros(
@@ -225,109 +171,77 @@ extension _Campo on _GuiaState {
         ).compareTo(distanciaMetros(b.punto, punto)),
       );
 
-  /// Mueve la entrada que elija la persona (la más cercana primero) o
-  /// agrega una nueva. Con una sola entrada no pregunta.
-  Future<void> _guardarEntrada(PuntoGeo punto, double precision) async {
-    final entradas = _entradasPorCercania(punto);
-    String? nombre;
-    if (entradas.length == 1) {
-      nombre = entradas.single.nombre;
-    } else {
-      nombre = await showDialog<String>(
-        context: context,
-        builder: (context) => SimpleDialog(
-          title: const Text('¿Qué entrada es esta?'),
-          children: [
-            for (final e in entradas)
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, e.nombre),
-                child: Text(
-                  '${e.nombre} · hoy a ${distanciaMetros(e.punto, punto).round()} m',
-                ),
-              ),
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, ''),
-              child: const Text('Es otra entrada, nueva'),
-            ),
-          ],
+  /// «Estoy en la puerta»: mide la puerta real y mueve allí la entrada más
+  /// cercana del lugar. Si ya estaba bien, solo lo anota. Siempre queda la
+  /// prueba (RF-29): dónde estaba la puerta y dónde dio la llegada la guía.
+  Future<void> _estoyEnLaPuerta() async {
+    final medida = await _medirAqui();
+    if (medida == null || !mounted) return;
+    final destino = _seguimiento?.ruta.destino;
+    if (destino != null) {
+      _correcciones.agregar(
+        CorreccionPrueba(
+          id: nuevoIdCorreccion(),
+          fecha: DateTime.now(),
+          autor: _autor,
+          poiId: widget.poi.id,
+          puerta: medida.punto,
+          destino: destino.punto,
+          llegadaApp: _llegadaApp,
         ),
       );
-      if (nombre == '' && mounted) {
-        nombre = await _pedirNombreEntrada(entradas.length + 1);
-      }
     }
-    if (nombre == null || nombre.isEmpty || !mounted) return;
-    _correcciones.agregar(
+    // Con dos entradas la ruta puede ir a la otra: se mueve la más cercana a
+    // donde está la persona, no la de la ruta.
+    final cercana = _entradasPorCercania(medida.punto).first;
+    final error = distanciaMetros(cercana.punto, medida.punto);
+    if (error <= _entradaBien) {
+      _avisarCampo(
+        'La entrada «${cercana.nombre}» estaba bien (a ${error.round()} m). '
+        'Anotado.',
+      );
+      return;
+    }
+    _hecho(
       CorreccionEntrada(
         id: nuevoIdCorreccion(),
         fecha: DateTime.now(),
         autor: _autor,
         poiId: widget.poi.id,
-        nombre: nombre,
-        punto: punto,
-        precision: precision,
+        nombre: cercana.nombre,
+        punto: medida.punto,
+        precision: medida.precision,
       ),
+      'Entrada «${cercana.nombre}» movida ${error.round()} m hasta aquí.',
     );
-    _avisarCampo('Entrada «$nombre» en este punto. Ruta recalculada.');
   }
 
-  Future<String?> _pedirNombreEntrada(int numero) async {
-    final control = TextEditingController(
-      text: '${widget.poi.nombre}, entrada $numero',
-    );
-    final nombre = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Entrada nueva'),
-        content: TextField(
-          controller: control,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Nombre'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, control.text.trim()),
-            child: const Text('Agregar'),
-          ),
-        ],
-      ),
-    );
-    control.dispose();
-    return nombre;
-  }
-
-  Future<void> _moverEntrada() async {
-    if (_seguimiento == null) return;
-    final medida = await _medirAqui('Quieto en la puerta real');
+  /// Una entrada más del lugar en este punto (la guía irá a la más cercana).
+  Future<void> _otraEntrada() async {
+    final medida = await _medirAqui();
     if (medida == null || !mounted) return;
-    await _guardarEntrada(medida.punto, medida.precision);
+    final numero = widget.grafo.accesosDe(widget.poi.id).length + 1;
+    _hecho(
+      CorreccionEntrada(
+        id: nuevoIdCorreccion(),
+        fecha: DateTime.now(),
+        autor: _autor,
+        poiId: widget.poi.id,
+        nombre: '${widget.poi.nombre}, entrada $numero',
+        punto: medida.punto,
+        precision: medida.precision,
+      ),
+      'Entrada nueva de ${widget.poi.nombre} aquí.',
+    );
   }
 
-  Future<void> _corregirTramo({bool? escalones, bool? bloqueado}) async {
+  void _corregirTramo({bool? escalones, bool? bloqueado}) {
     final actual = _tramoActual();
     if (actual == null) {
-      _avisarCampo('Sin ruta o sin posición: no hay tramo que corregir.');
+      _avisarCampo('Todavía no hay ruta ni posición: espera a que guíe.');
       return;
     }
-    _refrescar(() => _resaltado = [actual.desde, actual.hasta]);
-    final que = bloqueado == true
-        ? 'no se puede pasar'
-        : escalones == true
-        ? 'tiene escalones'
-        : 'no tiene escalones';
-    final ok = await _confirmarSobrePlano(
-      'Tramo en naranja',
-      'Tramo de ${actual.tramo.metros.round()} m '
-          '(${actual.tramo.tipo.name}${actual.tramo.escalones ? ', con escalones' : ''}). '
-          '¿Marcar que $que?',
-    );
-    if (mounted) _refrescar(() => _resaltado = const []);
-    if (!ok) return;
-    _correcciones.agregar(
+    _hecho(
       CorreccionTramo(
         id: nuevoIdCorreccion(),
         fecha: DateTime.now(),
@@ -337,20 +251,25 @@ extension _Campo on _GuiaState {
         bloqueado: bloqueado,
         escalones: escalones,
       ),
+      switch ((bloqueado, escalones)) {
+        (true, _) =>
+          'Tramo de ${actual.tramo.metros.round()} m cerrado. '
+              'Busco otro camino.',
+        (_, true) => 'Tramo con escalones. «Sin escaleras» lo evitará.',
+        _ => 'Tramo sin escalones.',
+      },
+      resaltar: [actual.desde, actual.hasta],
     );
-    _avisarCampo('Tramo corregido. Ruta recalculada.');
   }
 
   void _empezarGrabacion() {
     final aqui = _aqui;
     _refrescar(() => _trazo = [?aqui]);
-    _avisarCampo(
-      'Grabando. Camina el camino que falta, de un camino del mapa a otro, '
-      'y toca «Terminar camino».',
-    );
   }
 
-  Future<void> _terminarGrabacion() async {
+  void _cancelarGrabacion() => _refrescar(() => _trazo = null);
+
+  void _terminarGrabacion() {
     final trazo = _trazo;
     if (trazo == null) return;
     _refrescar(() => _trazo = null);
@@ -360,93 +279,110 @@ extension _Campo on _GuiaState {
       metros += distanciaMetros(puntos[i], puntos[i + 1]);
     }
     if (puntos.length < 2 || metros < 8) {
-      _avisarCampo('Camino de ${metros.round()} m: muy corto, no se guarda.');
+      _avisarCampo('Camino de ${metros.round()} m: muy corto, no se guardó.');
       return;
     }
-    final escalones = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Camino de ${metros.round()} m'),
-        content: const Text(
-          'Se une a los caminos del mapa por sus dos puntas. ¿Tiene escalones?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Descartar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Con escalones'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Sin escalones'),
-          ),
-        ],
-      ),
-    );
-    if (escalones == null) return;
-    _correcciones.agregar(
+    // Sin escalones por defecto, que es lo común: si los tiene, «Aquí hay
+    // escaleras» sobre ese tramo.
+    _hecho(
       CorreccionCamino(
         id: nuevoIdCorreccion(),
         fecha: DateTime.now(),
         autor: _autor,
         puntos: puntos,
-        escalones: escalones,
       ),
+      'Camino nuevo de ${metros.round()} m. La guía ya lo usa.',
+      resaltar: puntos,
     );
-    _avisarCampo('Camino agregado. Ruta recalculada.');
   }
 
   /// La flecha apunta mal: con la cámara hacia donde sigue el camino, la
   /// diferencia con el rumbo del tramo es el ajuste de la brújula.
   Future<void> _calibrarBrujula() async {
-    final actual = _tramoActual(), brujula = _rumbo;
-    if (actual == null || brujula == null) {
-      _avisarCampo('Hace falta la ruta y la brújula para calibrar.');
-      return;
-    }
-    if (brujula.descalibrada) {
-      _avisarCampo(
-        'Hay metal cerca o la brújula necesita el ocho: aléjate y repite.',
-      );
+    final actual = _tramoActual();
+    if (actual == null || _rumbo == null) {
+      _avisarCampo('Hace falta estar guiando, con la brújula, para esto.');
       return;
     }
     _refrescar(() => _resaltado = [actual.desde, actual.hasta]);
-    final ok = await _confirmarSobrePlano(
-      'Calibrar la brújula',
-      'Párate sobre el tramo naranja, con el teléfono vertical y la cámara '
-          'apuntando hacia donde sigue la ruta, lejos de rejas y carros. '
-          'Luego toca «Calibrar».',
-      accion: 'Calibrar',
+    // Abajo y sin oscurecer: la línea naranja del plano tiene que verse.
+    final listo = await showModalBottomSheet<bool>(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Apunta hacia donde sigue el camino',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Sobre la línea naranja, con el teléfono vertical y la cámara '
+                'mirando hacia donde hay que seguir. Lejos de rejas y carros.',
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Listo'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
     if (mounted) _refrescar(() => _resaltado = const []);
     final ahora = _rumbo;
-    if (!ok || ahora == null || !mounted) return;
-    final delta = diferenciaAngular(ahora.grados, actual.rumbo);
-    final total = ref.read(correccionesCampoProvider).ajusteBrujula + delta;
-    if (delta.abs() > 40 &&
-        !await _confirmarCampo(
-          'Diferencia de ${delta.round()}°',
-          'Es mucho para una brújula: puede que no apuntaras al camino o que '
-              'haya metal cerca. ¿Aplicarla de todos modos?',
-        )) {
+    if (listo != true || ahora == null || !mounted) return;
+    if (ahora.descalibrada) {
+      final ut = ahora.intensidad?.round();
+      _avisarCampo(
+        'La brújula marca ${ut ?? '?'} µT y aquí lo normal es 33: hay metal '
+        'cerca o falta calibrarla. Aléjate, dibuja un ocho con el teléfono y '
+        'repite. Si sigue igual, en Corregir → Más pon el detector en «amplio».',
+      );
       return;
     }
-    _correcciones.agregar(
+    final delta = diferenciaAngular(ahora.grados, actual.rumbo);
+    final total = normalizarAjuste(
+      ref.read(correccionesCampoProvider).ajusteBrujula + delta,
+    );
+    _hecho(
       CorreccionBrujula(
         id: nuevoIdCorreccion(),
         fecha: DateTime.now(),
         autor: _autor,
-        grados: normalizarAjuste(total),
+        grados: total,
       ),
-    );
-    _avisarCampo(
-      'Brújula corregida ${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(1)}° '
-      '(ajuste total ${normalizarAjuste(total).toStringAsFixed(1)}°).',
+      delta.abs() > 40
+          ? 'Flecha girada ${delta.round()}°. Es mucho: si no apuntabas al '
+                'camino, deshazlo.'
+          : 'Flecha corregida ${delta.round()}°.',
     );
   }
+
+  void _cambiarRadio(double metros) => _correcciones.agregar(
+    CorreccionRadio(
+      id: nuevoIdCorreccion(),
+      fecha: DateTime.now(),
+      autor: _autor,
+      metros: metros,
+    ),
+  );
 
   /// Estricto, amplio o el rango mundial, en ese orden.
   void _cambiarDetector() {
@@ -465,18 +401,6 @@ extension _Campo on _GuiaState {
         tolerancia: siguiente,
       ),
     );
-    _avisarCampo('Detector de metal: ${_nombreTolerancia(siguiente)}.');
-  }
-
-  void _cambiarRadio(double metros) {
-    _correcciones.agregar(
-      CorreccionRadio(
-        id: nuevoIdCorreccion(),
-        fecha: DateTime.now(),
-        autor: _autor,
-        metros: metros,
-      ),
-    );
   }
 
   Future<void> _anotar() async {
@@ -484,13 +408,12 @@ extension _Campo on _GuiaState {
     final texto = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Anotar un problema'),
+        title: const Text('¿Qué pasa aquí?'),
         content: TextField(
           controller: control,
           autofocus: true,
           maxLines: 3,
           decoration: const InputDecoration(
-            labelText: 'Qué pasa aquí',
             hintText: '«Dice derecha y el camino va a la izquierda»',
           ),
         ),
@@ -508,7 +431,7 @@ extension _Campo on _GuiaState {
     );
     control.dispose();
     if (texto == null || texto.isEmpty) return;
-    _correcciones.agregar(
+    _hecho(
       CorreccionNota(
         id: nuevoIdCorreccion(),
         fecha: DateTime.now(),
@@ -517,47 +440,63 @@ extension _Campo on _GuiaState {
         punto: _aqui,
         poiId: widget.poi.id,
       ),
+      'Anotado aquí.',
     );
-    _avisarCampo('Anotado con la posición.');
   }
 
   Future<void> _abrirCorrecciones() async {
-    await showModalBottomSheet<void>(
+    final accion = await showModalBottomSheet<VoidCallback>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
       builder: (_) => _HojaCorrecciones(
         guiando: _seguimiento != null,
-        grabando: _trazo != null,
-        alMoverEntrada: _moverEntrada,
-        alMarcarTramo: _corregirTramo,
-        alGrabar: _empezarGrabacion,
-        alCalibrar: _calibrarBrujula,
         alCambiarRadio: _cambiarRadio,
         alCambiarDetector: _cambiarDetector,
-        alAnotar: _anotar,
+        acciones: (
+          puerta: _estoyEnLaPuerta,
+          otraEntrada: _otraEntrada,
+          cerrado: () => _corregirTramo(bloqueado: true),
+          camino: _empezarGrabacion,
+          flecha: _calibrarBrujula,
+          escaleras: () => _corregirTramo(escalones: true),
+          sinEscaleras: () => _corregirTramo(escalones: false),
+          nota: _anotar,
+        ),
       ),
     );
+    // La acción va después de cerrar la hoja: lo que muestra (el tramo en
+    // naranja, la medida) tiene que verse sobre la guía. Se espera a que la
+    // hoja termine de bajar; si no, subía el panel siguiente encima de ella.
+    if (accion == null) return;
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (mounted) accion();
   }
 }
 
+/// Las acciones de la hoja. Cada una se hace con la hoja ya cerrada.
+typedef _AccionesCampo = ({
+  VoidCallback puerta,
+  VoidCallback otraEntrada,
+  VoidCallback cerrado,
+  VoidCallback camino,
+  VoidCallback flecha,
+  VoidCallback escaleras,
+  VoidCallback sinEscaleras,
+  VoidCallback nota,
+});
+
 String _nombreTolerancia(double? tolerancia) => switch (tolerancia) {
-  null => 'apagado (rango mundial 20-75 µT)',
+  null => 'apagado',
   final t =>
-    '${t == toleranciaCampo ? 'estricto' : 'amplio'} '
-        '(33 µT ±${(t * 100).round()} %)',
+    '${t == toleranciaCampo ? 'estricto' : 'amplio'} (±${(t * 100).round()} %)',
 };
 
 /// Junta las lecturas del GPS con cuenta atrás.
 class _DialogoMedicion extends StatefulWidget {
-  const _DialogoMedicion({
-    required this.titulo,
-    required this.segundos,
-    required this.muestras,
-  });
+  const _DialogoMedicion({required this.segundos, required this.muestras});
 
-  final String titulo;
   final int segundos;
   final List<LecturaPosicion> Function() muestras;
 
@@ -595,7 +534,7 @@ class _DialogoMedicionState extends State<_DialogoMedicion> {
         ? null
         : muestras.map((m) => m.precision).reduce((a, b) => a < b ? a : b);
     return AlertDialog(
-      title: Text(widget.titulo),
+      title: const Text('Quieto en la puerta'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -605,9 +544,8 @@ class _DialogoMedicionState extends State<_DialogoMedicion> {
           ),
           const SizedBox(height: 14),
           Text(
-            'No te muevas: $_restante s\n'
-            '${muestras.length} lecturas útiles'
-            '${mejor == null ? '' : ' · mejor ±${mejor.round()} m'}',
+            '$_restante s · ${muestras.length} lecturas'
+            '${mejor == null ? '' : ' · ±${mejor.round()} m'}',
             textAlign: TextAlign.center,
           ),
         ],
@@ -622,8 +560,8 @@ class _DialogoMedicionState extends State<_DialogoMedicion> {
   }
 }
 
-/// La barra del modo campo bajo la guía: diagnóstico y las dos acciones de
-/// siempre.
+/// Abajo de la guía: una línea de diagnóstico y un solo botón. Mientras se
+/// graba un camino, en vez del botón, «Listo» y «Cancelar».
 class _BarraCampo extends ConsumerWidget {
   const _BarraCampo({required this.guia});
 
@@ -632,35 +570,55 @@ class _BarraCampo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final correcciones = ref.watch(correccionesCampoProvider);
+    final ensayo = ref.watch(ensayoCampoProvider);
     final textos = Theme.of(context).textTheme;
     final posicion = guia._posicionCampo ?? guia._seguimiento?.ultima;
-    final seguimiento = guia._seguimiento;
-    final rumbo = rumboNavegacion(posicion, guia._rumbo);
-    final fuenteRumbo = rumbo == null
-        ? 'sin rumbo'
-        : (posicion?.rumbo != null && (posicion?.velocidad ?? 0) > 0.6)
-        ? 'rumbo GPS'
-        : 'brújula';
-    final destino = seguimiento?.ruta.destino;
-    final aPuerta = (posicion == null || destino == null)
-        ? null
-        : distanciaMetros(posicion.punto, destino.punto);
-    final tramo = guia._tramoActual()?.tramo;
+    final destino = guia._seguimiento?.ruta.destino;
+    final brujula = guia._rumbo;
+    final rumbo = rumboNavegacion(posicion, brujula);
+    final intensidad = brujula?.intensidad;
+    final fuente = rumbo != null
+        ? (posicion?.rumbo != null && (posicion?.velocidad ?? 0) > 0.6)
+              ? 'flecha por GPS'
+              : 'flecha por brújula'
+        : (brujula?.descalibrada ?? false)
+        ? 'brújula con interferencia${intensidad == null ? '' : ' (${intensidad.round()} µT, normal 33)'}'
+        : 'sin flecha';
     final trazo = guia._trazo;
-    final ajuste = correcciones.ajusteBrujula;
 
-    final intensidad = guia._rumbo?.intensidad;
-    final linea = [
-      if (posicion != null) '±${posicion.precision.round()} m',
-      fuenteRumbo,
-      if (intensidad != null) 'campo ${intensidad.round()} µT',
-      if (ajuste != 0) 'ajuste ${ajuste.toStringAsFixed(1)}°',
-      'radio ${guia.widget.radioLlegada.round()} m',
-      if (aPuerta != null) 'puerta a ${aPuerta.round()} m',
-      if (tramo != null)
-        '${tramo.tipo.name}${tramo.escalones ? '+escalones' : ''}',
-      '${correcciones.vigentes.length} corr.',
-    ].join(' · ');
+    final String linea;
+    if (trazo != null) {
+      var metros = 0.0;
+      for (var i = 0; i < trazo.length - 1; i++) {
+        metros += distanciaMetros(trazo[i], trazo[i + 1]);
+      }
+      linea =
+          'Grabando: ${metros.round()} m. Llega a otro camino y toca Listo.';
+    } else if (guia._fase
+        case _Fase.intro ||
+            _Fase.pidiendo ||
+            _Fase.fueraDelCampus ||
+            _Fase.sinRuta) {
+      linea = ensayo
+          ? 'ENSAYO: la posición caminará sola por la ruta.'
+          : 'Lejos del campus, ensaya con Corregir → Más → Ensayo.';
+    } else if (guia._fase == _Fase.llegada) {
+      linea =
+          '¿No es la puerta? Camina hasta la real y toca Corregir → Estoy en '
+          'la puerta.';
+    } else {
+      linea = [
+        if (ensayo) 'ENSAYO',
+        if (posicion != null) 'GPS ±${posicion.precision.round()} m',
+        fuente,
+        if (intensidad != null && !(brujula?.descalibrada ?? false))
+          '${intensidad.round()} µT',
+        if (posicion != null && destino != null)
+          'puerta a ${distanciaMetros(posicion.punto, destino.punto).round()} m',
+        if (correcciones.vigentes.length case final n when n > 0)
+          n == 1 ? '1 corrección' : '$n correcciones',
+      ].join(' · ');
+    }
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -669,43 +627,38 @@ class _BarraCampo extends ConsumerWidget {
         border: Border.all(color: ColoresUtb.naranja.withValues(alpha: 0.7)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+        child: Row(
           children: [
-            Text(
-              'MODO CAMPO · $linea',
-              style: textos.labelSmall?.copyWith(color: ColoresUtb.naranja),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            Expanded(
+              child: Text(
+                linea,
+                style: textos.labelMedium?.copyWith(color: ColoresUtb.naranja),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                if (trazo != null)
-                  FilledButton.icon(
-                    onPressed: guia._terminarGrabacion,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ColoresUtb.naranja,
-                    ),
-                    icon: const Icon(Icons.stop_rounded),
-                    label: Text('Terminar camino (${trazo.length} pts)'),
-                  ),
-                if (seguimiento != null)
-                  OutlinedButton.icon(
-                    onPressed: guia._estoyEnLaPuerta,
-                    icon: const Icon(Icons.door_front_door_outlined),
-                    label: const Text('Estoy en la puerta'),
-                  ),
-                FilledButton.tonalIcon(
-                  onPressed: guia._abrirCorrecciones,
-                  icon: const Icon(Icons.build_rounded),
-                  label: const Text('Corregir'),
+            const SizedBox(width: 8),
+            if (trazo != null) ...[
+              TextButton(
+                onPressed: guia._cancelarGrabacion,
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: guia._terminarGrabacion,
+                style: FilledButton.styleFrom(
+                  backgroundColor: ColoresUtb.naranja,
+                  minimumSize: const Size(0, 48),
                 ),
-              ],
-            ),
+                child: const Text('Listo'),
+              ),
+            ] else
+              FilledButton.icon(
+                onPressed: guia._abrirCorrecciones,
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                icon: const Icon(Icons.build_rounded),
+                label: const Text('Corregir'),
+              ),
           ],
         ),
       ),
@@ -713,174 +666,203 @@ class _BarraCampo extends ConsumerWidget {
   }
 }
 
-/// Todas las correcciones: qué corregir aquí, la lista de lo corregido y
-/// pasarlas a otro teléfono.
+/// «¿Qué está mal?»: seis botones grandes en palabras de la calle y, plegado
+/// en «Más», lo de configurar y compartir.
 class _HojaCorrecciones extends ConsumerWidget {
   const _HojaCorrecciones({
     required this.guiando,
-    required this.grabando,
-    required this.alMoverEntrada,
-    required this.alMarcarTramo,
-    required this.alGrabar,
-    required this.alCalibrar,
+    required this.acciones,
     required this.alCambiarRadio,
     required this.alCambiarDetector,
-    required this.alAnotar,
   });
 
   final bool guiando;
-  final bool grabando;
-  final Future<void> Function() alMoverEntrada;
-  final Future<void> Function({bool? escalones, bool? bloqueado}) alMarcarTramo;
-  final VoidCallback alGrabar;
-  final Future<void> Function() alCalibrar;
+  final _AccionesCampo acciones;
   final void Function(double) alCambiarRadio;
   final VoidCallback alCambiarDetector;
-  final Future<void> Function() alAnotar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textos = Theme.of(context).textTheme;
-    final correcciones = ref.watch(correccionesCampoProvider);
-    final radio = correcciones.radioLlegada ?? SeguimientoRuta.radioPorDefecto;
-    final magnetico = correcciones.magnetico;
-    final detector = magnetico == null ? toleranciaCampo : magnetico.tolerancia;
-    // Cierra la hoja y luego hace la acción: sus diálogos van sobre la guía,
-    // que es donde se ve el tramo resaltado.
-    VoidCallback cerrarY(void Function() accion) => () {
-      Navigator.pop(context);
-      accion();
-    };
+    // Cierra la hoja y entrega la acción a la guía.
+    VoidCallback? cerrarY(VoidCallback accion, {bool exigeRuta = true}) =>
+        exigeRuta && !guiando ? null : () => Navigator.pop(context, accion);
 
-    Widget opcion(
-      IconData icono,
-      String titulo,
-      String detalle,
-      VoidCallback? accion,
-    ) => ListTile(
-      leading: Icon(icono, color: ColoresUtb.naranja),
-      title: Text(titulo),
-      subtitle: Text(detalle),
-      onTap: accion,
-      enabled: accion != null,
-    );
+    final botones = [
+      (
+        Icons.door_front_door_rounded,
+        'Estoy en la puerta',
+        'Mueve la entrada aquí',
+        cerrarY(acciones.puerta),
+      ),
+      (
+        Icons.block_rounded,
+        'Por aquí no se pasa',
+        'Cerrado o no existe',
+        cerrarY(acciones.cerrado),
+      ),
+      (
+        Icons.alt_route_rounded,
+        'Hay un camino mejor',
+        'Grábalo caminándolo',
+        cerrarY(acciones.camino, exigeRuta: false),
+      ),
+      (
+        Icons.explore_rounded,
+        'La flecha apunta mal',
+        'Calibra la brújula',
+        cerrarY(acciones.flecha),
+      ),
+      (
+        Icons.stairs_rounded,
+        'Aquí hay escaleras',
+        'En el tramo actual',
+        cerrarY(acciones.escaleras),
+      ),
+      (
+        Icons.accessible_rounded,
+        'Aquí no hay escaleras',
+        'En el tramo actual',
+        cerrarY(acciones.sinEscaleras),
+      ),
+    ];
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Corregir la guía aquí', style: textos.titleLarge),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('¿Qué está mal?', style: textos.headlineSmall),
+          if (!guiando) ...[
             const SizedBox(height: 4),
-            const Text(
-              'Cada corrección cambia la ruta al momento y queda en este '
-              'teléfono. Cópialas al grupo para que los demás las peguen.',
+            Text(
+              'Casi todo se activa cuando la guía ya te está llevando.',
+              style: textos.bodyMedium,
             ),
-            const SizedBox(height: 8),
-            opcion(
-              Icons.door_front_door_outlined,
-              'La puerta real es aquí',
-              'Párate en la puerta: promedia el GPS 10 s y mueve la entrada.',
-              guiando ? cerrarY(alMoverEntrada) : null,
-            ),
-            opcion(
-              Icons.block_rounded,
-              'Por este tramo no se puede pasar',
-              'Cerrado, privado o no existe. La ruta lo evita.',
-              guiando ? cerrarY(() => alMarcarTramo(bloqueado: true)) : null,
-            ),
-            opcion(
-              Icons.stairs_rounded,
-              'Este tramo tiene escalones',
-              'La ruta sin escaleras lo evita.',
-              guiando ? cerrarY(() => alMarcarTramo(escalones: true)) : null,
-            ),
-            opcion(
-              Icons.accessible_rounded,
-              'Este tramo no tiene escalones',
-              'Quita la marca: las rampas sin escalones cuentan como sendero.',
-              guiando ? cerrarY(() => alMarcarTramo(escalones: false)) : null,
-            ),
-            opcion(
-              Icons.route_rounded,
-              'Grabar un camino que falta',
-              'Camínalo de un camino del mapa a otro; se une por sus puntas.',
-              grabando ? null : cerrarY(alGrabar),
-            ),
-            opcion(
-              Icons.explore_rounded,
-              'La flecha apunta mal',
-              'Calibra la brújula apuntando hacia donde sigue el camino.',
-              guiando ? cerrarY(alCalibrar) : null,
-            ),
-            opcion(
-              Icons.edit_note_rounded,
-              'Anotar un problema',
-              'Para corregirlo después, con la posición.',
-              cerrarY(alAnotar),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.adjust_rounded,
-                color: ColoresUtb.naranja,
-              ),
-              title: Text('Radio de llegada: ${radio.round()} m'),
-              subtitle: const Text('El del plan es 10 m (AD-03).'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    tooltip: 'Menos',
-                    onPressed: radio <= 4
-                        ? null
-                        : () => alCambiarRadio(radio - 2),
-                    icon: const Icon(Icons.remove_rounded),
-                  ),
-                  IconButton(
-                    tooltip: 'Más',
-                    onPressed: radio >= 30
-                        ? null
-                        : () => alCambiarRadio(radio + 2),
-                    icon: const Icon(Icons.add_rounded),
-                  ),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.sensors_rounded,
-                color: ColoresUtb.naranja,
-              ),
-              title: Text('Detector de metal: ${_nombreTolerancia(detector)}'),
-              subtitle: const Text(
-                'Si la flecha desaparece estando quieto con el teléfono '
-                'calibrado, prueba «amplio». Toca para cambiar.',
-              ),
-              onTap: alCambiarDetector,
-            ),
-            const Divider(height: 24),
-            const _ListaCorrecciones(),
           ],
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 1.35,
+            children: [
+              for (final (icono, titulo, detalle, accion) in botones)
+                _BotonCampo(
+                  icono: icono,
+                  titulo: titulo,
+                  detalle: detalle,
+                  alTocar: accion,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: cerrarY(acciones.nota, exigeRuta: false),
+            icon: const Icon(Icons.edit_note_rounded),
+            label: const Text('Otra cosa: anotarla'),
+          ),
+          const SizedBox(height: 4),
+          _Mas(
+            guiando: guiando,
+            otraEntrada: cerrarY(acciones.otraEntrada),
+            alCambiarRadio: alCambiarRadio,
+            alCambiarDetector: alCambiarDetector,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BotonCampo extends StatelessWidget {
+  const _BotonCampo({
+    required this.icono,
+    required this.titulo,
+    required this.detalle,
+    required this.alTocar,
+  });
+
+  final IconData icono;
+  final String titulo;
+  final String detalle;
+  final VoidCallback? alTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final textos = Theme.of(context).textTheme;
+    final activo = alTocar != null;
+    return Material(
+      color: ColoresUtb.superficieElevada,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: alTocar,
+        borderRadius: BorderRadius.circular(16),
+        child: Opacity(
+          opacity: activo ? 1 : 0.4,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icono, size: 30, color: ColoresUtb.naranja),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titulo,
+                      style: textos.titleSmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      detalle,
+                      style: textos.bodySmall?.copyWith(
+                        color: ColoresUtb.textoSecundario,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// Lo corregido en este teléfono y lo importado, con deshacer, copiar y
-/// pegar.
-class _ListaCorrecciones extends ConsumerStatefulWidget {
-  const _ListaCorrecciones();
+/// Plegado: quién corrige, enviar y recibir, ensayo, ajustes finos y la
+/// lista para deshacer.
+class _Mas extends ConsumerStatefulWidget {
+  const _Mas({
+    required this.guiando,
+    required this.otraEntrada,
+    required this.alCambiarRadio,
+    required this.alCambiarDetector,
+  });
+
+  final bool guiando;
+  final VoidCallback? otraEntrada;
+  final void Function(double) alCambiarRadio;
+  final VoidCallback alCambiarDetector;
 
   @override
-  ConsumerState<_ListaCorrecciones> createState() => _ListaCorreccionesState();
+  ConsumerState<_Mas> createState() => _MasState();
 }
 
-class _ListaCorreccionesState extends ConsumerState<_ListaCorrecciones> {
+class _MasState extends ConsumerState<_Mas> {
   late final _autor = TextEditingController(
     text: ref.read(correccionesCampoProvider.notifier).autor ?? '',
   );
+
+  /// Dentro de la hoja: un SnackBar quedaba detrás de ella y no se veía.
+  String? _mensaje;
 
   @override
   void dispose() {
@@ -888,34 +870,33 @@ class _ListaCorreccionesState extends ConsumerState<_ListaCorrecciones> {
     super.dispose();
   }
 
-  /// Dentro de la hoja: un SnackBar quedaba detrás de ella y no se veía.
-  String? _mensaje;
-
   void _avisar(String texto) => setState(() => _mensaje = texto);
 
-  Future<void> _copiar() async {
-    final texto = ref.read(correccionesCampoProvider).exportar();
-    await Clipboard.setData(ClipboardData(text: texto));
-    _avisar('Copiadas. Pégalas en el grupo; los demás tocan «Pegar».');
+  Future<void> _enviar() async {
+    await Clipboard.setData(
+      ClipboardData(text: ref.read(correccionesCampoProvider).exportar()),
+    );
+    _avisar(
+      'Copiadas. Pégalas en el grupo; en los otros teléfonos, copia el '
+      'mensaje y toca «Recibir».',
+    );
   }
 
-  Future<void> _pegar() async {
+  Future<void> _recibir() async {
     final datos = await Clipboard.getData(Clipboard.kTextPlain);
     final otras = CorreccionesCampo.importar(datos?.text ?? '');
     if (otras == null) {
-      _avisar('El portapapeles no tiene correcciones de la guía.');
+      _avisar('Copia primero el mensaje con las correcciones.');
       return;
     }
     final nuevas = ref.read(correccionesCampoProvider.notifier).importar(otras);
     _avisar(
-      nuevas == 0 ? 'Ya estaban todas.' : '$nuevas nuevas. Ruta recalculada.',
+      nuevas == 0 ? 'Ya las tenías todas.' : '$nuevas nuevas, ya aplicadas.',
     );
   }
 
   static String _resumen(Correccion c) => switch (c) {
-    CorreccionEntrada(:final nombre, :final precision) =>
-      'Entrada «$nombre» movida'
-          '${precision == null ? '' : ' (±${precision.round()} m)'}',
+    CorreccionEntrada(:final nombre) => 'Entrada «$nombre» movida',
     CorreccionTramo(:final bloqueado, :final escalones) =>
       bloqueado == true
           ? 'Tramo cerrado'
@@ -925,12 +906,12 @@ class _ListaCorreccionesState extends ConsumerState<_ListaCorrecciones> {
     CorreccionCamino(:final metros, :final escalones) =>
       'Camino nuevo de ${metros.round()} m${escalones ? ', con escalones' : ''}',
     CorreccionBrujula(:final grados) =>
-      'Brújula: ajuste ${grados.toStringAsFixed(1)}°',
+      'Flecha: ajuste ${grados.toStringAsFixed(1)}°',
     CorreccionRadio(:final metros) => 'Radio de llegada: ${metros.round()} m',
     CorreccionMagnetico(:final tolerancia) =>
       'Detector de metal: ${_nombreTolerancia(tolerancia)}',
     CorreccionPrueba(:final errorEntrada, :final llegadaApp) =>
-      'Prueba: entrada a ${errorEntrada.round()} m'
+      'Prueba: puerta a ${errorEntrada.round()} m'
           '${llegadaApp == null ? ', sin llegada' : ''}',
     CorreccionNota(:final texto) => 'Nota: $texto',
   };
@@ -938,35 +919,54 @@ class _ListaCorreccionesState extends ConsumerState<_ListaCorrecciones> {
   @override
   Widget build(BuildContext context) {
     final correcciones = ref.watch(correccionesCampoProvider);
+    final notifier = ref.read(correccionesCampoProvider.notifier);
+    final ensayo = ref.watch(ensayoCampoProvider);
     final textos = Theme.of(context).textTheme;
+    final radio = correcciones.radioLlegada ?? SeguimientoRuta.radioPorDefecto;
+    final magnetico = correcciones.magnetico;
+    final detector = magnetico == null ? toleranciaCampo : magnetico.tolerancia;
     final vigentes = correcciones.vigentes.reversed.toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: EdgeInsets.zero,
+      title: Text(
+        'Más: compartir, ajustes y deshacer',
+        style: textos.titleSmall,
+      ),
       children: [
         TextField(
           controller: _autor,
-          decoration: const InputDecoration(
-            labelText: 'Quién corrige',
-            helperText: 'Va en cada corrección.',
-          ),
-          onChanged: ref.read(correccionesCampoProvider.notifier).cambiarAutor,
+          decoration: const InputDecoration(labelText: 'Quién corrige'),
+          onChanged: notifier.cambiarAutor,
         ),
         const SizedBox(height: 12),
+        if (ensayo)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'En el ensayo las correcciones se aplican para practicar, pero '
+              'no se guardan ni se envían.',
+              style: textos.bodyMedium?.copyWith(color: ColoresUtb.naranja),
+            ),
+          ),
         Row(
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: correcciones.lista.isEmpty ? null : _copiar,
-                icon: const Icon(Icons.copy_rounded),
-                label: const Text('Copiar'),
+                onPressed: correcciones.lista.isEmpty || ensayo
+                    ? null
+                    : _enviar,
+                icon: const Icon(Icons.send_rounded),
+                label: const Text('Enviar'),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _pegar,
-                icon: const Icon(Icons.paste_rounded),
-                label: const Text('Pegar'),
+                onPressed: ensayo ? null : _recibir,
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Recibir'),
               ),
             ),
           ],
@@ -982,8 +982,65 @@ class _ListaCorreccionesState extends ConsumerState<_ListaCorrecciones> {
               ),
             ),
           ),
-        const SizedBox(height: 12),
-        Text('Correcciones (${vigentes.length})', style: textos.titleMedium),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: ensayo,
+          onChanged: (v) {
+            ref.read(ensayoCampoProvider.notifier).state = v;
+            Navigator.pop(context);
+          },
+          title: const Text('Ensayo lejos del campus'),
+          subtitle: const Text(
+            'La posición camina sola por la ruta; brújula y cámara son las '
+            'reales. Lo que corrijas no se guarda. Se apaga al cerrar la app.',
+          ),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.add_location_alt_rounded),
+          title: const Text('Otra entrada del lugar aquí'),
+          subtitle: const Text('Una puerta que la guía no conocía.'),
+          enabled: widget.otraEntrada != null,
+          onTap: widget.otraEntrada,
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.adjust_rounded),
+          title: Text('Llega a ${radio.round()} m de la puerta'),
+          subtitle: const Text('El plan dice 10 m.'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Menos',
+                onPressed: radio <= 4
+                    ? null
+                    : () => widget.alCambiarRadio(radio - 2),
+                icon: const Icon(Icons.remove_rounded),
+              ),
+              IconButton(
+                tooltip: 'Más',
+                onPressed: radio >= 30
+                    ? null
+                    : () => widget.alCambiarRadio(radio + 2),
+                icon: const Icon(Icons.add_rounded),
+              ),
+            ],
+          ),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.sensors_rounded),
+          title: Text('Detector de metal: ${_nombreTolerancia(detector)}'),
+          subtitle: const Text(
+            'Si la flecha desaparece quieto con la brújula calibrada, '
+            'prueba «amplio». Toca para cambiar.',
+          ),
+          onTap: widget.alCambiarDetector,
+        ),
+        const Divider(height: 20),
+        Text('Hechas (${vigentes.length})', style: textos.titleSmall),
         if (vigentes.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
@@ -1002,8 +1059,7 @@ class _ListaCorreccionesState extends ConsumerState<_ListaCorrecciones> {
             trailing: IconButton(
               tooltip: 'Deshacer',
               icon: const Icon(Icons.undo_rounded),
-              onPressed: () =>
-                  ref.read(correccionesCampoProvider.notifier).anular(c.id),
+              onPressed: () => notifier.anular(c.id),
             ),
           ),
       ],

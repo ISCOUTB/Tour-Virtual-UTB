@@ -181,6 +181,7 @@
   "navCamaraNoDisponible": "카메라를 열 수 없어요. 지도에서 경로를 따라가세요.",
   "navCalibrar": "나침반이 부정확해요. 휴대폰을 8자 모양으로 움직여 주세요.",
   "navSinRuta": "{lugar}까지 가는 길을 찾지 못했어요.",
+  "navFueraDelCampus": "캠퍼스 밖에 있어요. 길 안내는 UTB 안에서 작동해요. 도착하면 열어 주세요.",
   "navAproximada": "이 장소의 입구 위치는 아직 대략적이에요.",
   "navPlanoSemantica": "{lugar}까지의 경로가 표시된 지도",
   "verMapa3d": "3D 지도 보기",

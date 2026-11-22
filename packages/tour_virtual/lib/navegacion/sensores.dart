@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'geo.dart';
+import 'modo_campo.dart';
 import 'seguimiento.dart';
 
 /// Si el dispositivo tiene GPS y brújula de verdad. En escritorio y en web no:
@@ -110,9 +111,10 @@ class UbicacionSimulada extends FuenteUbicacion {
 
   List<PuntoGeo> _camino = const [];
 
-  /// El camino que recorrerá: la ruta calculada desde [inicio].
-  set camino(List<PuntoGeo> puntos) {
-    _camino = [inicio, ...puntos];
+  /// Sigue [puntos] desde [desde] (o desde [inicio]). Tras un recálculo
+  /// continúa desde donde iba en vez de volver a la portería.
+  void seguir(List<PuntoGeo> puntos, {PuntoGeo? desde}) {
+    _camino = [desde ?? inicio, ...puntos];
     _recorrido = 0;
   }
 
@@ -384,8 +386,12 @@ class RumboSimulado extends FuenteRumbo {
   }
 }
 
+/// En el escritorio, o en un ensayo del modo campo, una posición simulada
+/// que camina sola por la ruta. Brújula y cámara siguen siendo las reales.
 final fuenteUbicacionProvider = Provider<FuenteUbicacion>(
-  (ref) => haySensoresDeNavegacion ? UbicacionGps() : UbicacionSimulada(),
+  (ref) => haySensoresDeNavegacion && !ref.watch(ensayoCampoProvider)
+      ? UbicacionGps()
+      : UbicacionSimulada(),
 );
 
 /// La brújula del grafo: su declinación (con el ajuste de campo, si hay) y

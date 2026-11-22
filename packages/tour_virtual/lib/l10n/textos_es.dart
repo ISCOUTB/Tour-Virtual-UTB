@@ -673,6 +673,10 @@ class TextosEs extends Textos {
   }
 
   @override
+  String get navFueraDelCampus =>
+      'Estás fuera del campus. La guía funciona dentro de la UTB: ábrela cuando llegues.';
+
+  @override
   String get navAproximada => 'La entrada de este lugar aún es aproximada.';
 
   @override

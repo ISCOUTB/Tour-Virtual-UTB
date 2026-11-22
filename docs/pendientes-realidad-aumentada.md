@@ -10,7 +10,8 @@ Este documento tiene estas partes:
 0. [La prueba del lunes con el modo campo](#0-la-prueba-del-lunes-con-el-modo-campo):
    qué instalar, qué probar y cómo corregir en el momento.
 1. [El plan de campo](#1-el-plan-de-campo-ir-a-la-u-con-la-app-de-levantamiento):
-   medir el campus con la app secundaria `apps/levantamiento`.
+   cómo se midió el campus con la app secundaria `apps/levantamiento` (ya
+   hecho; el lunes no hace falta).
 2. [Las pruebas en teléfonos reales](#2-pruebas-en-teléfonos-reales) de la app
    del tour.
 3. [Lo que falta en el código](#3-lo-que-falta-en-el-código).
@@ -36,71 +37,72 @@ Al final, [cuándo está terminada](#4-cuándo-está-terminada).
 
 ### Qué es
 
-La app del tour compilada con `--dart-define=CAMPO=true`. La guía funciona
-igual que para un visitante, más una barra naranja abajo con el diagnóstico
-y dos botones, **Estoy en la puerta** y **Corregir**. Cada corrección cambia
-el grafo **en el teléfono, al momento**: la ruta se recalcula sin salir de
-la pantalla y la corrección se guarda aunque se cierre la app. Con
-**Copiar** y **Pegar** pasan a los otros teléfonos. Después,
-`scripts/grafo_campus.py` las lleva al grafo oficial.
+La app del tour de siempre, con una barra naranja abajo en la guía y un
+botón: **Corregir**. Se usa la app normalmente; si una indicación sale mal,
+se toca **Corregir** y se dice qué está mal. El cambio se aplica al momento,
+la ruta se recalcula y abajo sale un aviso con **Deshacer**. No hay nada que
+medir aparte ni formularios: la app de levantamiento ya no hace falta.
 
 En modo campo, **Cómo llegar** aparece en los 26 lugares, no solo en las
-paradas, para probar y corregir todas las entradas. El visitante nunca ve
-nada de esto: la UTB APP no activa el modo.
+paradas. El visitante nunca ve nada de esto: la UTB APP no activa el modo.
 
-### Instalar (el domingo)
+### Instalar
 
 ```sh
 python scripts/preparar_apk_demo.py --campo
-# o, sin medios: cd apps/mobile && flutter build apk --release --dart-define=DATOS=demo --dart-define=CAMPO=true
 ```
 
-Instalar el APK en todos los teléfonos. En cada uno: ubicación en alta
-precisión y la brújula calibrada (dibujar un ocho). En la guía,
-**Corregir → Quién corrige**: el nombre va en cada corrección.
+El APK queda en `apps/mobile/build/app/outputs/flutter-apk/app-release.apk`.
+En cada teléfono: ubicación en alta precisión y, en la guía,
+**Corregir → Más → Quién corrige** (el nombre va en cada corrección).
 
-### La barra de diagnóstico
+### Ensayar antes, desde la casa
 
-`MODO CAMPO · ±4 m · brújula · campo 33 µT · ajuste 2.5° · radio 10 m · puerta a 42 m · sendero · 3 corr.`
+**Corregir → Más → Ensayo lejos del campus.** La posición camina sola por la
+ruta desde la portería; la brújula y la cámara son las reales. Sirve para
+practicar las correcciones sin ir a la U: se aplican igual, pero **no se
+guardan ni se envían**, y al apagar el ensayo desaparecen. Se apaga solo al
+cerrar la app, y mientras está activo la guía lo dice («UBICACIÓN SIMULADA»,
+«ENSAYO» en la barra).
 
-- **±4 m**: precisión del GPS. Con más de ±15 m no se puede marcar una puerta.
-- **brújula / rumbo GPS / sin rumbo**: de dónde sale la flecha. Caminando,
-  del GPS. Quieto, de la brújula. «Sin rumbo» significa brújula interferida.
-- **campo 33 µT**: lo que mide el magnetómetro. En el campus el campo real es
-  33 µT (WMM2025). Muy lejos de eso, hay metal cerca o falta calibrar.
-- **puerta a N m**: en línea recta hasta la entrada a la que va la guía.
-- **sendero / escalera+escalones / acceso**: el tramo por el que vas.
+### Cuando algo sale mal
 
-### Qué probar y cómo corregir
-
-Las cinco paradas desde la portería, y luego entre paradas. Una persona
-guía; otra mira la barra y corrige.
-
-| Si pasa esto | Se hace esto |
+| Lo que pasa | Se toca |
 |---|---|
-| La guía dice que llegaste y la puerta está más allá (o no lo dice nunca) | En la puerta real, **Estoy en la puerta**: 10 s quieto. Anota la prueba y ofrece **Mover aquí**. Si el lugar tiene varias entradas, pregunta cuál es, o si es una nueva. |
-| Manda por un camino cerrado, privado o que no existe | **Corregir → Por este tramo no se puede pasar**. El tramo se ve en naranja en el plano antes de confirmar. |
-| El tramo tiene escalones y no lo sabía (o al revés) | **Corregir → Este tramo tiene / no tiene escalones**. Así se confirman las tres «rampas con escalones» del levantamiento. |
-| Falta un camino (da un rodeo) | **Corregir → Grabar un camino que falta**, caminarlo de un camino del mapa a otro, **Terminar camino**. Se une por sus puntas. Candidatos: Zona T → Rectoría, Portería → Cancha de fútbol, A2 → Biblioteca. |
-| La flecha de la cámara apunta mal estando quieto | **Corregir → La flecha apunta mal**: sobre el tramo naranja, teléfono vertical, cámara hacia donde sigue el camino, **Calibrar**. Si sale más de 40°, pregunta: casi siempre es no estar apuntando o tener metal cerca. |
-| La flecha desaparece quieto («sin rumbo») con la brújula calibrada | **Corregir → Detector de metal**: estricto (±35 %) → amplio (±60 %) → apagado (rango mundial). |
-| Llega demasiado lejos o demasiado cerca | **Corregir → Radio de llegada** (el plan dice 10 m). |
-| Cualquier otra cosa | **Corregir → Anotar un problema**: queda con la posición. |
+| Dice que llegaste y la puerta está más allá, o nunca lo dice | Ir a la puerta real → **Corregir → Estoy en la puerta**. 10 s quieto; mueve allí la entrada más cercana del lugar. Si ya estaba bien, solo lo anota. |
+| Manda por un camino cerrado, privado o que no existe | **Por aquí no se pasa**: cierra el tramo por el que manda la guía (se ve en naranja) y busca otro. |
+| Da un rodeo y hay un camino más corto | **Hay un camino mejor** → caminarlo hasta llegar a otro camino → **Listo** en la barra. La guía ya lo usa. |
+| La flecha de la cámara apunta mal estando quieto | **La flecha apunta mal** → sobre la línea naranja, teléfono vertical, cámara hacia donde sigue el camino → **Listo**. |
+| Hay escalones donde la guía no lo sabe (o al revés) | **Aquí hay escaleras** / **Aquí no hay escaleras**, en el tramo por el que manda. |
+| Cualquier otra cosa | **Otra cosa: anotarla**: queda con la posición. |
 
-Lo deshecho (botón ↶ en la lista) se deshace también en los demás teléfonos
-al pegar. Los ajustes de radio, detector y brújula reemplazan al anterior.
+Todo se deshace con el aviso de abajo o desde **Más → Hechas**.
+
+Casos menos comunes, en **Más**:
+
+- **Otra entrada del lugar aquí**: una puerta que la guía no conocía.
+- **Llega a N m de la puerta**: radio de llegada (el plan dice 10 m).
+- **Detector de metal**: si la brújula marca lejos de 33 µT, la flecha
+  desaparece estando quieto. Si pasa con el teléfono calibrado (dibujar un
+  ocho) y lejos del metal, pasar a «amplio».
+
+### La barra
+
+Mientras guía: `GPS ±4 m · flecha por brújula · 33 µT · puerta a 42 m · 2
+correcciones`. «Flecha por GPS» es caminando; «brújula con interferencia
+(55 µT, normal 33)» es metal cerca o brújula sin calibrar. Al llegar, la
+barra recuerda qué hacer si no es la puerta.
 
 ### Compartir entre teléfonos
 
-**Corregir → Copiar**, pegarlo en el grupo; en los demás teléfonos, copiar el
-mensaje y **Pegar** (acepta el texto con lo que tenga alrededor). Se unen sin
-duplicar. La app de levantamiento también tiene **Pegar correcciones de la
-guía** en su pestaña Datos: su prueba de la guía camina con el grafo
-corregido.
+**Corregir → Más → Enviar** copia todo; se pega en el grupo. En los otros
+teléfonos: copiar el mensaje y **Recibir**. Se unen sin duplicar, y lo
+deshecho también se deshace en los demás. La app de levantamiento tiene
+**Pegar correcciones de la guía** si se quiere usar su prueba de la guía.
 
 ### Después: al grafo oficial
 
-Guardar el texto copiado de **un** teléfono que tenga todo pegado como
+Guardar el texto de **un** teléfono que tenga todo recibido como
 `scripts/datos/campo/correcciones-2026-11-23.json` y:
 
 ```sh
@@ -112,21 +114,38 @@ python -I scripts/aplicar_pines.py scripts/datos/campo/ajustes-entradas.json scr
 Una entrada corregida en el campus manda sobre el ajuste de la foto
 satelital. Los tramos y caminos se aplican por geometría, no por id. El
 ajuste de brújula y el detector solo se informan: se pasan a `DECLINACION`
-si varios teléfonos coinciden. Después se compila un APK nuevo para que
-el grafo corregido llegue a todos.
+si varios teléfonos coinciden. Después, un APK nuevo para que el grafo
+corregido llegue a todos.
 
-### Calibración hecha antes de ir
+### Calibración y pruebas hechas antes de ir
 
 - **Declinación −8,5°** (era −7,7°): WMM2025 de NOAA/NGA en el campus para
-  noviembre de 2026. Baja unos 0,02° por año.
+  noviembre de 2026.
 - **Campo magnético 33 µT**. La brújula se da por interferida si se aparta
-  más del 35 %. Antes valía cualquier cosa entre 20 y 75 µT: una reja que lo
-  llevaba a 60 pasaba por buena.
-- Auditoría del grafo: las cinco paradas tienen ruta normal desde la
-  portería y entre ellas, y ruta sin escaleras. Sin escaleras, entre
-  Biblioteca y Puente hay un rodeo de 321 m frente a 88 m en línea recta: lo
-  causan las tres «rampas con escalones» sin confirmar. Edificio A2,
-  Cafetería y Solo Café no tienen ruta sin escaleras.
+  más del 35 %: con eso la flecha ya puede errar unos 25°, y más tolerancia
+  dejaría errores de 45°. Antes valía cualquier cosa entre 20 y 75 µT.
+- **Grafo**: las cinco paradas tienen ruta normal desde la portería y entre
+  ellas, y ruta sin escaleras. Sin escaleras, entre Biblioteca y Puente hay
+  un rodeo de 321 m frente a 88 m en línea recta, por las tres «rampas con
+  escalones» sin confirmar. Edificio A2, Cafetería y Solo Café no tienen
+  ruta sin escaleras. Portería → Cancha de fútbol (×3,3) y Zona T →
+  Rectoría (×2,9) sugieren caminos que faltan.
+- **Teléfono real** (Xiaomi, Android 16), el 22 de noviembre, en ensayo:
+  guía, cámara con la flecha, cerrar un tramo y deshacerlo, grabar un
+  camino, llegada y «Estoy en la puerta». Con el GPS real fuera del campus
+  dice «Estás fuera del campus». En un escritorio, junto al computador, la
+  brújula marcó 55 µT y la app la dio por interferida, que es lo correcto:
+  el lunes hay que mirar qué marca a cielo abierto.
+
+La prueba automática que recorre todo eso en un teléfono conectado:
+
+```sh
+cd apps/mobile
+flutter drive --driver=test_driver/mapa_3d.dart --target=integration_test/guia_campo_test.dart -d <serial>
+```
+
+Imprime lo que mide la brújula y deja capturas en `.impeccable/review/`.
+Instala una app de comprobación: después hay que reinstalar el APK.
 
 ---
 

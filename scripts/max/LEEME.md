@@ -6,13 +6,14 @@ De aquí salen las poses de Max, la mascota de la UTB, que usa el módulo en
 Son renders 2D generados con **Codex** (herramienta de generación de imágenes,
 sesión de ChatGPT) a partir de la hoja de referencia del personaje, y limpiados
 con estos scripts. Las referencias y los resultados en alta resolución no se
-versionan: viven en `inspo_max/` y `max_utb/poses_2d/`.
+versionan ni se guardan en el repositorio local (se borraron el 2026-11-22):
+para regenerar una pose hay que partir de la hoja oficial del personaje.
 
 ## Pasos
 
 Todo se corre dentro de una carpeta de trabajo con los scripts y dos
 referencias: `ref_max_frente.png` (la vista frontal ya limpia) y
-`ref_max_4vistas.png` (`inspo_max/max_all.png`).
+`ref_max_4vistas.png` (la hoja de cuatro vistas del personaje).
 
 1. **Generar las poses:** `bash poses.sh`, o una sola con
    `bash generar.sh <nombre> "<pose>" "<encuadre>"`. Se piden sobre magenta

@@ -78,11 +78,17 @@ class RutaCampus {
     required this.destino,
     required this.metros,
     required this.usaEscaleras,
+    this.tramos = const [],
   });
 
   /// Empieza en el punto del camino más cercano a la posición de partida y
   /// termina en la puerta.
   final List<PuntoGeo> puntos;
+
+  /// El tramo del grafo que recorre cada segmento: `tramos[i]` va de
+  /// `puntos[i]` a `puntos[i + 1]`. Lo usan las correcciones de campo para
+  /// saber qué tramo marcar.
+  final List<TramoCampus> tramos;
   final AccesoLugar destino;
   final double metros;
   final bool usaEscaleras;
@@ -94,6 +100,8 @@ class GrafoCampus {
   GrafoCampus({
     required this.version,
     required this.declinacion,
+    this.campoMagnetico,
+    this.toleranciaCampo = 0.35,
     required this.nodos,
     required this.tramos,
     required this.accesos,
@@ -110,6 +118,7 @@ class GrafoCampus {
     return GrafoCampus(
       version: json['version'] as String? ?? '',
       declinacion: (json['declinacion'] as num?)?.toDouble() ?? 0,
+      campoMagnetico: (json['campo_magnetico_ut'] as num?)?.toDouble(),
       nodos: {
         for (final n in (json['nodos'] as List).cast<Map<String, dynamic>>())
           n['id'] as String: punto(n),
@@ -150,6 +159,14 @@ class GrafoCampus {
   /// Declinación magnética del campus, en grados (positiva al este). La
   /// brújula da el norte magnético; el GPS y el grafo, el geográfico.
   final double declinacion;
+
+  /// Intensidad del campo magnético terrestre en el campus, en µT (WMM). Si
+  /// la brújula mide algo muy distinto, hay metal cerca.
+  final double? campoMagnetico;
+
+  /// Cuánto puede apartarse la brújula de [campoMagnetico] sin que se dé por
+  /// interferida. El modo campo la cambia.
+  final double toleranciaCampo;
   final Map<String, PuntoGeo> nodos;
   final List<TramoCampus> tramos;
   final List<AccesoLugar> accesos;
@@ -241,17 +258,20 @@ class GrafoCampus {
     }
     if (llegada == null) return null;
 
-    final camino = <PuntoGeo>[];
+    // Cada punto con el tramo por el que se llega a él.
+    final camino = <(PuntoGeo, TramoCampus?)>[];
     var usaEscaleras = false;
     for (String? n = llegada; n != null; n = previo[n]) {
-      camino.add(n == inicio ? mejor.punto : nodos[n]!);
+      camino.add((n == inicio ? mejor.punto : nodos[n]!, previoTramo[n]));
       if (previoTramo[n]?.escalones ?? false) usaEscaleras = true;
     }
     // Sin puntos repetidos: si se parte justo sobre un nodo, la entrada y el
     // nodo coinciden, y el rumbo entre dos puntos iguales inventaba un giro.
     final puntos = <PuntoGeo>[];
-    for (final p in camino.reversed) {
+    final recorridos = <TramoCampus>[];
+    for (final (p, tramo) in camino.reversed) {
       if (puntos.isEmpty || distanciaMetros(puntos.last, p) > 0.5) {
+        if (puntos.isNotEmpty && tramo != null) recorridos.add(tramo);
         puntos.add(p);
       }
     }
@@ -260,6 +280,7 @@ class GrafoCampus {
       destino: objetivos[llegada]!,
       metros: costo[llegada]!,
       usaEscaleras: usaEscaleras,
+      tramos: recorridos.length == puntos.length - 1 ? recorridos : const [],
     );
   }
 }

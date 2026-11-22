@@ -679,4 +679,24 @@ class TextosIt extends Textos {
   String navPlanoSemantica(String lugar) {
     return 'Mappa con il percorso fino a $lugar';
   }
+
+  @override
+  String get verMapa3d => 'Visualizza mappa 3D';
+
+  @override
+  String get verMapa2d => 'Torna alla mappa 2D';
+
+  @override
+  String get mapa3dDescripcion =>
+      'Modello 3D del campus. Tocca una tappa per vedere i dettagli.';
+
+  @override
+  String get mapa3dNoDisponible =>
+      'Impossibile aprire la mappa 3D. Puoi usare la mappa 2D o riprovare.';
+
+  @override
+  String get creditoModelo3d => 'Modello 3D: ElMapita UTB';
+
+  @override
+  String get mapa3dCargando => 'Caricamento della mappa 3D';
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
@@ -6,14 +7,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../datos/modelos/modelos.dart';
+import '../../datos/georreferencia_3d.dart';
 import '../../datos/plano_campus.dart';
 import '../../datos/progreso.dart';
 import '../../l10n/textos.dart';
 import '../../nucleo/movimiento.dart';
 import '../../nucleo/tema.dart';
+import '../../navegacion/geo.dart';
 import '../comunes/componentes.dart';
 import '../ficha_poi.dart';
 import 'pintor_plano.dart';
+import 'mapa_3d.dart';
 
 /// Plano del campus con los lugares de la UTB.
 ///
@@ -69,6 +73,14 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
   var _actual = 0;
   var _paginaProgramada = false;
   var _entradaIniciada = false;
+  final _control3d = ControladorMapa3d();
+  var _crear3d = false;
+  var _listo3d = false;
+  var _desea3d = false;
+  var _mostrar3d = false;
+  Timer? _volverAlPlano;
+  PuntoGeo? _ultimoCentro3d;
+  var _ultimoRadio3d = 1100.0;
 
   List<Poi> get _paradas => widget.pois.where((p) => p.esParada).toList();
 
@@ -95,6 +107,7 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
 
   @override
   void dispose() {
+    _volverAlPlano?.cancel();
     _controlador.dispose();
     _camara.dispose();
     _entrada.dispose();
@@ -204,6 +217,10 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
   }
 
   void _verTodo() {
+    if (_mostrar3d) {
+      _control3d.verTodo();
+      return;
+    }
     final encuadre = _encuadre;
     if (encuadre != null) _volarA(encuadre);
   }
@@ -214,6 +231,10 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
   /// puntero o el acceso con interruptores no puede hacer el gesto de dos
   /// dedos.
   void _zoom(double factor) {
+    if (_mostrar3d) {
+      _control3d.zoom(factor);
+      return;
+    }
     final m = _controlador.value;
     final s = _escalaDe(m);
     final x = (_ventana.width / 2 - m.storage[12]) / s;
@@ -223,6 +244,7 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
 
   void _seleccionar(int indice, {bool moverCarrusel = true}) {
     setState(() => _actual = indice);
+    if (_mostrar3d) unawaited(_control3d.centrar(_paradas[indice]));
     final punto = _enLienzo(_paradas[indice]);
     if (punto != null) {
       final escala = max(_escalaDe(_controlador.value), 2.0);
@@ -243,6 +265,110 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
   /// Las paradas numeran y cuentan; el resto de los lugares abre su ficha
   /// sin número de parada.
   void _abrir(Poi poi) => abrirPoi(context, ref, poi: poi, pois: _paradas);
+
+  ({PuntoGeo centro, double radio})? _camaraDelPlano() {
+    final p = _plano;
+    if (p == null || _ventana.isEmpty || _lienzo.isEmpty) return null;
+    final punto = _controlador.toScene(_ventana.center(Offset.zero));
+    final centro = PuntoGeo(
+      p.norte - punto.dy / _lienzo.height * (p.norte - p.sur),
+      p.oeste + punto.dx / _lienzo.width * (p.este - p.oeste),
+    );
+    final metrosPorPixel =
+        p.anchoMetros / (_lienzo.width * _escalaDe(_controlador.value));
+    final radio =
+        _ventana.height *
+        metrosPorPixel *
+        Georreferencia3d.escala /
+        (2 * tan(25 * pi / 360));
+    return (centro: centro, radio: radio.clamp(70, 2600).toDouble());
+  }
+
+  Future<void> _entrar3d() async {
+    final camara = _camaraDelPlano();
+    if (!_desea3d || camara == null) return;
+    _ultimoCentro3d = camara.centro;
+    _ultimoRadio3d = camara.radio;
+    await _control3d.vista(
+      false,
+      camara.centro,
+      camara.radio,
+      quieto: true,
+      instantaneo: true,
+    );
+    if (!mounted || !_desea3d) return;
+    setState(() => _mostrar3d = true);
+    await _control3d.vista(
+      true,
+      camara.centro,
+      camara.radio,
+      quieto: sinMovimiento(context),
+    );
+  }
+
+  void _alternarDimension() {
+    _volverAlPlano?.cancel();
+    if (!_desea3d) {
+      setState(() {
+        _desea3d = true;
+        _crear3d = true;
+      });
+      if (_listo3d) unawaited(_entrar3d());
+      return;
+    }
+    setState(() => _desea3d = false);
+    final centro = _ultimoCentro3d;
+    if (_mostrar3d && centro != null) {
+      unawaited(
+        _control3d.vista(
+          false,
+          centro,
+          _ultimoRadio3d,
+          quieto: sinMovimiento(context),
+        ),
+      );
+    }
+    _volverAlPlano = Timer(
+      sinMovimiento(context) ? Duration.zero : Movimiento.largo,
+      () {
+        if (!mounted || _desea3d) return;
+        final plano = _plano;
+        if (centro != null && plano != null && !_lienzo.isEmpty) {
+          final n = plano.normalizar(centro.lat, centro.lng);
+          if (n != null) {
+            final s =
+                _ventana.height *
+                plano.anchoMetros *
+                Georreferencia3d.escala /
+                (2 * tan(25 * pi / 360) * _ultimoRadio3d * _lienzo.width);
+            _controlador.value = _matriz(
+              n.dx * _lienzo.width,
+              n.dy * _lienzo.height,
+              s,
+            );
+          }
+        }
+        setState(() => _mostrar3d = false);
+      },
+    );
+  }
+
+  void _alFallar3d() {
+    if (!mounted) return;
+    final avisar = _desea3d || _mostrar3d;
+    _volverAlPlano?.cancel();
+    setState(() {
+      _desea3d = false;
+      _mostrar3d = false;
+      _crear3d = false;
+      _listo3d = false;
+    });
+    if (avisar) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(Textos.of(context).mapa3dNoDisponible)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -269,13 +395,101 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
         child: Stack(
           children: [
             Positioned.fill(
-              child: plano.when(
-                data: (p) => _lienzoInteractivo(p, paradas, visitados),
-                loading: () => const SizedBox.shrink(),
-                error: (_, _) => const _MapaAusente(),
+              key: const ValueKey('plano-campus'),
+              child: IgnorePointer(
+                ignoring: _mostrar3d,
+                child: ExcludeSemantics(
+                  excluding: _mostrar3d,
+                  child: plano.when(
+                    data: (p) => _lienzoInteractivo(p, paradas, visitados),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const _MapaAusente(),
+                  ),
+                ),
               ),
             ),
+            if (_crear3d)
+              Positioned.fill(
+                key: const ValueKey('maqueta-campus'),
+                child: IgnorePointer(
+                  ignoring: !_mostrar3d,
+                  child: ExcludeSemantics(
+                    excluding: !_mostrar3d,
+                    child: AnimatedOpacity(
+                      opacity: _mostrar3d ? 1 : 0,
+                      duration: sinMovimiento(context)
+                          ? Duration.zero
+                          : Movimiento.medio,
+                      curve: Movimiento.salida,
+                      child: MapaCampus3d(
+                        pois: widget.pois,
+                        visitados: visitados,
+                        controlador: _control3d,
+                        alCargar: () {
+                          _listo3d = true;
+                          unawaited(_entrar3d());
+                        },
+                        alFallar: _alFallar3d,
+                        alMoverCamara: (centro, radio) {
+                          if (_mostrar3d) {
+                            _ultimoCentro3d = centro;
+                            _ultimoRadio3d = radio;
+                          }
+                        },
+                        alTocarPoi: (poi) {
+                          final i = _paradas.indexWhere((p) => p.id == poi.id);
+                          if (i >= 0) _seleccionar(i);
+                          _abrir(poi);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (admiteMapa3d)
+              Positioned(
+                key: const ValueKey('dimension-campus'),
+                left: 12,
+                top: 60,
+                child: Tooltip(
+                  message: _desea3d ? txt.verMapa2d : txt.verMapa3d,
+                  child: Semantics(
+                    button: true,
+                    toggled: _desea3d,
+                    label: _desea3d && !_listo3d
+                        ? '${txt.mapa3dCargando}. ${txt.verMapa2d}'
+                        : _desea3d
+                        ? txt.verMapa2d
+                        : txt.verMapa3d,
+                    liveRegion: _desea3d && !_listo3d,
+                    onTap: _alternarDimension,
+                    excludeSemantics: true,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _alternarDimension,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(80, 48),
+                        backgroundColor: ColoresUtb.superficie,
+                        foregroundColor: ColoresUtb.texto,
+                      ),
+                      icon: _desea3d && !_listo3d
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              _desea3d
+                                  ? Icons.map_outlined
+                                  : Icons.view_in_ar_rounded,
+                              size: 20,
+                            ),
+                      label: Text(_desea3d ? '2D' : '3D'),
+                    ),
+                  ),
+                ),
+              ),
             Positioned(
+              key: const ValueKey('leyenda-campus'),
               left: 12,
               right: 12 + MedidasUtb.toque + 8,
               top: 12,
@@ -285,6 +499,7 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
               ),
             ),
             Positioned(
+              key: const ValueKey('controles-campus'),
               right: 12,
               top: 12,
               child: Column(
@@ -306,21 +521,37 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
                     etiqueta: txt.alejar,
                     alTocar: () => _zoom(1 / 1.5),
                   ),
+                  if (_mostrar3d) ...[
+                    const SizedBox(height: 8),
+                    BotonCircular(
+                      icono: Icons.rotate_left_rounded,
+                      etiqueta: txt.girarIzquierda,
+                      alTocar: () => _control3d.girar(-45),
+                    ),
+                    const SizedBox(height: 8),
+                    BotonCircular(
+                      icono: Icons.rotate_right_rounded,
+                      etiqueta: txt.girarDerecha,
+                      alTocar: () => _control3d.girar(45),
+                    ),
+                  ],
                 ],
               ),
             ),
             // ODbL: los datos de OSM se usan con la atribución a la vista.
             Positioned(
+              key: const ValueKey('credito-campus'),
               left: 12,
               right: 12,
               bottom: 12 + (paradas.isEmpty ? 0 : altoCarrusel + 8),
-              child: const Align(
+              child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: _CreditoOsm(),
+                child: _CreditoOsm(modelo3d: _mostrar3d),
               ),
             ),
             if (paradas.isNotEmpty)
               Positioned(
+                key: const ValueKey('carrusel-campus'),
                 left: 0,
                 right: 0,
                 bottom: 12,
@@ -561,7 +792,8 @@ class _MapaAusente extends StatelessWidget {
 
 /// «© colaboradores de OpenStreetMap», sobre el plano.
 class _CreditoOsm extends StatelessWidget {
-  const _CreditoOsm();
+  const _CreditoOsm({this.modelo3d = false});
+  final bool modelo3d;
 
   @override
   Widget build(BuildContext context) {
@@ -573,7 +805,9 @@ class _CreditoOsm extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
-          Textos.of(context).creditoOsm,
+          modelo3d
+              ? '${Textos.of(context).creditoOsm}\n${Textos.of(context).creditoModelo3d}'
+              : Textos.of(context).creditoOsm,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             // Gris de OSM sobre blanco: 10:1.
             color: const Color(0xFF333333),

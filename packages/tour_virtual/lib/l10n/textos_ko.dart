@@ -653,4 +653,22 @@ class TextosKo extends Textos {
   String navPlanoSemantica(String lugar) {
     return '$lugar까지의 경로가 표시된 지도';
   }
+
+  @override
+  String get verMapa3d => '3D 지도 보기';
+
+  @override
+  String get verMapa2d => '2D 지도로 돌아가기';
+
+  @override
+  String get mapa3dDescripcion => '캠퍼스 3D 모형입니다. 방문 지점을 누르면 상세 정보를 볼 수 있습니다.';
+
+  @override
+  String get mapa3dNoDisponible => '3D 지도를 열 수 없습니다. 2D 지도를 사용하거나 다시 시도하세요.';
+
+  @override
+  String get creditoModelo3d => '3D 모델: ElMapita UTB';
+
+  @override
+  String get mapa3dCargando => '3D 지도 불러오는 중';
 }

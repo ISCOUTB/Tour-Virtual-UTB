@@ -70,5 +70,8 @@
   "navCamaraAviso": "Olhe para o caminho, não para o ecrã.",
   "navCamaraNoDisponible": "Não foi possível abrir a câmara. Siga o percurso no mapa.",
   "navCalibrar": "A bússola está imprecisa: mova o telemóvel desenhando um oito.",
-  "navPlanoSemantica": "Mapa com o percurso até {lugar}"
+  "navPlanoSemantica": "Mapa com o percurso até {lugar}",
+  "navIdeaRuta": "Levo-o pelos caminhos do campus e aviso antes de cada curva.",
+  "navIdeaCamara": "Levante o telemóvel e verá uma seta sobre a câmara a indicar o caminho.",
+  "navLlegada": "Chegou"
 }

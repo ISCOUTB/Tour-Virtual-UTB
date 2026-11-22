@@ -670,6 +670,23 @@ class TextosEn extends Textos {
       'You’re outside the campus. The guide works inside UTB: open it when you arrive.';
 
   @override
+  String get navCaminandoHacia => 'Walking to';
+
+  @override
+  String get navLlegada => 'You’ve arrived';
+
+  @override
+  String get navIdeaRuta =>
+      'I take you along the campus paths and tell you before each turn.';
+
+  @override
+  String get navIdeaCamara =>
+      'Raise your phone to see an arrow over the camera showing the way.';
+
+  @override
+  String get navSinEscalerasDetalle => 'Avoids steps along the route.';
+
+  @override
   String get navAproximada => 'This place’s entrance is still approximate.';
 
   @override

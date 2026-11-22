@@ -212,7 +212,7 @@ void main() {
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
-      expect(find.text('Llegaste a Biblioteca'), findsWidgets);
+      expect(find.text('Ver la ficha'), findsWidgets);
       // Tras la llegada siguen los sensores: se puede marcar la puerta real.
       expect(ubicacion.cambios.hasListener, isTrue);
       expect(find.textContaining('¿No es la puerta?'), findsOneWidget);
@@ -268,7 +268,7 @@ void main() {
         .vigentes
         .map((c) => c.tipo);
     expect(tipos, ['prueba', 'entrada']);
-    expect(find.text('Llegaste a Biblioteca'), findsWidgets);
+    expect(find.text('Ver la ficha'), findsWidgets);
 
     await tester.tap(find.text('Deshacer'));
     await tester.pump(const Duration(milliseconds: 100));
@@ -388,10 +388,10 @@ void main() {
     // Camina hasta la puerta.
     for (var i = 0; i < 80; i++) {
       await tester.pump(const Duration(milliseconds: 200));
-      if (find.text('Llegaste a Biblioteca').evaluate().isNotEmpty) break;
+      if (find.text('Ver la ficha').evaluate().isNotEmpty) break;
     }
-    expect(find.text('Llegaste a Biblioteca'), findsOneWidget);
     expect(find.text('Ver la ficha'), findsOneWidget);
+    expect(find.text('LLEGASTE'), findsOneWidget);
     expect(voz.dichos.last, 'Llegaste a Biblioteca');
 
     await tester.pumpWidget(const SizedBox.shrink());

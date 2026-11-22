@@ -651,6 +651,21 @@ class TextosJa extends Textos {
   String get navFueraDelCampus => 'キャンパスの外にいます。案内はUTBの中で使えます。着いたら開いてください。';
 
   @override
+  String get navCaminandoHacia => '目的地';
+
+  @override
+  String get navLlegada => '到着';
+
+  @override
+  String get navIdeaRuta => 'キャンパスの道を案内し、曲がる前にお知らせします。';
+
+  @override
+  String get navIdeaCamara => 'スマートフォンを持ち上げると、カメラ画面の矢印が進む方向を示します。';
+
+  @override
+  String get navSinEscalerasDetalle => 'ルート上の段差を避けます。';
+
+  @override
   String get navAproximada => 'この場所の入口はまだおおよその位置です。';
 
   @override

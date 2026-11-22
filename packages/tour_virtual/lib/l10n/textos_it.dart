@@ -679,6 +679,23 @@ class TextosIt extends Textos {
       'Sei fuori dal campus. La guida funziona dentro l’UTB: aprila quando arrivi.';
 
   @override
+  String get navCaminandoHacia => 'In cammino verso';
+
+  @override
+  String get navLlegada => 'Sei arrivato';
+
+  @override
+  String get navIdeaRuta =>
+      'Ti porto lungo i percorsi del campus e ti avviso prima di ogni svolta.';
+
+  @override
+  String get navIdeaCamara =>
+      'Alza il telefono: una freccia sulla fotocamera ti indica la strada.';
+
+  @override
+  String get navSinEscalerasDetalle => 'Evita i gradini lungo il percorso.';
+
+  @override
   String get navAproximada =>
       'L’ingresso di questo luogo è ancora approssimativo.';
 

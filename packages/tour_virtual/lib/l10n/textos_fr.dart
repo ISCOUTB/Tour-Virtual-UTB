@@ -683,6 +683,23 @@ class TextosFr extends Textos {
       'Vous êtes hors du campus. Le guide fonctionne dans l’UTB : ouvrez-le à votre arrivée.';
 
   @override
+  String get navCaminandoHacia => 'En route vers';
+
+  @override
+  String get navLlegada => 'Vous êtes arrivé';
+
+  @override
+  String get navIdeaRuta =>
+      'Je vous guide par les chemins du campus et vous préviens avant chaque virage.';
+
+  @override
+  String get navIdeaCamara =>
+      'Levez le téléphone : une flèche sur la caméra vous montre le chemin.';
+
+  @override
+  String get navSinEscalerasDetalle => 'Évite les marches sur le trajet.';
+
+  @override
   String get navAproximada => 'L’entrée de ce lieu est encore approximative.';
 
   @override

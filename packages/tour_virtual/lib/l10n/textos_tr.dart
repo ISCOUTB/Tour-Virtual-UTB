@@ -673,6 +673,23 @@ class TextosTr extends Textos {
       'Kampüsün dışındasın. Rehber UTB içinde çalışır: vardığında aç.';
 
   @override
+  String get navCaminandoHacia => 'Gidilen yer';
+
+  @override
+  String get navLlegada => 'Vardın';
+
+  @override
+  String get navIdeaRuta =>
+      'Seni kampüs yollarından götürür, her dönüşten önce haber veririm.';
+
+  @override
+  String get navIdeaCamara =>
+      'Telefonu kaldır: kameranın üzerindeki ok yolu gösterir.';
+
+  @override
+  String get navSinEscalerasDetalle => 'Rotadaki basamaklardan kaçınır.';
+
+  @override
   String get navAproximada => 'Bu yerin girişi henüz yaklaşık.';
 
   @override

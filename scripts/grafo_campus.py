@@ -95,11 +95,16 @@ RADIO_LLEGADA_M = 10.0
 TIPOS_TRAMO = {"sendero", "via", "escalera", "rampa", "pasillo", "acceso"}
 
 
+# Archivo que descarga la herramienta de ajuste manual (scripts/ajustar_entradas.py).
+FORMATO_AJUSTES = "ajustes-entradas-1"
+
+
 def cargar_levantamientos(rutas: list[str]) -> dict[str, list]:
     """Junta varios JSON de la app. Acepta también el formato 1 (solo
     accesos, nortes y recorridos)."""
     juntos: dict[str, list] = {k: [] for k in
-                               ("accesos", "nortes", "tramos", "brujula", "pruebas", "recorridos")}
+                               ("accesos", "nortes", "tramos", "brujula", "pruebas", "recorridos",
+                                "ajustes")}
     archivos = set()
     for patron in rutas:
         # PowerShell pasa los comodines literalmente a los programas nativos.
@@ -109,7 +114,18 @@ def cargar_levantamientos(rutas: list[str]) -> dict[str, list]:
         archivos.update(Path(ruta).resolve() for ruta in coincidencias)
     vistos = {k: set() for k in juntos}
     for ruta in sorted(archivos):
-        datos = json.loads(Path(ruta).read_text(encoding="utf-8"))
+        datos = json.loads(Path(ruta).read_text(encoding="utf-8-sig"))
+        # Volcado de las preferencias de Android: el JSON va como texto adentro.
+        for clave in ("flutter.levantamiento.datos", "levantamiento.datos"):
+            if clave in datos:
+                datos = datos[clave]
+                if isinstance(datos, str):
+                    datos = json.loads(datos)
+        if datos.get("formato") == FORMATO_AJUSTES:
+            # Entradas revisadas a mano sobre la foto satelital
+            # (campo/ajustar-entradas.html): la fecha del archivo ordena.
+            datos = {"ajustes": [{**e, "fecha": datos.get("generado", "")}
+                                 for e in datos.get("entradas") or []]}
         for k in juntos:
             # Cada exportación contiene también los días anteriores. No contar
             # dos veces una medida presente en varias copias del mismo teléfono.
@@ -210,19 +226,25 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
     for m in datos["accesos"]:
         por_nombre.setdefault((int(m["poi_id"]), m.get("nombre") or ""), []).append(m)
     esperadas = [(a["poi_id"], a["nombre"]) for a in accesos_grafo]
-    nuevas = [k for k in por_nombre if k not in esperadas]
+    ajustadas = {(int(a["poi_id"]), a.get("nombre") or "") for a in datos.get("ajustes", [])}
+    nuevas = [k for k in [*por_nombre, *ajustadas] if k not in esperadas]
+    nuevas = list(dict.fromkeys(nuevas))
     aceptadas = 0
     filas = []
     for clave_acceso in esperadas + nuevas:
         r = evaluar_acceso(por_nombre.get(clave_acceso, []))
-        aceptadas += r["estado"] == "aceptado"
         marca = {"aceptado": "✅", "sin_confirmar": "🟡", "sin_medidas_utiles": "❌"}[r["estado"]]
         if not por_nombre.get(clave_acceso):
             marca = "⬜"
+        if clave_acceso in ajustadas:
+            marca, r = "✅", {**r, "estado": "aceptado",
+                             "motivo": "ajustada a mano sobre la foto satelital; " + r["motivo"]}
+        aceptadas += r["estado"] == "aceptado"
         nueva = " (nueva)" if clave_acceso in nuevas else ""
         filas.append(f"| {marca} | {clave_acceso[1]}{nueva} | {len(por_nombre.get(clave_acceso, []))} | {r['motivo']} |")
     lineas += [f"## Entradas: {aceptadas} de {len(esperadas) + len(nuevas)} aceptadas", "",
-               "Criterio: dos medidas en días distintos, a 5 m o menos entre sí, con precisión de 5 m o mejor.", "",
+               "Criterio: dos medidas en días distintos, a 5 m o menos entre sí, con precisión de 5 m o mejor; "
+               "o ajustada a mano sobre la foto satelital con las medidas a la vista.", "",
                "| | Entrada | Medidas | Estado |", "|---|---|---|---|", *filas, ""]
 
     # Norte de las panorámicas
@@ -451,13 +473,26 @@ def main(levantamientos: list[str], solo_informe: bool = False,
         medidas.setdefault((int(m["poi_id"]), m.get("nombre") or ""), []).append(m)
     por_poi = {p["id"]: p for p in catalogo}
     conocidas = {(poi["id"], nombre) for poi, nombre, *_ in estimadas}
-    for (pid, nombre) in medidas:
+    # Un ajuste manual manda sobre las medidas: es la puerta que el equipo
+    # ubicó sobre la foto satelital viendo todas las medidas del GPS.
+    ajustes: dict[tuple[int, str], dict] = {}
+    for a in datos["ajustes"]:
+        ajustes[(int(a["poi_id"]), a.get("nombre") or "")] = a
+    for (pid, nombre) in [*medidas, *ajustes]:
         if (pid, nombre) not in conocidas and pid in por_poi:
+            conocidas.add((pid, nombre))
             poi = por_poi[pid]
             estimadas.append((poi, nombre or poi["nombre"], poi["lat"], poi["lng"], False, "nueva en el campus"))
 
     accesos = []
     for poi, nombre, lat, lng, principal, fuente in estimadas:
+        ajuste = ajustes.get((poi["id"], nombre))
+        if ajuste:
+            n = len(medidas.get((poi["id"], nombre), []))
+            nota = f": {ajuste['nota']}" if ajuste.get("nota") else ""
+            accesos.append(enganchar(nombre, poi, ajuste["lat"], ajuste["lng"], principal, True,
+                                     f"ajuste manual sobre la foto satelital con {n} medidas de GPS{nota}"))
+            continue
         r = evaluar_acceso(medidas.get((poi["id"], nombre), []))
         if r["estado"] != "sin_medidas_utiles":
             lat, lng = r["lat"], r["lng"]

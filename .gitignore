@@ -52,3 +52,7 @@ recorridos*.geojson
 # Maqueta institucional de ElMapita: scripts/preparar_modelo3d.py la descarga
 # y prepara; se empaqueta en el APK, sin versionar el binario.
 /packages/tour_virtual/assets/mapa3d/*.glb
+
+# Copias locales de los levantamientos y herramientas generadas (los datos que
+# usa el grafo van en scripts/datos/campo/, sin recorridos).
+/campo/

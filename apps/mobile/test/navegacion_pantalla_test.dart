@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +32,21 @@ const pois = [
     escenaPrincipalId: 1,
   ),
 ];
+
+/// Si cada entrada de un lugar está verificada en el grafo que lleva la app.
+List<bool> entradasVerificadas(int poiId) {
+  final grafo =
+      jsonDecode(
+            File(
+              '../../packages/tour_virtual/assets/navegacion/grafo_campus.json',
+            ).readAsStringSync(),
+          )
+          as Map<String, dynamic>;
+  return [
+    for (final a in (grafo['accesos'] as List).cast<Map<String, dynamic>>())
+      if (a['poi_id'] == poiId) a['verificado'] as bool? ?? false,
+  ];
+}
 
 class RepositorioFalso implements RepositorioContenido {
   @override
@@ -183,10 +200,20 @@ void main() {
     // Guiando: indicación, distancia y los avisos honestos.
     expect(find.textContaining('Faltan'), findsOneWidget);
     expect(find.text('UBICACIÓN SIMULADA'), findsOneWidget);
-    expect(
-      find.text('LA ENTRADA DE ESTE LUGAR AÚN ES APROXIMADA.'),
-      findsOneWidget,
-    );
+    // El aviso de entrada aproximada depende del grafo real: sale solo si la
+    // entrada de la Biblioteca aún no está verificada en el campus.
+    final verificadas = entradasVerificadas(1);
+    if (verificadas.every((v) => v)) {
+      expect(
+        find.text('LA ENTRADA DE ESTE LUGAR AÚN ES APROXIMADA.'),
+        findsNothing,
+      );
+    } else if (verificadas.every((v) => !v)) {
+      expect(
+        find.text('LA ENTRADA DE ESTE LUGAR AÚN ES APROXIMADA.'),
+        findsOneWidget,
+      );
+    }
     expect(voz.dichos, isNotEmpty);
 
     // Camina hasta la puerta.

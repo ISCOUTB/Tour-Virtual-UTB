@@ -1,0 +1,280 @@
+{
+  "formato": "ajustes-entradas-1",
+  "generado": "2026-11-22T13:53:24.535Z",
+  "nota": "Entradas revisadas a mano sobre la foto satelital, con las medidas del levantamiento a la vista.",
+  "entradas": [
+    {
+      "poi_id": 1,
+      "nombre": "Biblioteca",
+      "lat": 10.3699308,
+      "lng": -75.4651281,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 1,
+      "nombre": "Biblioteca, segunda entrada",
+      "lat": 10.3702909,
+      "lng": -75.4653424,
+      "estado": "movido",
+      "nota": "",
+      "principal": false,
+      "pin": null
+    },
+    {
+      "poi_id": 2,
+      "nombre": "Puente A3 - A5",
+      "lat": 10.3693299,
+      "lng": -75.4646038,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 3,
+      "nombre": "Enfermería",
+      "lat": 10.3692929,
+      "lng": -75.4660428,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 4,
+      "nombre": "Zona T",
+      "lat": 10.3695983,
+      "lng": -75.4657454,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 5,
+      "nombre": "Cancha de softbol",
+      "lat": 10.3698371,
+      "lng": -75.4658858,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 6,
+      "nombre": "Edificio A1",
+      "lat": 10.3699525,
+      "lng": -75.4654466,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 7,
+      "nombre": "Edificio A2",
+      "lat": 10.3705033,
+      "lng": -75.4656954,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 8,
+      "nombre": "Edificio A3",
+      "lat": 10.3693457,
+      "lng": -75.4646923,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 9,
+      "nombre": "Edificio A4",
+      "lat": 10.3694377,
+      "lng": -75.4646386,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 10,
+      "nombre": "Edificio A5",
+      "lat": 10.3691514,
+      "lng": -75.4646644,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 11,
+      "nombre": "Edificio Alcatraz",
+      "lat": 10.3704508,
+      "lng": -75.4653829,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 12,
+      "nombre": "Auditorio",
+      "lat": 10.3704466,
+      "lng": -75.4658228,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 13,
+      "nombre": "Plaza Maloca",
+      "lat": 10.3702309,
+      "lng": -75.4657558,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 14,
+      "nombre": "Rectoría",
+      "lat": 10.3696445,
+      "lng": -75.4652676,
+      "estado": "confirmado",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 15,
+      "nombre": "Laboratorio El Patio",
+      "lat": 10.3697995,
+      "lng": -75.465167,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 16,
+      "nombre": "Centro de Cuidado Integral (QUID)",
+      "lat": 10.3692698,
+      "lng": -75.4658852,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 17,
+      "nombre": "Centro Deportivo y Cultural",
+      "lat": 10.3694196,
+      "lng": -75.4657638,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 18,
+      "nombre": "Cancha de fútbol",
+      "lat": 10.3702249,
+      "lng": -75.466197,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": {
+        "lat": 10.3701542,
+        "lng": -75.4667058
+      }
+    },
+    {
+      "poi_id": 19,
+      "nombre": "Salas de estudio",
+      "lat": 10.3704736,
+      "lng": -75.4653829,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 20,
+      "nombre": "Cafetería",
+      "lat": 10.3704828,
+      "lng": -75.4655097,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 21,
+      "nombre": "Tienda",
+      "lat": 10.3694262,
+      "lng": -75.464639,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 22,
+      "nombre": "Cajero automático",
+      "lat": 10.3705445,
+      "lng": -75.4659509,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 23,
+      "nombre": "Pasillo de la conexión",
+      "lat": 10.3704479,
+      "lng": -75.4657786,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 24,
+      "nombre": "Solo Café",
+      "lat": 10.3702256,
+      "lng": -75.4654775,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 25,
+      "nombre": "La Placita",
+      "lat": 10.3702491,
+      "lng": -75.4653206,
+      "estado": "confirmado",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    },
+    {
+      "poi_id": 26,
+      "nombre": "QuantaLab",
+      "lat": 10.3691307,
+      "lng": -75.4646339,
+      "estado": "movido",
+      "nota": "",
+      "principal": true,
+      "pin": null
+    }
+  ]
+}

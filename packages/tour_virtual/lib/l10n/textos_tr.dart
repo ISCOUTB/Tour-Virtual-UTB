@@ -669,6 +669,10 @@ class TextosTr extends Textos {
   }
 
   @override
+  String get navFueraDelCampus =>
+      'Kampüsün dışındasın. Rehber UTB içinde çalışır: vardığında aç.';
+
+  @override
   String get navAproximada => 'Bu yerin girişi henüz yaklaşık.';
 
   @override

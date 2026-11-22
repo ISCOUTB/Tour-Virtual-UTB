@@ -78,10 +78,13 @@ enum EstadoSeguimiento {
 class SeguimientoRuta {
   SeguimientoRuta(
     this.ruta, {
-    this.radio = 10,
+    this.radio = radioPorDefecto,
     this.radioDesvio = 25,
     this.precisionMaxima = 50,
   }) : assert(ruta.puntos.isNotEmpty);
+
+  /// AD-03. En el modo campo se puede cambiar para probar.
+  static const radioPorDefecto = 10.0;
 
   final RutaCampus ruta;
   final double radio;

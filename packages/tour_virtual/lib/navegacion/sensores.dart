@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'geo.dart';
+import 'modo_campo.dart';
 import 'seguimiento.dart';
 
 /// Si el dispositivo tiene GPS y brújula de verdad. En escritorio y en web no:
@@ -110,9 +111,10 @@ class UbicacionSimulada extends FuenteUbicacion {
 
   List<PuntoGeo> _camino = const [];
 
-  /// El camino que recorrerá: la ruta calculada desde [inicio].
-  set camino(List<PuntoGeo> puntos) {
-    _camino = [inicio, ...puntos];
+  /// Sigue [puntos] desde [desde] (o desde [inicio]). Tras un recálculo
+  /// continúa desde donde iba en vez de volver a la portería.
+  void seguir(List<PuntoGeo> puntos, {PuntoGeo? desde}) {
+    _camino = [desde ?? inicio, ...puntos];
     _recorrido = 0;
   }
 
@@ -175,6 +177,7 @@ class LecturaRumbo {
     required this.grados,
     required this.inclinacion,
     this.descalibrada = false,
+    this.intensidad,
   });
 
   /// Rumbo geográfico hacia donde apunta la cámara (o la parte de arriba del
@@ -188,6 +191,9 @@ class LecturaRumbo {
   /// El campo magnético medido no es el de la Tierra: hay metal cerca o la
   /// brújula necesita calibrarse (UC-17, flujo 4a).
   final bool descalibrada;
+
+  /// Campo magnético medido, en µT. Lo muestra el modo campo.
+  final double? intensidad;
 }
 
 abstract class FuenteRumbo {
@@ -220,12 +226,22 @@ double? rumboNavegacion(LecturaPosicion? posicion, LecturaRumbo? brujula) {
 /// paquete da el rumbo de la parte de arriba del teléfono, que con el teléfono
 /// vertical apunta al cielo y se vuelve inestable.
 class RumboSensores extends FuenteRumbo {
-  RumboSensores({this.declinacion = 0, MotionSensors? sensores})
-    : _sensores = sensores ?? MotionSensors();
+  RumboSensores({
+    this.declinacion = 0,
+    this.campoEsperado,
+    this.tolerancia = toleranciaCampo,
+    MotionSensors? sensores,
+  }) : _sensores = sensores ?? MotionSensors();
 
   /// Declinación magnética (grados, positiva al este): pasa del norte de la
   /// brújula al geográfico.
   final double declinacion;
+
+  /// Campo terrestre del lugar en µT, para detectar metal cerca.
+  final double? campoEsperado;
+
+  /// Desviación admitida sobre [campoEsperado] (fracción).
+  final double tolerancia;
   final MotionSensors _sensores;
 
   @override
@@ -244,7 +260,13 @@ class RumboSensores extends FuenteRumbo {
     void calcular() {
       final gv = g, mv = m;
       if (gv == null || mv == null) return;
-      final lectura = rumboDesdeSensores(gv, mv, declinacion: declinacion);
+      final lectura = rumboDesdeSensores(
+        gv,
+        mv,
+        declinacion: declinacion,
+        campoEsperado: campoEsperado,
+        tolerancia: tolerancia,
+      );
       if (lectura != null) salida.add(lectura);
     }
 
@@ -291,6 +313,8 @@ LecturaRumbo? rumboDesdeSensores(
   List<double> gravedad,
   List<double> campo, {
   double declinacion = 0,
+  double? campoEsperado,
+  double tolerancia = toleranciaCampo,
 }) {
   final ax = gravedad[0], ay = gravedad[1], az = gravedad[2];
   final ex = campo[0], ey = campo[1], ez = campo[2];
@@ -321,10 +345,30 @@ LecturaRumbo? rumboDesdeSensores(
   return LecturaRumbo(
     grados: normalizarGrados(magnetico + declinacion),
     inclinacion: inclinacion,
-    // El campo terrestre ronda 25-65 µT; fuera de eso hay metal cerca.
-    descalibrada: intensidad < 20 || intensidad > 75,
+    descalibrada: campoAnomalo(intensidad, campoEsperado, tolerancia),
+    intensidad: intensidad,
   );
 }
+
+/// Si el campo medido no es el de la Tierra en ese lugar: metal cerca o
+/// brújula sin calibrar.
+///
+/// Sin el campo del lugar se usa el rango mundial (25-65 µT, con margen).
+/// En Cartagena el campo es de 33 µT: con el rango mundial, una reja que lo
+/// llevaba a 60 µT pasaba por bueno y la flecha giraba hacia ella.
+bool campoAnomalo(
+  double intensidad,
+  double? esperado, [
+  double tolerancia = toleranciaCampo,
+]) {
+  if (esperado == null) return intensidad < 20 || intensidad > 75;
+  return (intensidad - esperado).abs() > esperado * tolerancia;
+}
+
+/// Desviación admitida sobre el campo esperado. Los magnetómetros de los
+/// teléfonos calibrados quedan a unos pocos µT del valor real; uno sin
+/// calibrar puede pasarse, y en el modo campo se puede ampliar.
+const toleranciaCampo = 0.35;
 
 /// Rumbo de escritorio y de pruebas: mira hacia donde camina la posición
 /// simulada, o hacia el norte.
@@ -342,12 +386,28 @@ class RumboSimulado extends FuenteRumbo {
   }
 }
 
+/// En el escritorio, o en un ensayo del modo campo, una posición simulada
+/// que camina sola por la ruta. Brújula y cámara siguen siendo las reales.
 final fuenteUbicacionProvider = Provider<FuenteUbicacion>(
-  (ref) => haySensoresDeNavegacion ? UbicacionGps() : UbicacionSimulada(),
+  (ref) => haySensoresDeNavegacion && !ref.watch(ensayoCampoProvider)
+      ? UbicacionGps()
+      : UbicacionSimulada(),
 );
 
-final fuenteRumboProvider = Provider.family<FuenteRumbo, double>(
-  (ref, declinacion) => haySensoresDeNavegacion
-      ? RumboSensores(declinacion: declinacion)
+/// La brújula del grafo: su declinación (con el ajuste de campo, si hay) y
+/// el campo magnético del campus.
+typedef AjusteBrujula = ({
+  double declinacion,
+  double? campoEsperado,
+  double tolerancia,
+});
+
+final fuenteRumboProvider = Provider.family<FuenteRumbo, AjusteBrujula>(
+  (ref, ajuste) => haySensoresDeNavegacion
+      ? RumboSensores(
+          declinacion: ajuste.declinacion,
+          campoEsperado: ajuste.campoEsperado,
+          tolerancia: ajuste.tolerancia,
+        )
       : RumboSimulado(),
 );

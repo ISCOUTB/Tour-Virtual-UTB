@@ -678,6 +678,10 @@ class TextosDe extends Textos {
   }
 
   @override
+  String get navFueraDelCampus =>
+      'Du bist außerhalb des Campus. Die Führung funktioniert auf dem UTB-Gelände: Öffne sie, wenn du ankommst.';
+
+  @override
   String get navAproximada => 'Der Eingang dieses Ortes ist noch ungefähr.';
 
   @override

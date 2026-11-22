@@ -56,10 +56,17 @@ PLANO = RAIZ / "packages" / "tour_virtual" / "assets" / "campus_osm.geojson"
 CATALOGO = RAIZ / "scripts" / "datos" / "pois_campus.json"
 SALIDA = RAIZ / "packages" / "tour_virtual" / "assets" / "navegacion" / "grafo_campus.json"
 
-# Declinación magnética en el campus (grados, positiva al este). El norte de
-# la brújula está corrido ~7,7° al oeste del geográfico en Cartagena; el GPS
-# usa el geográfico. Se recalibra con la herramienta de levantamiento.
-DECLINACION = -7.7
+# Declinación magnética en el campus (grados, positiva al este): el norte de
+# la brújula está corrido al oeste del geográfico, que es el del GPS. Modelo
+# WMM2025 de NOAA/NGA en 10,3697 N, 75,4652 O para noviembre de 2026: -8,5°
+# (baja unos 0,02° por año). Antes se usaba -7,7°, de un modelo anterior. Si
+# las comprobaciones de brújula del campo dan un sesgo de más de 3°, manda el
+# campo: --informe sugiere el valor.
+DECLINACION = -8.5
+
+# Intensidad del campo magnético terrestre allí, en µT (WMM2025). La app
+# avisa de metal cerca cuando la brújula mide algo muy distinto.
+CAMPO_MAGNETICO_UT = 33.0
 
 # Segunda entrada de la Biblioteca: el otro polígono de OSM (ver docs/mapa-osm.md).
 ACCESOS_EXTRA = {1: [("Biblioteca, segunda entrada", "way/1563809305")]}
@@ -98,13 +105,22 @@ TIPOS_TRAMO = {"sendero", "via", "escalera", "rampa", "pasillo", "acceso"}
 # Archivo que descarga la herramienta de ajuste manual (scripts/ajustar_entradas.py).
 FORMATO_AJUSTES = "ajustes-entradas-1"
 
+# Correcciones hechas en el campus con la guía en modo campo (la app del tour
+# compilada con --dart-define=CAMPO=true, botón «Copiar»).
+FORMATO_CORRECCIONES = "correcciones-guia-1"
+# Una punta de un camino grabado se une al camino más cercano dentro de esto.
+RADIO_ENGANCHE_CAMINO_M = 30.0
+# Un tramo corregido coincide con los del grafo a esta distancia.
+TOLERANCIA_TRAMO_M = 3.0
+
 
 def cargar_levantamientos(rutas: list[str]) -> dict[str, list]:
     """Junta varios JSON de la app. Acepta también el formato 1 (solo
     accesos, nortes y recorridos)."""
     juntos: dict[str, list] = {k: [] for k in
                                ("accesos", "nortes", "tramos", "brujula", "pruebas", "recorridos",
-                                "ajustes")}
+                                "ajustes", "tramos_campo", "caminos", "brujula_campo", "radios",
+                                "pruebas_campo", "notas", "magnetico")}
     archivos = set()
     for patron in rutas:
         # PowerShell pasa los comodines literalmente a los programas nativos.
@@ -121,7 +137,9 @@ def cargar_levantamientos(rutas: list[str]) -> dict[str, list]:
                 datos = datos[clave]
                 if isinstance(datos, str):
                     datos = json.loads(datos)
-        if datos.get("formato") == FORMATO_AJUSTES:
+        if datos.get("formato") == FORMATO_CORRECCIONES:
+            datos = separar_correcciones(datos)
+        elif datos.get("formato") == FORMATO_AJUSTES:
             # Entradas revisadas a mano sobre la foto satelital
             # (campo/ajustar-entradas.html): la fecha del archivo ordena.
             datos = {"ajustes": [{**e, "fecha": datos.get("generado", "")}
@@ -137,6 +155,39 @@ def cargar_levantamientos(rutas: list[str]) -> dict[str, list]:
     for k in juntos:
         juntos[k].sort(key=lambda d: d.get("fecha", ""))
     return juntos
+
+
+def separar_correcciones(datos: dict) -> dict[str, list]:
+    """Reparte las correcciones de campo entre las listas del levantamiento.
+
+    Las deshechas en cualquier teléfono no cuentan. Una entrada corregida pasa
+    como un ajuste manual: es la puerta real, medida de pie en ella.
+    """
+    anuladas = set(datos.get("anuladas") or [])
+    salida: dict[str, list] = {k: [] for k in ("ajustes", "tramos_campo", "caminos",
+                                                "brujula_campo", "radios", "pruebas_campo", "notas",
+                                                "magnetico")}
+    destinos = {"tramo": "tramos_campo", "camino": "caminos", "brujula": "brujula_campo",
+                "radio": "radios", "prueba": "pruebas_campo", "nota": "notas",
+                "magnetico": "magnetico"}
+    for c in datos.get("correcciones") or []:
+        if c.get("id") in anuladas:
+            continue
+        tipo = c.get("tipo")
+        if tipo == "entrada":
+            quien = f" ({c['autor']})" if c.get("autor") else ""
+            precision = f", ±{c['precision']} m" if c.get("precision") is not None else ""
+            salida["ajustes"].append({"poi_id": c["poi_id"], "nombre": c.get("nombre") or "",
+                                      "lat": c["lat"], "lng": c["lng"], "fecha": c["fecha"],
+                                      "campo": True,
+                                      "nota": f"corregida en el campus{quien}{precision}"})
+        elif tipo in destinos:
+            salida[destinos[tipo]].append(c)
+    return salida
+
+
+def _largo(puntos: list[dict]) -> float:
+    return sum(metros((a["lat"], a["lng"]), (b["lat"], b["lng"])) for a, b in zip(puntos, puntos[1:]))
 
 
 def _promedio(medidas: list[dict]) -> tuple[float, float, float]:
@@ -325,6 +376,47 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
                + (", ".join(r.get("etiqueta") or "sin etiqueta" for r in datos["recorridos"]) or "ninguno"),
                "- Un camino que falta (el puente A3–A5, un pasillo) se graba como recorrido y se "
                "agrega en OpenStreetMap; `scripts/mapa_campus.py` y este script lo recogen después.", ""]
+
+    # Correcciones hechas en el campus con la guía.
+    entradas_c = [a for a in datos.get("ajustes", []) if a.get("campo")]
+    tramos_c, caminos = datos.get("tramos_campo", []), datos.get("caminos", [])
+    brujula_c, radios = datos.get("brujula_campo", []), datos.get("radios", [])
+    pruebas_c, notas = datos.get("pruebas_campo", []), datos.get("notas", [])
+    magnetico = datos.get("magnetico", [])
+    if any([entradas_c, tramos_c, caminos, brujula_c, radios, pruebas_c, notas, magnetico]):
+        lineas += ["## Correcciones de la guía en el campus", "",
+                   f"- Entradas corregidas: {len(entradas_c)}",
+                   f"- Tramos corregidos: {len(tramos_c)} "
+                   f"({sum(1 for t in tramos_c if t.get('bloqueado'))} cerrados)",
+                   f"- Caminos nuevos: {len(caminos)}, "
+                   f"{sum(_largo(c['puntos']) for c in caminos):.0f} m", ""]
+        if brujula_c:
+            ultimo = sorted(brujula_c, key=lambda c: c["fecha"])[-1]["grados"]
+            lineas += [f"Ajuste de brújula en el campus: {ultimo:+.1f}° → declinación con él: "
+                       f"{declinacion + ultimo:.1f}° (hoy {declinacion}°). Pasarlo a DECLINACION solo si "
+                       "varios teléfonos coinciden: cada magnetómetro tiene su sesgo.", ""]
+        if magnetico:
+            ultimo = sorted(magnetico, key=lambda c: c["fecha"])[-1].get("tolerancia")
+            detector = "rango mundial" if ultimo is None else f"±{ultimo * 100:.0f} % sobre {CAMPO_MAGNETICO_UT} µT"
+            lineas += [f"Detector de metal usado en el campus: {detector} (la app trae ±35 %).", ""]
+        if radios:
+            ultimo = sorted(radios, key=lambda c: c["fecha"])[-1]["metros"]
+            lineas += [f"Radio de llegada probado: {ultimo:.0f} m (el plan dice {RADIO_LLEGADA_M:.0f}).", ""]
+        if pruebas_c:
+            nombres = {p["id"]: p["nombre"] for p in catalogo}
+            lineas += ["| Lugar | Entrada a | La guía dio la llegada | Quién |", "|---|---|---|---|"]
+            for t in sorted(pruebas_c, key=lambda c: c["fecha"]):
+                llegada = "sí" if t.get("llegada_app") else "no"
+                lineas.append(f"| {nombres.get(t['poi_id'], t['poi_id'])} | {t.get('error_entrada_m', '?')} m "
+                              f"| {llegada} | {t.get('autor', '')} |")
+            lineas.append("")
+        if notas:
+            lineas += ["Notas:", ""]
+            for t in sorted(notas, key=lambda c: c["fecha"]):
+                donde = f" ({t['lat']:.6f}, {t['lng']:.6f})" if t.get("lat") is not None else ""
+                lineas.append(f"- {t['texto']}{donde} — {t.get('autor', 'sin autor')}, {t['fecha'][:16]}")
+            lineas.append("")
+
     return "\n".join(lineas)
 
 
@@ -428,6 +520,78 @@ def main(levantamientos: list[str], solo_informe: bool = False,
         if "techado" in t:
             e["techado"] = bool(t["techado"])
 
+    def unir(p: tuple[float, float], maximo: float) -> str | None:
+        """Nodo en el camino más cercano a p, partiendo el tramo si hace falta."""
+        i, punto, distancia = proyectar(p)
+        if i < 0 or distancia > maximo:
+            return None
+        e = aristas[i]
+        for extremo in (e["a"], e["b"]):
+            q = por_id[extremo]
+            if metros(punto, (q["lat"], q["lng"])) < 1:
+                return extremo
+        aristas.pop(i)
+        medio = nodo(*punto)
+        por_id[medio] = nodos[clave(*punto)]
+        for extremo in (e["a"], e["b"]):
+            q = por_id[extremo]
+            aristas.append({**e, "a": medio, "b": extremo,
+                            "metros": round(metros(punto, (q["lat"], q["lng"])), 2)})
+        return medio
+
+    def sobre(p: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+        """Metros de p al segmento a-b."""
+        lat0 = math.radians(p[0])
+
+        def xy(q):
+            return (math.radians(q[1]) * math.cos(lat0) * R_TIERRA, math.radians(q[0]) * R_TIERRA)
+        (px, py), (ax, ay), (bx, by) = xy(p), xy(a), xy(b)
+        dx, dy = bx - ax, by - ay
+        largo2 = dx * dx + dy * dy
+        t = 0.0 if largo2 == 0 else max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / largo2))
+        return math.hypot(px - ax - t * dx, py - ay - t * dy)
+
+    def arista(a: str, b: str, tipo: str, escalones: bool) -> dict:
+        q, r = por_id[a], por_id[b]
+        return {"a": a, "b": b, "metros": round(metros((q["lat"], q["lng"]), (r["lat"], r["lng"])), 2),
+                "tipo": tipo, "escalones": escalones, "techado": False, "osm": None}
+
+    # Correcciones de la guía en el campus, en el orden en que se hicieron. Los
+    # caminos nuevos primero, para que las entradas puedan engancharse a ellos.
+    # Las puntas se unen antes de agregar el camino: si no, lo más cercano a
+    # cada punta es el propio camino.
+    for c in sorted(datos["caminos"], key=lambda c: c["fecha"]):
+        puntos = [(q["lat"], q["lng"]) for q in c["puntos"]]
+        if len(puntos) < 2:
+            continue
+        juntos = [unir(puntos[0], RADIO_ENGANCHE_CAMINO_M), unir(puntos[-1], RADIO_ENGANCHE_CAMINO_M)]
+        escalones = bool(c.get("escalones"))
+        ids = [nodo(*q) for q in puntos]
+        for q in puntos:
+            por_id[nodos[clave(*q)]["id"]] = nodos[clave(*q)]
+        for a, b in zip(ids, ids[1:]):
+            if a != b:
+                aristas.append(arista(a, b, "escalera" if escalones else "sendero", escalones))
+        for punta, junto in ((ids[0], juntos[0]), (ids[-1], juntos[1])):
+            if junto and junto != punta:
+                aristas.append(arista(punta, junto, "sendero", False))
+    for c in sorted(datos["tramos_campo"], key=lambda c: c["fecha"]):
+        desde = (c["desde"]["lat"], c["desde"]["lng"])
+        hasta = (c["hasta"]["lat"], c["hasta"]["lng"])
+        for e in list(aristas):
+            a, b = por_id[e["a"]], por_id[e["b"]]
+            if (sobre((a["lat"], a["lng"]), desde, hasta) > TOLERANCIA_TRAMO_M
+                    or sobre((b["lat"], b["lng"]), desde, hasta) > TOLERANCIA_TRAMO_M):
+                continue
+            if c.get("bloqueado"):
+                aristas.remove(e)
+            elif "escalones" in c:
+                e["escalones"] = bool(c["escalones"])
+                if e["escalones"]:
+                    e["tipo"] = "escalera"
+                elif e["tipo"] == "escalera":
+                    e["tipo"] = "sendero"
+
     def enganchar(nombre: str, poi: dict, lat: float, lng: float, principal: bool,
                   verificado: bool, fuente: str) -> dict:
         i, punto, distancia = proyectar((lat, lng))
@@ -476,7 +640,9 @@ def main(levantamientos: list[str], solo_informe: bool = False,
     # Un ajuste manual manda sobre las medidas: es la puerta que el equipo
     # ubicó sobre la foto satelital viendo todas las medidas del GPS.
     ajustes: dict[tuple[int, str], dict] = {}
-    for a in datos["ajustes"]:
+    # Por fecha: una corrección del campus es más nueva que el ajuste sobre la
+    # foto satelital y manda.
+    for a in sorted(datos["ajustes"], key=lambda a: a.get("fecha") or ""):
         ajustes[(int(a["poi_id"]), a.get("nombre") or "")] = a
     for (pid, nombre) in [*medidas, *ajustes]:
         if (pid, nombre) not in conocidas and pid in por_poi:
@@ -490,8 +656,10 @@ def main(levantamientos: list[str], solo_informe: bool = False,
         if ajuste:
             n = len(medidas.get((poi["id"], nombre), []))
             nota = f": {ajuste['nota']}" if ajuste.get("nota") else ""
+            fuente_ajuste = (ajuste["nota"] if ajuste.get("campo") else
+                             f"ajuste manual sobre la foto satelital con {n} medidas de GPS{nota}")
             accesos.append(enganchar(nombre, poi, ajuste["lat"], ajuste["lng"], principal, True,
-                                     f"ajuste manual sobre la foto satelital con {n} medidas de GPS{nota}"))
+                                     fuente_ajuste))
             continue
         r = evaluar_acceso(medidas.get((poi["id"], nombre), []))
         if r["estado"] != "sin_medidas_utiles":
@@ -545,6 +713,7 @@ def main(levantamientos: list[str], solo_informe: bool = False,
         "licencia": "ODbL 1.0 — © colaboradores de OpenStreetMap",
         "generado_por": "scripts/grafo_campus.py",
         "declinacion": DECLINACION,
+        "campo_magnetico_ut": CAMPO_MAGNETICO_UT,
         "nodos": list(nodos.values()),
         "aristas": [{k: v for k, v in e.items() if k != "osm"} for e in aristas],
         "accesos": accesos,

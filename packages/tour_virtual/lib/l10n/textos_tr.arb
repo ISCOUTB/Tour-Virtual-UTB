@@ -181,6 +181,7 @@
   "navCamaraNoDisponible": "Kamera açılamadı. Rotayı haritadan izleyin.",
   "navCalibrar": "Pusula hassas değil: telefonu sekiz çizerek hareket ettirin.",
   "navSinRuta": "{lugar} için bir yol bulamadım.",
+  "navFueraDelCampus": "Kampüsün dışındasın. Rehber UTB içinde çalışır: vardığında aç.",
   "navAproximada": "Bu yerin girişi henüz yaklaşık.",
   "navPlanoSemantica": "{lugar} rotasını gösteren harita",
   "verMapa3d": "3B haritayı göster",

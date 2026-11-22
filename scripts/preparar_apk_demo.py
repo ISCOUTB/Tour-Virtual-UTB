@@ -24,7 +24,11 @@ panoramicas sin difuminar: es para ensenarlo, no para distribuirlo.
 Uso:
 
     python scripts/preparar_apk_demo.py              # copia y compila
+    python scripts/preparar_apk_demo.py --campo      # para probar la guia en el campus
     python scripts/preparar_apk_demo.py --solo-copiar
+
+Con --campo la guia muestra su diagnostico y deja corregir alli mismo lo que
+salga mal (docs/pendientes-realidad-aumentada.md). Es solo para el equipo.
 """
 
 from __future__ import annotations
@@ -63,6 +67,8 @@ def copiar() -> bool:
 def main() -> int:
     argumentos = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     argumentos.add_argument("--solo-copiar", action="store_true")
+    argumentos.add_argument("--campo", action="store_true",
+                            help="guia con diagnostico y correcciones (--dart-define=CAMPO=true)")
     opciones = argumentos.parse_args()
 
     print(f"Copiando medios de {ORIGEN}")
@@ -78,7 +84,8 @@ def main() -> int:
         return 1
     subprocess.run(
         [flutter, "build", "apk", "--release",
-         "--dart-define=DATOS=demo", "--dart-define=MEDIOS_DEMO=empaquetados"],
+         "--dart-define=DATOS=demo", "--dart-define=MEDIOS_DEMO=empaquetados",
+         *(["--dart-define=CAMPO=true"] if opciones.campo else [])],
         cwd=MOVIL, check=True)
     print(f"\nAPK: {APK} ({APK.stat().st_size / 1e6:.0f} MB)")
     return 0

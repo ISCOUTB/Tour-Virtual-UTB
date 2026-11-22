@@ -21,6 +21,11 @@ haya marcado que va aparte (por ejemplo, en el centro de una cancha).
 Uso:
 
     python -I scripts/aplicar_pines.py scripts/datos/campo/ajustes-entradas.json
+    python -I scripts/aplicar_pines.py scripts/datos/campo/ajustes-entradas.json \
+        scripts/datos/campo/correcciones-*.json
+
+Los archivos de correcciones son los que copia la guía en modo campo. Una
+entrada principal corregida allí mueve el pin, salvo que el pin vaya aparte.
 """
 
 from __future__ import annotations
@@ -70,11 +75,39 @@ def pines(ajustes: list[dict]) -> dict[int, tuple[float, float, str]]:
     return salida
 
 
+def con_correcciones(ajustes: list[dict], archivos: list[Path]) -> list[dict]:
+    """Los ajustes con las entradas corregidas en el campus encima.
+
+    Solo cambian entradas que ya estaban: una nueva no es la principal. Por
+    fecha, manda la última; las deshechas en cualquier teléfono no cuentan.
+    """
+    correcciones, anuladas = [], set()
+    for archivo in archivos:
+        datos = json.loads(archivo.read_text(encoding="utf-8-sig"))
+        if datos.get("formato") != "correcciones-guia-1":
+            raise SystemExit(f"{archivo.name}: no es un archivo de correcciones de la guía.")
+        correcciones += datos.get("correcciones") or []
+        anuladas |= set(datos.get("anuladas") or [])
+    por_entrada = {(int(a["poi_id"]), a.get("nombre") or ""): dict(a) for a in ajustes}
+    for c in sorted(correcciones, key=lambda c: c["fecha"]):
+        if c.get("tipo") != "entrada" or c.get("id") in anuladas:
+            continue
+        a = por_entrada.get((int(c["poi_id"]), c.get("nombre") or ""))
+        if a is None:
+            continue
+        a["lat"], a["lng"] = c["lat"], c["lng"]
+        a["nota"] = "corregida en el campus" + (f" ({c['autor']})" if c.get("autor") else "")
+    return list(por_entrada.values())
+
+
 def main() -> None:
     argumentos = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     argumentos.add_argument("ajustes", type=Path, help="ajustes-entradas.json de la herramienta")
+    argumentos.add_argument("correcciones", type=Path, nargs="*",
+                            help="correcciones de la guía en modo campo (botón «Copiar»)")
     a = argumentos.parse_args()
     ajustes = json.loads(a.ajustes.read_text(encoding="utf-8-sig"))["entradas"]
+    ajustes = con_correcciones(ajustes, a.correcciones)
     nuevos = pines(ajustes)
 
     catalogo = json.loads(CATALOGO_JSON.read_text(encoding="utf-8"))
@@ -98,7 +131,9 @@ def main() -> None:
         nlat, nlng = repr(lat), repr(lng)
 
         poi["lat"], poi["lng"] = lat, lng
-        poi["fuente_posicion"] = f"ajustado por el equipo sobre la foto satelital con el levantamiento ({hoy})"
+        poi["fuente_posicion"] = (
+            f"corregido en el campus con la guía ({hoy})" if "en el campus" in nota
+            else f"ajustado por el equipo sobre la foto satelital con el levantamiento ({hoy})")
 
         sql = reemplazar(sql, f"{vlat}, {vlng}", f"{nlat}, {nlng}", CATALOGO_SQL) \
             if f"{vlat}, {vlng}" in sql else sql

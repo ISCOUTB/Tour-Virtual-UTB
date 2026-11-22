@@ -181,6 +181,7 @@
   "navCamaraNoDisponible": "The camera couldn’t be opened. Follow the route on the map.",
   "navCalibrar": "The compass is inaccurate: move your phone in a figure eight.",
   "navSinRuta": "I couldn’t find a way to {lugar}.",
+  "navFueraDelCampus": "You’re outside the campus. The guide works inside UTB: open it when you arrive.",
   "navAproximada": "This place’s entrance is still approximate.",
   "navPlanoSemantica": "Map with the route to {lugar}",
   "verMapa3d": "View 3D map",

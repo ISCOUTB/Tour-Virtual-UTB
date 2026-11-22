@@ -30,6 +30,10 @@ abstract final class Configuracion {
   /// panorámicas y el audio viven en S3; para verlos, ver [mediosDemo].
   static const datosDemo = String.fromEnvironment('DATOS') == 'demo';
 
+  /// `--dart-define=CAMPO=true`: guía con diagnóstico y correcciones para
+  /// probarla en el campus (ver [ConfiguracionTour.modoCampo]).
+  static const modoCampo = bool.fromEnvironment('CAMPO');
+
   /// Carpeta servida por HTTP con las panorámicas y audios del seed, para ver
   /// el visor 360 en modo demo sin acceso a S3:
   ///

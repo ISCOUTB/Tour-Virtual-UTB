@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tour_virtual/navegacion/correcciones.dart';
 import 'package:tour_virtual/navegacion/geo.dart';
 import 'package:tour_virtual/navegacion/grafo_campus.dart';
 import 'package:tour_virtual/navegacion/pantalla_activa.dart';
@@ -69,6 +70,7 @@ const _lecturasMinimas = 20;
 class _LevantamientoState extends State<_Levantamiento>
     with WidgetsBindingObserver {
   static const _clave = 'levantamiento.datos';
+  static const _claveCorrecciones = 'levantamiento.correcciones';
 
   final _ubicacion = UbicacionGps();
   // Sin declinación: se guarda el rumbo magnético crudo y el geográfico se
@@ -86,6 +88,13 @@ class _LevantamientoState extends State<_Levantamiento>
   Future<void> _cancelacion = Future<void>.value();
 
   GrafoCampus? _grafo;
+
+  /// El grafo empaquetado, sin las correcciones de la guía.
+  GrafoCampus? _grafoBase;
+
+  /// Las de la app del tour en modo campo: la prueba de la guía camina con
+  /// el mismo grafo corregido.
+  var _correcciones = const CorreccionesCampo();
   Json _datos = normalizarDatos(null);
   final _medidor = TextEditingController();
 
@@ -179,9 +188,14 @@ class _LevantamientoState extends State<_Levantamiento>
           )
           as Json,
     );
+    final correcciones =
+        CorreccionesCampo.importar(prefs.getString(_claveCorrecciones) ?? '') ??
+        const CorreccionesCampo();
     if (!mounted) return;
     setState(() {
-      _grafo = grafo;
+      _grafoBase = grafo;
+      _correcciones = correcciones;
+      _grafo = correcciones.aplicar(grafo);
       if (guardado != null) {
         _datos = normalizarDatos(jsonDecode(guardado) as Json);
       }
@@ -1211,6 +1225,27 @@ class _LevantamientoState extends State<_Levantamiento>
     );
   }
 
+  Future<void> _pegarCorrecciones() async {
+    final texto = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    final otras = CorreccionesCampo.importar(texto ?? '');
+    final base = _grafoBase;
+    if (otras == null || base == null) {
+      _avisar('El portapapeles no tiene correcciones de la guía.');
+      return;
+    }
+    final juntas = _correcciones.unir(otras);
+    setState(() {
+      _correcciones = juntas;
+      _grafo = juntas.aplicar(base);
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_claveCorrecciones, juntas.exportar());
+    _avisar(
+      'Guía con ${juntas.vigentes.length} correcciones. Las pruebas nuevas '
+      'caminan con ellas.',
+    );
+  }
+
   Future<void> _borrarTodo() async {
     if (!await _confirmar(
       'Borrar todo',
@@ -1321,6 +1356,19 @@ class _LevantamientoState extends State<_Levantamiento>
           'En el computador: python -I scripts/grafo_campus.py --informe '
           'levantamiento-*.json muestra qué falta; sin --informe, actualiza el '
           'grafo de la app.',
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: _pegarCorrecciones,
+          icon: const Icon(Icons.paste_rounded),
+          label: Text(
+            'Pegar correcciones de la guía (${_correcciones.vigentes.length})',
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Las que se copian en la app del tour en modo campo. La pestaña Guía '
+          'las usa al momento.',
         ),
         const SizedBox(height: 24),
         TextButton.icon(

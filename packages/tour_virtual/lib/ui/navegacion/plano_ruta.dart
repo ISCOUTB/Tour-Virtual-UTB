@@ -22,6 +22,8 @@ class PlanoRuta extends StatelessWidget {
     this.posicion,
     this.precision,
     this.rumbo,
+    this.resaltado = const [],
+    this.trazo = const [],
   });
 
   final PlanoCampus plano;
@@ -36,6 +38,12 @@ class PlanoRuta extends StatelessWidget {
 
   /// Hacia dónde mira el teléfono (grados desde el norte geográfico).
   final double? rumbo;
+
+  /// Modo campo: el tramo que se va a corregir, en naranja.
+  final List<PuntoGeo> resaltado;
+
+  /// Modo campo: el camino que se está grabando.
+  final List<PuntoGeo> trazo;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +65,8 @@ class PlanoRuta extends StatelessWidget {
             posicion: posicion,
             precision: precision,
             rumbo: rumbo,
+            resaltado: resaltado,
+            trazo: trazo,
           ),
         ),
       ),
@@ -73,6 +83,8 @@ class _PintorRuta extends CustomPainter {
     required this.posicion,
     required this.precision,
     required this.rumbo,
+    required this.resaltado,
+    required this.trazo,
   });
 
   final PlanoCampus plano;
@@ -82,6 +94,8 @@ class _PintorRuta extends CustomPainter {
   final PuntoGeo? posicion;
   final double? precision;
   final double? rumbo;
+  final List<PuntoGeo> resaltado;
+  final List<PuntoGeo> trazo;
 
   /// Lado del lienzo del plano, antes de encuadrar.
   static const _anchoBase = 1000.0;
@@ -101,6 +115,8 @@ class _PintorRuta extends CustomPainter {
       if (posicion != null) aLienzo(posicion!),
       for (final p in ruta) aLienzo(p),
       aLienzo(destino),
+      for (final p in resaltado) aLienzo(p),
+      for (final p in trazo) aLienzo(p),
     ];
 
     // Encuadre: la ruta pendiente y la persona, con 25 m de margen y al menos
@@ -156,6 +172,25 @@ class _PintorRuta extends CustomPainter {
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
           ..color = ColoresUtb.azul,
+      );
+    }
+
+    // Modo campo: lo que se graba y lo que se va a corregir, en naranja.
+    for (final (linea, grosor) in [(trazo, 4.0), (resaltado, 8.0)]) {
+      if (linea.length < 2) continue;
+      final camino = Path()
+        ..moveTo(aLienzo(linea.first).dx, aLienzo(linea.first).dy);
+      for (final p in linea.skip(1)) {
+        camino.lineTo(aLienzo(p).dx, aLienzo(p).dy);
+      }
+      canvas.drawPath(
+        camino,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = dp(grosor)
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..color = ColoresUtb.naranja,
       );
     }
 
@@ -221,5 +256,7 @@ class _PintorRuta extends CustomPainter {
       old.precision != precision ||
       old.ruta != ruta ||
       old.destino != destino ||
+      old.resaltado != resaltado ||
+      old.trazo.length != trazo.length ||
       old.plano != plano;
 }

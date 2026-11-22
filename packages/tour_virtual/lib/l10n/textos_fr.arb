@@ -181,6 +181,7 @@
   "navCamaraNoDisponible": "Impossible d’ouvrir la caméra. Suivez l’itinéraire sur le plan.",
   "navCalibrar": "La boussole est imprécise : bougez le téléphone en dessinant un huit.",
   "navSinRuta": "Je n’ai pas trouvé de chemin vers {lugar}.",
+  "navFueraDelCampus": "Vous êtes hors du campus. Le guide fonctionne dans l’UTB : ouvrez-le à votre arrivée.",
   "navAproximada": "L’entrée de ce lieu est encore approximative.",
   "navPlanoSemantica": "Plan avec l’itinéraire vers {lugar}",
   "verMapa3d": "Voir la carte en 3D",

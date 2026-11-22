@@ -650,6 +650,10 @@ class TextosKo extends Textos {
   }
 
   @override
+  String get navFueraDelCampus =>
+      '캠퍼스 밖에 있어요. 길 안내는 UTB 안에서 작동해요. 도착하면 열어 주세요.';
+
+  @override
   String get navAproximada => '이 장소의 입구 위치는 아직 대략적이에요.';
 
   @override

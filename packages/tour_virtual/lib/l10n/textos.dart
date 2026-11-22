@@ -1200,6 +1200,12 @@ abstract class Textos {
   /// **'No encontré un camino hasta {lugar}.'**
   String navSinRuta(String lugar);
 
+  /// La persona está a más de 150 m del grafo del campus: la guía no inventa una ruta (RF-33).
+  ///
+  /// In es, this message translates to:
+  /// **'Estás fuera del campus. La guía funciona dentro de la UTB: ábrela cuando llegues.'**
+  String get navFueraDelCampus;
+
   /// La entrada no se ha medido en el campus todavía.
   ///
   /// In es, this message translates to:

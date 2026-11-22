@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../configuracion_tour.dart';
 import '../../datos/modelos/modelos.dart';
 import '../../datos/plano_campus.dart';
+import '../../datos/progreso.dart';
 import '../../datos/proveedores.dart';
 import '../../l10n/textos.dart';
 import '../../navegacion/correcciones.dart';
@@ -19,16 +20,21 @@ import '../../navegacion/pantalla_activa.dart';
 import '../../navegacion/seguimiento.dart';
 import '../../navegacion/sensores.dart';
 import '../../navegacion/voz_guia.dart';
+import '../../nucleo/idiomas.dart';
 import '../../nucleo/rutas.dart';
 import '../../nucleo/tema.dart';
+import '../comunes/anillo_progreso.dart';
 import '../comunes/componentes.dart';
+import '../comunes/fondos.dart';
 import '../comunes/ilustracion_max.dart';
 import '../ficha_poi.dart';
+import '../postal_escena.dart';
 import '../vista_async.dart';
 import 'plano_ruta.dart';
 import 'vista_camara.dart';
 
 part 'campo_guia.dart';
+part 'piezas_guia.dart';
 
 /// Guía a pie hasta un lugar del campus (F-06, RF-26 a RF-34).
 ///
@@ -446,105 +452,208 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     }
   }
 
+  /// La siguiente parada del recorrido que aún no se ha visto, para seguir
+  /// desde la llegada.
+  Poi? _siguienteParada() {
+    final paradas = widget.paradas;
+    final i = paradas.indexWhere((p) => p.id == widget.poi.id);
+    if (i < 0) return null;
+    final vistos = ref.watch(progresoProvider);
+    for (var k = 1; k < paradas.length; k++) {
+      final p = paradas[(i + k) % paradas.length];
+      if (!vistos.contains(p.id) && p.id != widget.poi.id) return p;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final txt = Textos.of(context);
     final lugar = widget.poi.nombre;
-    final arriba = MediaQuery.paddingOf(context).top;
     final abajo = MediaQuery.paddingOf(context).bottom;
+    final numero = widget.paradas.indexWhere((p) => p.id == widget.poi.id);
+    final seguimiento = _seguimiento;
+    final guiando = _fase == _Fase.guiando;
+    final escena = escenaPrincipalDe(ref, widget.poi);
+    final postal = escena == null
+        ? null
+        : _PostalDestino(
+            escena: escena,
+            poi: widget.poi,
+            numero: numero < 0 ? null : numero + 1,
+          );
 
     final contenido = switch (_fase) {
-      _Fase.intro || _Fase.pidiendo => _Panel(
-        pose: PoseMax.telefono,
-        titulo: txt.navPermisoTitulo(lugar),
-        texto: txt.navPermisoTexto,
-        principal: (txt.navPermitir, _fase == _Fase.pidiendo ? null : _empezar),
-      ),
-      _Fase.sinPermiso => _Panel(
-        pose: PoseMax.apenado,
-        titulo: txt.navTitulo(lugar),
+      _Fase.intro || _Fase.pidiendo => _vistaIntro(txt, lugar, postal),
+      _Fase.sinPermiso => _EstadoGuia(
+        icono: Icons.location_off_outlined,
         texto: txt.navSinPermiso,
         principal: _permiso == PermisoUbicacion.denegadoSiempre
             ? (txt.navAbrirAjustes, _ubicacion.abrirAjustes)
             : (txt.navPermitir, _empezar),
         secundaria: _salidaAl360(txt),
+        postal: postal,
       ),
-      _Fase.gpsApagado => _Panel(
-        pose: PoseMax.apenado,
-        titulo: txt.navTitulo(lugar),
+      _Fase.gpsApagado => _EstadoGuia(
+        icono: Icons.gps_off_rounded,
         texto: txt.navGpsApagado,
         principal: (txt.reintentar, _empezar),
         secundaria: _salidaAl360(txt),
+        postal: postal,
       ),
-      _Fase.sinRuta => _Panel(
-        pose: PoseMax.pensativo,
-        titulo: txt.navTitulo(lugar),
+      _Fase.sinRuta => _EstadoGuia(
+        icono: Icons.wrong_location_outlined,
         texto: txt.navSinRuta(lugar),
         principal: (txt.volver, _salir),
         secundaria: _salidaAl360(txt),
+        postal: postal,
       ),
-      _Fase.fueraDelCampus => _Panel(
-        pose: PoseMax.mapa,
-        titulo: txt.navTitulo(lugar),
+      _Fase.fueraDelCampus => _EstadoGuia(
+        icono: Icons.explore_outlined,
         texto: txt.navFueraDelCampus,
         principal: (txt.volver, _salir),
         secundaria: _salidaAl360(txt),
+        postal: postal,
       ),
-      _Fase.llegada => _Panel(
-        pose: PoseMax.invitando,
-        titulo: txt.navLlegaste(lugar),
-        texto: widget.poi.descripcion ?? '',
-        principal: (
-          txt.navVerFicha,
-          () => abrirPoi(context, ref, poi: widget.poi, pois: widget.paradas),
-        ),
-        secundaria: (txt.navTerminar, _salir),
-      ),
+      _Fase.llegada => _vistaLlegada(txt, postal),
       _Fase.guiando => _vistaGuia(txt),
     };
 
+    final restantes = seguimiento?.metrosRestantes;
+    final total = seguimiento?.ruta.metros;
     return Material(
       color: ColoresUtb.fondo,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          MedidasUtb.margen,
-          arriba + 8,
-          MedidasUtb.margen,
-          abajo + 12,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                BotonCircular(
-                  icono: Icons.arrow_back_rounded,
-                  etiqueta: txt.volver,
-                  alTocar: _salir,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      txt.navTitulo(lugar),
-                      style: Theme.of(context).textTheme.titleLarge,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _CabeceraGuia(
+            poi: widget.poi,
+            numero: numero < 0 ? null : numero + 1,
+            total: widget.paradas.length,
+            sobretitulo: switch (_fase) {
+              _Fase.guiando => txt.navCaminandoHacia,
+              _Fase.llegada => txt.navLlegada,
+              _ => txt.comoLlegar,
+            },
+            alVolver: _salir,
+            avance: guiando && restantes != null && total != null && total > 0
+                ? (1 - restantes / total).clamp(0.0, 1.0)
+                : null,
+            metrosRestantes: guiando && restantes != null
+                ? _redondear(restantes)
+                : null,
+            pose: switch (_fase) {
+              _Fase.intro || _Fase.pidiendo => PoseMax.telefono,
+              _Fase.sinPermiso || _Fase.gpsApagado => PoseMax.apenado,
+              _Fase.sinRuta => PoseMax.pensativo,
+              _Fase.fueraDelCampus => PoseMax.mapa,
+              _Fase.llegada => PoseMax.celebrando,
+              _Fase.guiando => null,
+            },
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                MedidasUtb.margen,
+                guiando ? 14 : 0,
+                MedidasUtb.margen,
+                (widget.modoCampo ? 8 : 12) + (widget.modoCampo ? 0 : abajo),
+              ),
+              child: contenido,
             ),
-            const SizedBox(height: 12),
-            Expanded(child: contenido),
-            if (widget.modoCampo) ...[
-              const SizedBox(height: 8),
-              _BarraCampo(guia: this),
-            ],
-          ],
-        ),
+          ),
+          if (widget.modoCampo)
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                MedidasUtb.margen,
+                0,
+                MedidasUtb.margen,
+                abajo + 12,
+              ),
+              child: _BarraCampo(guia: this),
+            ),
+        ],
       ),
+    );
+  }
+
+  /// Antes de empezar: qué va a pasar, «sin escaleras» y el permiso.
+  Widget _vistaIntro(Textos txt, String lugar, Widget? postal) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(top: 20),
+            children: [
+              if (postal != null) ...[postal, const SizedBox(height: 12)],
+              _TarjetaComoFunciona(titulo: txt.navPermisoTitulo(lugar)),
+              const SizedBox(height: 12),
+              TarjetaUtb(
+                padding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+                child: _InterruptorEscaleras(
+                  valor: _sinEscaleras,
+                  alCambiar: (v) => setState(() => _sinEscaleras = v),
+                ),
+              ),
+            ],
+          ),
+        ),
+        _Acciones(
+          principal: (
+            txt.navPermitir,
+            _fase == _Fase.pidiendo ? null : _empezar,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Al llegar: la postal del lugar, su ficha y, si queda, la siguiente
+  /// parada del recorrido. La cabecera ya dice «Llegaste» y el lugar.
+  Widget _vistaLlegada(Textos txt, Widget? postal) {
+    final textos = Theme.of(context).textTheme;
+    final paleta = PaletaUtb.de(context);
+    final siguiente = _siguienteParada();
+    return ListView(
+      padding: const EdgeInsets.only(top: 20),
+      children: [
+        if (postal != null) ...[postal, const SizedBox(height: 16)],
+        if (widget.poi.descripcion case final d? when d.isNotEmpty) ...[
+          TextoDeContenido(
+            d,
+            style: textos.bodyLarge?.copyWith(color: paleta.textoSecundario),
+          ),
+          const SizedBox(height: 18),
+        ],
+        FilledButton(
+          onPressed: () =>
+              abrirPoi(context, ref, poi: widget.poi, pois: widget.paradas),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+          child: Text(txt.navVerFicha),
+        ),
+        if (_salidaAl360(txt) case (final etiqueta, final accion)) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: accion,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
+            icon: const Icon(Icons.threesixty_rounded),
+            label: Text(etiqueta),
+          ),
+        ],
+        if (siguiente != null) ...[
+          const SizedBox(height: 20),
+          _TarjetaSiguiente(
+            poi: siguiente,
+            alIr: () =>
+                context.pushReplacement(Rutas.haciaNavegacion(siguiente.id)),
+          ),
+        ],
+        const SizedBox(height: 8),
+        TextButton(onPressed: _salir, child: Text(txt.navTerminar)),
+      ],
     );
   }
 
@@ -641,19 +750,26 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
       children: [
         // La indicación: lo que hay que hacer ahora, grande y en una región
         // viva para el lector de pantalla.
-        Container(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [ColoresUtb.destacadaInicio, ColoresUtb.destacadaFin],
-            ),
-            borderRadius: BorderRadius.circular(MedidasUtb.radioTarjeta),
-          ),
+        _TarjetaDestacada(
+          padding: const EdgeInsets.fromLTRB(16, 16, 18, 16),
           child: Row(
             children: [
-              Icon(_icono(maniobra), size: 44, color: ColoresUtb.texto),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.26),
+                  ),
+                ),
+                child: Icon(
+                  _icono(maniobra),
+                  size: 36,
+                  color: ColoresUtb.texto,
+                ),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -711,89 +827,25 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
         ),
         const SizedBox(height: 12),
         Expanded(child: vista),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(
-              child: SwitchListTile(
-                value: _sinEscaleras,
-                onChanged: _cambiarEscaleras,
-                secondary: const Icon(
-                  Icons.accessible_rounded,
-                  color: ColoresUtb.azulClaro,
+        const SizedBox(height: 10),
+        TarjetaUtb(
+          radio: 22,
+          padding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
+          child: Row(
+            children: [
+              Expanded(
+                child: _InterruptorEscaleras(
+                  valor: _sinEscaleras,
+                  alCambiar: _cambiarEscaleras,
+                  compacto: true,
                 ),
-                title: Text(txt.navSinEscaleras, style: textos.titleSmall),
-                contentPadding: EdgeInsets.zero,
               ),
-            ),
-            TextButton(onPressed: _salir, child: Text(txt.navTerminar)),
-          ],
+              const SizedBox(width: 4),
+              TextButton(onPressed: _salir, child: Text(txt.navTerminar)),
+            ],
+          ),
         ),
       ],
-    );
-  }
-}
-
-/// Un estado de la guía fuera del recorrido: pedir permiso, un fallo, la
-/// llegada. Max pone la cara.
-class _Panel extends StatelessWidget {
-  const _Panel({
-    required this.pose,
-    required this.titulo,
-    required this.texto,
-    required this.principal,
-    this.secundaria,
-  });
-
-  final PoseMax pose;
-  final String titulo;
-  final String texto;
-  final (String, VoidCallback?) principal;
-  final (String, VoidCallback)? secundaria;
-
-  @override
-  Widget build(BuildContext context) {
-    final textos = Theme.of(context).textTheme;
-    final paleta = PaletaUtb.de(context);
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 12),
-          Center(
-            child: IlustracionMax(pose: pose, alto: 210, difuminarBase: true),
-          ),
-          const SizedBox(height: 18),
-          Semantics(
-            header: true,
-            child: Text(
-              titulo,
-              style: textos.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          if (texto.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              texto,
-              style: textos.bodyLarge?.copyWith(color: paleta.textoSecundario),
-              textAlign: TextAlign.center,
-            ),
-          ],
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: principal.$2,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(54),
-            ),
-            child: Text(principal.$1),
-          ),
-          if (secundaria case (final etiqueta, final accion)) ...[
-            const SizedBox(height: 6),
-            TextButton(onPressed: accion, child: Text(etiqueta)),
-          ],
-        ],
-      ),
     );
   }
 }

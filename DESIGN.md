@@ -334,6 +334,9 @@ Píldora de vidrio arriba a la derecha de la cabecera, con globo y código del i
 ### Visor 360
 Pie oscuro con la escena, sus puntos y, a la derecha, dos botones circulares para girar 45°. Debajo, «Desde aquí puedes ir a» con una píldora por salida (icono de caminar y destino): la misma navegación que los hotspots, sin tener que encontrarlos. Arriba a la derecha, el interruptor del giroscopio, que se rellena de azul cuando está activo.
 
+### Cómo llegar
+La misma cabecera azul con arcos: sobretítulo según la fase («CÓMO LLEGAR», «CAMINANDO HACIA», «LLEGASTE»), el lugar, su categoría y «Parada N de M». A la derecha, Max con la pose del momento (teléfono antes de salir, apenado o pensativo si algo falla, mapa fuera del campus, celebrando al llegar); mientras guía, el anillo de avance con los metros que faltan. La postal del destino (16:9, radio 26) aparece antes de salir, en los avisos y al llegar, para reconocer el lugar. La instrucción va en una tarjeta destacada con la flecha en un círculo de vidrio; «Sin escaleras» y «Terminar» comparten una tarjeta grafito al pie. Al llegar, si queda alguna parada sin ver, una tarjeta destacada lleva directo a su «Cómo llegar».
+
 ### Anillo de avance
 Trazo de 8 con puntas redondas en azul-claro sobre pista del mismo tono al 18 %; el arranque del trazo es más claro (barrido de gradiente). Se llena desde cero en 850 ms al aparecer. 76 en la cabecera desplegada, 34 compacto.
 

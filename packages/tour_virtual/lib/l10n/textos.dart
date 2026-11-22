@@ -1206,6 +1206,36 @@ abstract class Textos {
   /// **'Estás fuera del campus. La guía funciona dentro de la UTB: ábrela cuando llegues.'**
   String get navFueraDelCampus;
 
+  /// Sobretítulo de la cabecera mientras guía, sobre el nombre del lugar.
+  ///
+  /// In es, this message translates to:
+  /// **'Caminando hacia'**
+  String get navCaminandoHacia;
+
+  /// Sobretítulo de la cabecera al llegar, sobre el nombre del lugar.
+  ///
+  /// In es, this message translates to:
+  /// **'Llegaste'**
+  String get navLlegada;
+
+  /// Cómo funciona la guía, antes de empezar.
+  ///
+  /// In es, this message translates to:
+  /// **'Te llevo por los caminos del campus y te aviso antes de cada giro.'**
+  String get navIdeaRuta;
+
+  /// Cómo funciona la vista de cámara, antes de empezar.
+  ///
+  /// In es, this message translates to:
+  /// **'Levanta el teléfono y verás una flecha sobre la cámara que marca por dónde ir.'**
+  String get navIdeaCamara;
+
+  /// Debajo del interruptor «Sin escaleras».
+  ///
+  /// In es, this message translates to:
+  /// **'Evita escalones y gradas en la ruta.'**
+  String get navSinEscalerasDetalle;
+
   /// La entrada no se ha medido en el campus todavía.
   ///
   /// In es, this message translates to:

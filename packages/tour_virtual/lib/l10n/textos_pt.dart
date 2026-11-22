@@ -676,6 +676,23 @@ class TextosPt extends Textos {
       'Você está fora do campus. O guia funciona dentro da UTB: abra-o quando chegar.';
 
   @override
+  String get navCaminandoHacia => 'A caminho de';
+
+  @override
+  String get navLlegada => 'Você chegou';
+
+  @override
+  String get navIdeaRuta =>
+      'Levo você pelos caminhos do campus e aviso antes de cada curva.';
+
+  @override
+  String get navIdeaCamara =>
+      'Levante o celular e verá uma seta sobre a câmera indicando o caminho.';
+
+  @override
+  String get navSinEscalerasDetalle => 'Evita degraus no caminho.';
+
+  @override
   String get navAproximada => 'A entrada deste lugar ainda é aproximada.';
 
   @override
@@ -969,6 +986,17 @@ class TextosPtPt extends TextosPt {
   @override
   String get navCalibrar =>
       'A bússola está imprecisa: mova o telemóvel desenhando um oito.';
+
+  @override
+  String get navLlegada => 'Chegou';
+
+  @override
+  String get navIdeaRuta =>
+      'Levo-o pelos caminhos do campus e aviso antes de cada curva.';
+
+  @override
+  String get navIdeaCamara =>
+      'Levante o telemóvel e verá uma seta sobre a câmara a indicar o caminho.';
 
   @override
   String navPlanoSemantica(String lugar) {

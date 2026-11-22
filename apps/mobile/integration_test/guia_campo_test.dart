@@ -124,7 +124,7 @@ void main() {
     // 8. Llega, y en la puerta: «Estoy en la puerta».
     await _esperar(
       tester,
-      () => _hay('Llegaste a Biblioteca'),
+      () => _hay('Ver la ficha'),
       limite: const Duration(seconds: 90),
     );
     await _pausa(tester);

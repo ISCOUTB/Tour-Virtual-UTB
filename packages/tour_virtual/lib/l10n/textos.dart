@@ -702,6 +702,12 @@ abstract class Textos {
   /// **'Girar a la derecha'**
   String get girarDerecha;
 
+  /// Botón de la brújula del mapa 3D: vuelve a poner el norte arriba.
+  ///
+  /// In es, this message translates to:
+  /// **'Orientar al norte'**
+  String get orientarNorte;
+
   /// No description provided for @sinEscenas.
   ///
   /// In es, this message translates to:

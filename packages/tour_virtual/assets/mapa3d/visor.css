@@ -1,0 +1,199 @@
+/* Visor 3D del campus. Los pines copian la figura y las medidas del plano 2D
+   (vista_mapa.dart): caja de 56×60, círculo de 34 y punta en y = 48. */
+body {
+  --cielo: 0;
+  /* Tierra de OSM Carto abajo, cielo tenue arriba cuando la cámara se
+     inclina. En cenital, solo tierra: igual que el plano. */
+  background:
+    linear-gradient(180deg,
+      rgba(196, 214, 232, var(--cielo)) 0%,
+      rgba(226, 232, 236, var(--cielo)) 38%,
+      rgba(242, 239, 233, 0) 62%),
+    #f2efe9;
+  font-family: Roboto, 'Noto Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+model-viewer {
+  --poster-color: transparent;
+  --progress-bar-color: transparent;
+  background-color: transparent !important;
+}
+
+.poi {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.poi:focus { outline: none; }
+.poi[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- Parada */
+
+.parada { width: 56px; height: 60px; }
+.parada .figura {
+  position: absolute;
+  inset: 0;
+  width: 56px;
+  height: 60px;
+  overflow: visible;
+  filter: drop-shadow(0 2px 2.5px rgba(0, 0, 0, .45));
+  transform-origin: 28px 48px;
+  transition: transform .18s cubic-bezier(.215, .61, .355, 1);
+}
+.parada .claro { stop-color: var(--color-pin-claro); }
+.parada .pleno { stop-color: var(--color-pin); }
+.parada.visitado .claro { stop-color: var(--visitado-claro); }
+.parada.visitado .pleno { stop-color: var(--visitado); }
+.parada .marca { display: none; }
+.parada.visitado .marca { display: inline; }
+.parada.visitado .cifra { display: none; }
+.parada.elegida .figura { transform: scale(1.14); }
+.parada:focus-visible .figura {
+  filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 3px #fff) drop-shadow(0 2px 2.5px rgba(0, 0, 0, .45));
+}
+
+/* La cifra no crece con el texto del sistema: vive en un pin de 34 px y el
+   lector de pantalla la recibe por la etiqueta, igual que en 2D. */
+.parada .cifra {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 15px;
+  height: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transform-origin: 28px 33px;
+  transition: transform .18s cubic-bezier(.215, .61, .355, 1);
+}
+.parada.elegida .cifra { transform: scale(1.14); }
+
+.parada .pulso {
+  position: absolute;
+  left: 10px;
+  top: 5px;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  border: 3px solid var(--color-pin);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.parada.visitado .pulso { border-color: var(--visitado); }
+.parada.elegida .pulso { animation: pulso 1.4s cubic-bezier(.215, .61, .355, 1) infinite; }
+.quieto .parada .pulso { animation: none; }
+.quieto .parada .figura, .quieto .parada .cifra, .quieto .lugar .punto { transition: none; }
+@keyframes pulso {
+  from { transform: scale(1); opacity: .9; }
+  to { transform: scale(1.9); opacity: 0; }
+}
+
+/* Cuando dos paradas caen en el mismo sitio, una se aparta y un tallo la
+   une a su punto real. */
+.parada .tallo, .parada .ancla { display: none; position: absolute; pointer-events: none; }
+.parada.desplazada .tallo, .parada.desplazada .ancla { display: block; }
+.parada .tallo {
+  left: 28px;
+  top: 47px;
+  width: var(--tallo);
+  height: 2px;
+  background: #fff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, .55);
+  transform-origin: 0 50%;
+  transform: rotate(var(--tallo-angulo));
+}
+.parada .ancla {
+  left: calc(28px + var(--ancla-x) - 5px);
+  top: calc(48px + var(--ancla-y) - 5px);
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--color-pin);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+}
+.parada.visitado .ancla { background: var(--visitado); }
+
+/* ---------------------------------------------------------------- Lugar */
+
+.lugar { width: 48px; height: 48px; }
+/* Grafito con el color de la categoría, como en el plano: se separa igual
+   de un techo claro que del verde de una cancha. */
+.lugar .punto {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  margin: -15px 0 0 -15px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #1b1c1e;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .35);
+  transition: width .18s, height .18s, margin .18s;
+}
+.lugar .punto img { width: 16px; height: 16px; transition: opacity .18s; }
+/* De lejos, un punto que no se toca ni se anuncia. */
+.lugar.lejos { pointer-events: none; }
+.lugar.lejos .punto { width: 10px; height: 10px; margin: -5px 0 0 -5px; border-width: 1.5px; }
+.lugar.lejos .punto img { opacity: 0; }
+.lugar:focus-visible .punto { outline: 3px solid #fff; outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- Nombre */
+
+.nombre {
+  display: none;
+  position: absolute;
+  left: 50%;
+  max-width: 62vw;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #1b1c1e;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .33);
+  color: #fff;
+  font-size: var(--tam-texto, 13px);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.parada .nombre {
+  bottom: calc(100% + 6px);
+  font-weight: 600;
+  transform: translateX(calc(-50% + var(--nombre-x, 0px)));
+}
+.parada.elegida .nombre { display: block; }
+/* Bajo un control de Flutter, el nombre va debajo del pin. */
+.parada.nombre-abajo .nombre { bottom: auto; top: calc(100% + 4px); }
+.lugar .nombre {
+  top: calc(50% + 16px);
+  padding: 3px 8px;
+  background: rgba(27, 28, 30, .86);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .25);
+  font-size: calc(var(--tam-texto, 13px) * .92);
+  font-weight: 400;
+}
+.lugar .nombre { display: block; visibility: hidden; }
+/* Oculto con visibility y no con display: así se mide su ancho real antes
+   de decidir si cabe. */
+.lugar.con-nombre .nombre { visibility: visible; }
+.contraste .nombre { border: 1.5px solid #fff; }

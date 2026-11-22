@@ -377,6 +377,9 @@ class TextosDe extends Textos {
   String get girarDerecha => 'Nach rechts drehen';
 
   @override
+  String get orientarNorte => 'Nach Norden ausrichten';
+
+  @override
   String get sinEscenas =>
       'Dieser Rundgang hat noch keine veröffentlichten Szenen.';
 

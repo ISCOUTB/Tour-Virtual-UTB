@@ -10,6 +10,18 @@ RAIZ = Path(__file__).resolve().parent.parent
 CARPETA = RAIZ / "packages" / "tour_virtual" / "assets" / "mapa3d"
 
 
+def excluido(nombre: str) -> bool:
+    """Nodos que no se dibujan en el tour.
+
+    `Plano_Referencia` es la imagen plana usada para modelar. Los `Etq_*` son
+    rótulos de texto horneados en la malla: solo en español, ilegibles en un
+    teléfono, invertidos según el giro de la cámara y con nombres distintos
+    del catálogo («Bloque A4» frente a «Edificio A4»). Los nombres los pone
+    el módulo, traducidos y accesibles.
+    """
+    return nombre == "Plano_Referencia" or nombre.startswith("Etq_")
+
+
 def preparar(contenido: bytes) -> bytes:
     if contenido[:4] != b"glTF" or struct.unpack_from("<I", contenido, 4)[0] != 2:
         raise ValueError("El recurso no es un GLB 2 válido")
@@ -17,9 +29,8 @@ def preparar(contenido: bytes) -> bytes:
     if tipo != 0x4E4F534A:
         raise ValueError("El GLB no tiene cabecera JSON")
     modelo = json.loads(contenido[20:20 + largo])
-    # La imagen plana usada para modelar no es parte de la maqueta final.
     ocultos = {i for i, nodo in enumerate(modelo.get("nodes", []))
-               if nodo.get("name") == "Plano_Referencia"}
+               if excluido(nodo.get("name") or "")}
     for escena in modelo.get("scenes", []):
         escena["nodes"] = [i for i in escena.get("nodes", []) if i not in ocultos]
     for nodo in modelo.get("nodes", []):

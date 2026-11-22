@@ -361,6 +361,9 @@ class TextosJa extends Textos {
   String get girarDerecha => '右に回転';
 
   @override
+  String get orientarNorte => '北を上にする';
+
+  @override
   String get sinEscenas => 'このツアーにはまだ公開されたシーンがありません。';
 
   @override

@@ -361,6 +361,9 @@ class TextosKo extends Textos {
   String get girarDerecha => '오른쪽으로 회전';
 
   @override
+  String get orientarNorte => '북쪽이 위로 오게 맞추기';
+
+  @override
   String get sinEscenas => '이 투어에는 아직 게시된 장면이 없습니다.';
 
   @override

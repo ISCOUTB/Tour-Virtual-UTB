@@ -1,9 +1,13 @@
 {
   "repositorio": "https://github.com/ISCOUTB/AS_202620_ElMapita",
-  "autores": ["Diego Rosales Garza", "Rodrigo Vazquez Rico", "Angel Fabian Gutierrez Gomez"],
+  "autores": [
+    "Diego Rosales Garza",
+    "Rodrigo Vazquez Rico",
+    "Angel Fabian Gutierrez Gomez"
+  ],
   "url": "https://smgbmfbgxfjkspvtyvfb.supabase.co/storage/v1/object/public/mapa-campus/utb_campus.glb",
   "sha256": "b14fb8a0dcea7b077429167445c407f7ebead7ba5218fc7ff1487c2b88a1a61a",
   "version": 1,
-  "preparacion": "Excluir Plano_Referencia del dibujo; conservar geometría y coordenadas originales.",
+  "preparacion": "Excluir del dibujo Plano_Referencia y los rótulos Etq_*; conservar geometría y coordenadas originales.",
   "calibracion": "Ajuste provisional de ElMapita contra OSM (~9 m); no sustituye los accesos medidos para la guía AR."
 }

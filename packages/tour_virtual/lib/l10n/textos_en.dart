@@ -371,6 +371,9 @@ class TextosEn extends Textos {
   String get girarDerecha => 'Turn right';
 
   @override
+  String get orientarNorte => 'Face north';
+
+  @override
   String get sinEscenas => 'This tour has no published scenes yet.';
 
   @override

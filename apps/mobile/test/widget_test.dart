@@ -569,6 +569,41 @@ void main() {
     await drenarTemporizadores(tester);
   });
 
+  testWidgets('dos paradas en el mismo sitio no se tapan en el plano', (
+    WidgetTester tester,
+  ) async {
+    // La Enfermería y la Zona T caen a pocos metros: con el campus entero en
+    // pantalla una tapaba a la otra. La que se mueve sube y deja un tallo.
+    await montarModulo(
+      tester,
+      pois: [
+        poisDePrueba.first,
+        Poi(
+          id: 2,
+          lugarId: 1,
+          nombre: 'Zona de comidas',
+          lat: poisDePrueba.first.lat! + 0.00001,
+          lng: poisDePrueba.first.lng,
+          escenaPrincipalId: 4,
+        ),
+      ],
+    );
+    await abrirMapa(tester);
+
+    final primera = tester.getRect(marcador('Parada 1, Biblioteca, Recursos'));
+    final segunda = tester.getRect(marcador('Parada 2, Zona de comidas'));
+    expect(primera.overlaps(segunda), isFalse);
+    expect(segunda.width, greaterThanOrEqualTo(48));
+
+    // La elegida (la primera) queda en su sitio; la otra se aparta y se puede
+    // tocar.
+    await tester.tapAt(segunda.center);
+    await asentar(tester);
+    expect(find.text('Ver en 360°'), findsOneWidget);
+
+    await drenarTemporizadores(tester);
+  });
+
   testWidgets('el mapa se acerca y se aleja sin pellizcar', (
     WidgetTester tester,
   ) async {

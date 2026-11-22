@@ -134,6 +134,8 @@
   "deslizaParaGirar": "Desliza a los lados para girar",
   "girarIzquierda": "Girar a la izquierda",
   "girarDerecha": "Girar a la derecha",
+  "orientarNorte": "Orientar al norte",
+  "@orientarNorte": {"description": "Botón de la brújula del mapa 3D: vuelve a poner el norte arriba."},
 
   "sinEscenas": "Este recorrido todavía no tiene escenas publicadas.",
   "siguienteEscena": "Siguiente escena",

@@ -375,6 +375,9 @@ class TextosPt extends Textos {
   String get girarDerecha => 'Girar para a direita';
 
   @override
+  String get orientarNorte => 'Orientar para o norte';
+
+  @override
   String get sinEscenas => 'Este percurso ainda não tem cenas publicadas.';
 
   @override

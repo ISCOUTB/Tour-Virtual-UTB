@@ -78,9 +78,24 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
   var _listo3d = false;
   var _desea3d = false;
   var _mostrar3d = false;
+  var _cambioDimension = 0;
   Timer? _volverAlPlano;
   PuntoGeo? _ultimoCentro3d;
-  var _ultimoRadio3d = 1100.0;
+  var _ultimoAlto3d = 0.0;
+
+  /// Cuánto gira el norte en pantalla, en grados y en sentido horario.
+  var _rumbo3d = 0.0;
+
+  // Lo que Flutter pinta encima del visor 3D. El visor no pone nombres
+  // debajo: se transparentaban por los botones.
+  final _claveMapa = GlobalKey();
+  final _claveLeyenda = GlobalKey();
+  final _claveDimension = GlobalKey();
+  final _claveControles = GlobalKey();
+  final _claveOrientacion = GlobalKey();
+  final _claveCredito = GlobalKey();
+  final _claveCarrusel = GlobalKey();
+  String? _ultimasZonas;
 
   List<Poi> get _paradas => widget.pois.where((p) => p.esParada).toList();
 
@@ -266,7 +281,12 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
   /// sin número de parada.
   void _abrir(Poi poi) => abrirPoi(context, ref, poi: poi, pois: _paradas);
 
-  ({PuntoGeo centro, double radio})? _camaraDelPlano() {
+  /// Centro del plano y metros del modelo que caben en vertical.
+  ///
+  /// El visor 3D llena la misma caja que el plano: con el mismo centro y la
+  /// misma altura en metros, la vista cenital coincide con el plano y el
+  /// fundido no da un salto de escala.
+  ({PuntoGeo centro, double alto})? _camaraDelPlano() {
     final p = _plano;
     if (p == null || _ventana.isEmpty || _lienzo.isEmpty) return null;
     final punto = _controlador.toScene(_ventana.center(Offset.zero));
@@ -276,37 +296,47 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
     );
     final metrosPorPixel =
         p.anchoMetros / (_lienzo.width * _escalaDe(_controlador.value));
-    final radio =
-        _ventana.height *
-        metrosPorPixel *
-        Georreferencia3d.escala /
-        (2 * tan(25 * pi / 360));
-    return (centro: centro, radio: radio.clamp(70, 2600).toDouble());
+    final alto = _ventana.height * metrosPorPixel * Georreferencia3d.escala;
+    return (centro: centro, alto: alto);
   }
 
   Future<void> _entrar3d() async {
+    final cambio = _cambioDimension;
     final camara = _camaraDelPlano();
     if (!_desea3d || camara == null) return;
+    final quieto = sinMovimiento(context);
     _ultimoCentro3d = camara.centro;
-    _ultimoRadio3d = camara.radio;
+    _ultimoAlto3d = camara.alto;
     await _control3d.vista(
       false,
       camara.centro,
-      camara.radio,
+      camara.alto,
       quieto: true,
       instantaneo: true,
     );
-    if (!mounted || !_desea3d) return;
+    if (!mounted || !_desea3d || cambio != _cambioDimension) return;
     setState(() => _mostrar3d = true);
+    if (!quieto) {
+      // El primer cuadro inicia el fundido. El último se pinta antes de
+      // inclinar la cámara; cancelar o salir invalida esta continuación.
+      await WidgetsBinding.instance.endOfFrame;
+      await Future<void>.delayed(Movimiento.medio);
+      if (!mounted || !_desea3d || cambio != _cambioDimension) return;
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    if (!mounted || !_desea3d || cambio != _cambioDimension) return;
+    // Al inclinarse se acerca un poco: tumbado, el mismo encuadre dejaba
+    // media vista de horizonte.
     await _control3d.vista(
       true,
       camara.centro,
-      camara.radio,
+      camara.alto * 0.82,
       quieto: sinMovimiento(context),
     );
   }
 
   void _alternarDimension() {
+    _cambioDimension++;
     _volverAlPlano?.cancel();
     if (!_desea3d) {
       setState(() {
@@ -318,29 +348,33 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
     }
     setState(() => _desea3d = false);
     final centro = _ultimoCentro3d;
-    if (_mostrar3d && centro != null) {
+    final alto = _ultimoAlto3d;
+    if (_mostrar3d && centro != null && alto > 0) {
+      // Se endereza y mira al norte antes del fundido: así llega al plano
+      // con el mismo encuadre que tendrá el plano.
       unawaited(
         _control3d.vista(
           false,
           centro,
-          _ultimoRadio3d,
+          alto,
           quieto: sinMovimiento(context),
+          duracion: Vuelo3d.enderezar,
         ),
       );
     }
     _volverAlPlano = Timer(
-      sinMovimiento(context) ? Duration.zero : Movimiento.largo,
+      sinMovimiento(context) || !_mostrar3d ? Duration.zero : Vuelo3d.enderezar,
       () {
         if (!mounted || _desea3d) return;
         final plano = _plano;
-        if (centro != null && plano != null && !_lienzo.isEmpty) {
+        if (centro != null && alto > 0 && plano != null && !_lienzo.isEmpty) {
           final n = plano.normalizar(centro.lat, centro.lng);
           if (n != null) {
             final s =
                 _ventana.height *
                 plano.anchoMetros *
                 Georreferencia3d.escala /
-                (2 * tan(25 * pi / 360) * _ultimoRadio3d * _lienzo.width);
+                (alto * _lienzo.width);
             _controlador.value = _matriz(
               n.dx * _lienzo.width,
               n.dy * _lienzo.height,
@@ -353,8 +387,37 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
     );
   }
 
+  /// Mide los controles sobre el mapa y se los pasa al visor 3D.
+  void _reservarZonas() {
+    if (!mounted || !_listo3d || !_mostrar3d) return;
+    final mapa = _claveMapa.currentContext?.findRenderObject();
+    if (mapa is! RenderBox || !mapa.hasSize) return;
+    final zonas = <Rect>[
+      for (final clave in [
+        _claveLeyenda,
+        _claveDimension,
+        _claveControles,
+        _claveOrientacion,
+        _claveCredito,
+        _claveCarrusel,
+      ])
+        if (clave.currentContext?.findRenderObject() case final RenderBox caja
+            when caja.hasSize && caja.attached)
+          MatrixUtils.transformRect(
+            caja.getTransformTo(mapa),
+            Offset.zero & caja.size,
+          ).inflate(4),
+    ];
+    final firma = zonas.map((z) => z.toString()).join();
+    if (firma == _ultimasZonas) return;
+    _ultimasZonas = firma;
+    unawaited(_control3d.reservar(zonas));
+  }
+
   void _alFallar3d() {
     if (!mounted) return;
+    _ultimasZonas = null;
+    _cambioDimension++;
     final avisar = _desea3d || _mostrar3d;
     _volverAlPlano?.cancel();
     setState(() {
@@ -386,6 +449,9 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
       24 + escala.scale(17) * 1.3 + 2 + escala.scale(13) * 1.4 + 6,
     );
 
+    if (_mostrar3d && _listo3d) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reservarZonas());
+    }
     final tarjeta = ClipRRect(
       borderRadius: BorderRadius.circular(MedidasUtb.radioTarjeta + 2),
       child: ColoredBox(
@@ -393,6 +459,7 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
         // allá del borde, no se ve una costura.
         color: ColoresPlano.tierra,
         child: Stack(
+          key: _claveMapa,
           children: [
             Positioned.fill(
               key: const ValueKey('plano-campus'),
@@ -424,16 +491,20 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
                       child: MapaCampus3d(
                         pois: widget.pois,
                         visitados: visitados,
+                        seleccion: paradas.elementAtOrNull(_actual)?.id,
                         controlador: _control3d,
                         alCargar: () {
                           _listo3d = true;
                           unawaited(_entrar3d());
                         },
                         alFallar: _alFallar3d,
-                        alMoverCamara: (centro, radio) {
-                          if (_mostrar3d) {
-                            _ultimoCentro3d = centro;
-                            _ultimoRadio3d = radio;
+                        alMoverCamara: (camara) {
+                          if (!_mostrar3d || !_desea3d) return;
+                          _ultimoCentro3d = camara.centro;
+                          _ultimoAlto3d = camara.alto;
+                          // Solo se redibuja la brújula cuando se nota.
+                          if ((camara.rumbo - _rumbo3d).abs() > 0.5) {
+                            setState(() => _rumbo3d = camara.rumbo);
                           }
                         },
                         alTocarPoi: (poi) {
@@ -452,6 +523,7 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
                 left: 12,
                 top: 60,
                 child: Tooltip(
+                  key: _claveDimension,
                   message: _desea3d ? txt.verMapa2d : txt.verMapa3d,
                   child: Semantics(
                     button: true,
@@ -495,7 +567,11 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
               top: 12,
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: _Leyenda(hechos: hechos, total: paradas.length),
+                child: _Leyenda(
+                  key: _claveLeyenda,
+                  hechos: hechos,
+                  total: paradas.length,
+                ),
               ),
             ),
             Positioned(
@@ -503,41 +579,65 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
               right: 12,
               top: 12,
               child: Column(
+                key: _claveControles,
                 children: [
                   BotonCircular(
+                    solido: true,
                     icono: Icons.zoom_out_map_rounded,
                     etiqueta: txt.verTodoCampus,
                     alTocar: _verTodo,
                   ),
                   const SizedBox(height: 8),
                   BotonCircular(
+                    solido: true,
                     icono: Icons.add_rounded,
                     etiqueta: txt.acercar,
                     alTocar: () => _zoom(1.5),
                   ),
                   const SizedBox(height: 8),
                   BotonCircular(
+                    solido: true,
                     icono: Icons.remove_rounded,
                     etiqueta: txt.alejar,
                     alTocar: () => _zoom(1 / 1.5),
                   ),
-                  if (_mostrar3d) ...[
-                    const SizedBox(height: 8),
+                ],
+              ),
+            ),
+            // Giro y brújula, solo en 3D. Van en fila bajo el botón 2D/3D y
+            // no en la columna del zoom: seis botones apilados pisaban el
+            // carrusel en un teléfono pequeño o con el texto grande.
+            if (_mostrar3d)
+              Positioned(
+                key: const ValueKey('orientacion-campus'),
+                left: 12,
+                top: 116,
+                child: Row(
+                  key: _claveOrientacion,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     BotonCircular(
+                      solido: true,
                       icono: Icons.rotate_left_rounded,
                       etiqueta: txt.girarIzquierda,
                       alTocar: () => _control3d.girar(-45),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(width: 8),
+                    _Brujula(
+                      rumbo: _rumbo3d,
+                      etiqueta: txt.orientarNorte,
+                      alTocar: _control3d.orientarNorte,
+                    ),
+                    const SizedBox(width: 8),
                     BotonCircular(
+                      solido: true,
                       icono: Icons.rotate_right_rounded,
                       etiqueta: txt.girarDerecha,
                       alTocar: () => _control3d.girar(45),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
             // ODbL: los datos de OSM se usan con la atribución a la vista.
             Positioned(
               key: const ValueKey('credito-campus'),
@@ -546,7 +646,18 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
               bottom: 12 + (paradas.isEmpty ? 0 : altoCarrusel + 8),
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: _CreditoOsm(modelo3d: _mostrar3d),
+                // El plano es de OSM; la maqueta, de ElMapita. Cada vista
+                // acredita lo que muestra.
+                child: AnimatedSwitcher(
+                  key: _claveCredito,
+                  duration: sinMovimiento(context)
+                      ? Duration.zero
+                      : Movimiento.medio,
+                  child: _Credito(
+                    key: ValueKey(_mostrar3d),
+                    texto: _mostrar3d ? txt.creditoModelo3d : txt.creditoOsm,
+                  ),
+                ),
               ),
             ),
             if (paradas.isNotEmpty)
@@ -556,7 +667,10 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
                 right: 0,
                 bottom: 12,
                 height: altoCarrusel,
-                child: _carrusel(paradas, visitados),
+                child: KeyedSubtree(
+                  key: _claveCarrusel,
+                  child: _carrusel(paradas, visitados),
+                ),
               ),
           ],
         ),
@@ -662,6 +776,7 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
         final k = 1 / escala.clamp(0.2, 10.0);
         final tocables = escala >= _escalaLugares;
         final conNombre = escala >= _escalaNombres;
+        final apartes = _repartirParadas(paradas, escala);
 
         return Stack(
           clipBehavior: Clip.none,
@@ -684,11 +799,41 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
                         : const _PuntoMudo(),
                   ),
                 ),
+            // Tallos de las paradas apartadas, bajo todos los pines.
+            for (final (i, poi) in paradas.indexed)
+              if ((_enLienzo(poi), apartes[i]) case (
+                final punto?,
+                final aparte?,
+              ))
+                Positioned(
+                  left: punto.dx,
+                  top: punto.dy,
+                  child: Transform.scale(
+                    scale: k,
+                    alignment: Alignment.topLeft,
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _PintorTallo(
+                          aparte: aparte,
+                          color: visitados.contains(poi.id)
+                              ? ColoresUtb.verde
+                              : ColoresUtb.azul,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             for (final (i, poi) in paradas.indexed)
               if (_enLienzo(poi) case final punto?)
                 Positioned(
-                  left: punto.dx - _Marcador.ancho / 2,
-                  top: punto.dy - _Marcador.punta,
+                  left:
+                      punto.dx -
+                      _Marcador.ancho / 2 +
+                      (apartes[i]?.dx ?? 0) / escala,
+                  top:
+                      punto.dy -
+                      _Marcador.punta +
+                      (apartes[i]?.dy ?? 0) / escala,
                   child: Transform.scale(
                     scale: k,
                     alignment: const Alignment(
@@ -715,6 +860,61 @@ class _VistaMapaState extends ConsumerState<VistaMapa>
       },
     );
   }
+
+  /// Paradas que, en pantalla, caen encima de otra: suben (o se apartan)
+  /// lo justo y un tallo las une a su punto real. Mismos desplazamientos que
+  /// el visor 3D (`CANDIDATOS` en visor.js). La elegida no se mueve.
+  ///
+  /// Devuelve el desplazamiento en píxeles de pantalla de cada parada
+  /// apartada, por su índice.
+  Map<int, Offset> _repartirParadas(List<Poi> paradas, double escala) {
+    Rect caja(Offset punta) => Rect.fromLTWH(
+      punta.dx - _Marcador.ancho / 2,
+      punta.dy - _Marcador.punta,
+      _Marcador.ancho,
+      _Marcador.alto,
+    );
+    final orden = [
+      if (_actual < paradas.length) _actual,
+      for (var i = 0; i < paradas.length; i++)
+        if (i != _actual) i,
+    ];
+    final ocupadas = <Rect>[];
+    final apartes = <int, Offset>{};
+    for (final i in orden) {
+      final punto = _enLienzo(paradas[i]);
+      if (punto == null) continue;
+      final base = punto * escala;
+      for (final d in _candidatos) {
+        final c = caja(base + d);
+        if (ocupadas.any((o) => o.overlaps(c))) continue;
+        ocupadas.add(c);
+        if (d != Offset.zero) apartes[i] = d;
+        break;
+      }
+    }
+    return apartes;
+  }
+
+  static final _candidatos = () {
+    final lista = <(Offset, double)>[];
+    for (final dx in const [0.0, -20.0, 20.0, -40.0, 40.0, -64.0, 64.0]) {
+      for (final dy in const [
+        0.0,
+        -20.0,
+        -40.0,
+        -60.0,
+        -80.0,
+        -100.0,
+        24.0,
+        48.0,
+      ]) {
+        lista.add((Offset(dx, dy), dx.abs() * 1.6 + (dy < 0 ? -dy : dy * 2.5)));
+      }
+    }
+    lista.sort((a, b) => a.$2.compareTo(b.$2));
+    return [for (final (d, _) in lista) d];
+  }();
 
   Widget _carrusel(List<Poi> paradas, Set<int> visitados) {
     return PageView.builder(
@@ -790,10 +990,11 @@ class _MapaAusente extends StatelessWidget {
   }
 }
 
-/// «© colaboradores de OpenStreetMap», sobre el plano.
-class _CreditoOsm extends StatelessWidget {
-  const _CreditoOsm({this.modelo3d = false});
-  final bool modelo3d;
+/// «© colaboradores de OpenStreetMap» sobre el plano, o el autor de la
+/// maqueta sobre el 3D.
+class _Credito extends StatelessWidget {
+  const _Credito({super.key, required this.texto});
+  final String texto;
 
   @override
   Widget build(BuildContext context) {
@@ -805,9 +1006,7 @@ class _CreditoOsm extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Text(
-          modelo3d
-              ? '${Textos.of(context).creditoOsm}\n${Textos.of(context).creditoModelo3d}'
-              : Textos.of(context).creditoOsm,
+          texto,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             // Gris de OSM sobre blanco: 10:1.
             color: const Color(0xFF333333),
@@ -816,6 +1015,79 @@ class _CreditoOsm extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Brújula del mapa 3D: la aguja marca dónde queda el norte y tocarla lo
+/// vuelve a poner arriba.
+class _Brujula extends StatelessWidget {
+  const _Brujula({
+    required this.rumbo,
+    required this.etiqueta,
+    required this.alTocar,
+  });
+
+  /// Giro del norte en pantalla, en grados y en sentido horario.
+  final double rumbo;
+  final String etiqueta;
+  final VoidCallback alTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final paleta = PaletaUtb.de(context);
+    return Tooltip(
+      message: etiqueta,
+      child: Semantics(
+        button: true,
+        label: etiqueta,
+        onTap: alTocar,
+        excludeSemantics: true,
+        child: Material(
+          // Como los BotonCircular sólidos de al lado.
+          color: ColoresUtb.superficie,
+          shape: CircleBorder(
+            side: BorderSide(
+              color: Colors.white.withValues(
+                alpha: paleta.altoContraste ? 0.85 : 0.2,
+              ),
+              width: paleta.altoContraste ? 1.5 : 1,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: alTocar,
+            child: SizedBox.square(
+              dimension: MedidasUtb.toque,
+              child: Transform.rotate(
+                angle: rumbo * pi / 180,
+                child: const CustomPaint(painter: _PintorAguja()),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PintorAguja extends CustomPainter {
+  const _PintorAguja();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    const largo = 14.0, ancho = 5.5;
+    Path mitad(double signo) => Path()
+      ..moveTo(c.dx, c.dy + signo * largo)
+      ..lineTo(c.dx + ancho, c.dy)
+      ..lineTo(c.dx - ancho, c.dy)
+      ..close();
+    canvas.drawPath(mitad(-1), Paint()..color = ColoresUtb.rojo);
+    canvas.drawPath(mitad(1), Paint()..color = ColoresUtb.texto);
+    canvas.drawCircle(c, 1.8, Paint()..color = ColoresUtb.superficie);
+  }
+
+  @override
+  bool shouldRepaint(_PintorAguja old) => false;
 }
 
 /// Lugar del campus que no es parada: un círculo con el icono de su
@@ -1067,6 +1339,42 @@ class _Marcador extends StatelessWidget {
   }
 }
 
+/// Tallo blanco desde el punto real de una parada hasta la punta de su pin
+/// apartado, con un punto del color de la parada en el extremo.
+class _PintorTallo extends CustomPainter {
+  const _PintorTallo({required this.aparte, required this.color});
+
+  /// De la punta real a la punta del pin, en píxeles de pantalla.
+  final Offset aparte;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawLine(
+      Offset.zero,
+      aparte,
+      Paint()
+        ..color = const Color(0x8C000000)
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      Offset.zero,
+      aparte,
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawCircle(Offset.zero, 5, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset.zero, 3, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_PintorTallo old) =>
+      old.aparte != aparte || old.color != color;
+}
+
 class _PintorPin extends CustomPainter {
   const _PintorPin({required this.color});
 
@@ -1143,7 +1451,7 @@ class _EtiquetaPin extends StatelessWidget {
 }
 
 class _Leyenda extends StatelessWidget {
-  const _Leyenda({required this.hechos, required this.total});
+  const _Leyenda({super.key, required this.hechos, required this.total});
 
   final int hechos;
   final int total;

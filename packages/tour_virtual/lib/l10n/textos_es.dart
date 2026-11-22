@@ -374,6 +374,9 @@ class TextosEs extends Textos {
   String get girarDerecha => 'Girar a la derecha';
 
   @override
+  String get orientarNorte => 'Orientar al norte';
+
+  @override
   String get sinEscenas =>
       'Este recorrido todavía no tiene escenas publicadas.';
 

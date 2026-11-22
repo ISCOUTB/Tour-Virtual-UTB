@@ -360,6 +360,9 @@ class TextosZh extends Textos {
   String get girarDerecha => '向右转';
 
   @override
+  String get orientarNorte => '朝向北方';
+
+  @override
   String get sinEscenas => '此导览尚未发布任何场景。';
 
   @override

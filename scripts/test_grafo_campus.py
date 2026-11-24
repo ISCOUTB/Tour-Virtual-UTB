@@ -147,6 +147,75 @@ class ImportacionTest(unittest.TestCase):
         self.assertIn("Correcciones de la guía en el campus", log.getvalue())
         self.assertIn("Reja cerrada", log.getvalue())
 
+    def test_el_informe_lee_las_pruebas_de_la_app_de_levantamiento(self):
+        datos = grafo.cargar_levantamientos([])
+        datos["pruebas"] = [{"destino": "Biblioteca", "metros_ruta": 10, "error_llegada_m": 1.2,
+                             "paso": True, "recalculos": 0, "indicaciones_malas": 0}]
+        texto = grafo.informe(datos, [], [], -8.5)
+        self.assertIn("| Biblioteca | 10 m | sí | 1.2 m | 0 | 0 | ✅ |", texto)
+
+
+def _red(lineas: list[list[tuple[float, float]]]):
+    """Nodos y aristas como los arma main() a partir de líneas de OSM."""
+    nodos, aristas = {}, []
+
+    def nodo(lat, lng):
+        k = grafo.clave(lat, lng)
+        if k not in nodos:
+            nodos[k] = {"id": f"n{len(nodos)}", "lat": lat, "lng": lng, "tipo": "camino"}
+        return nodos[k]["id"]
+    for linea in lineas:
+        for a, b in zip(linea, linea[1:]):
+            aristas.append({"a": nodo(*a), "b": nodo(*b), "metros": round(grafo.metros(a, b), 2),
+                            "tipo": "sendero", "escalones": False, "techado": False, "osm": None})
+    return nodos, aristas, {n["id"]: n for n in nodos.values()}
+
+
+class TopologiaTest(unittest.TestCase):
+    """El trazado de OSM tiene cruces sin nodo y andenes que no llegan."""
+
+    def test_un_cruce_sin_nodo_se_parte_y_se_une(self):
+        nodos, aristas, por_id = _red([
+            [(10.3700, -75.4660), (10.3700, -75.4650)],
+            [(10.3695, -75.4655), (10.3705, -75.4655)],
+        ])
+        hecho = grafo.reparar_topologia(nodos, aristas, por_id, [])
+        self.assertEqual(len(hecho["cruces"]), 1)
+        self.assertEqual(len(aristas), 4)
+        cruce = next(n["id"] for n in nodos.values() if n["tipo"] == "cruce")
+        self.assertEqual(sum(cruce in (e["a"], e["b"]) for e in aristas), 4)
+        # Los metros se conservan al partir.
+        self.assertAlmostEqual(sum(e["metros"] for e in aristas), 109.4 + 111.2, delta=1)
+
+    def test_una_punta_a_pocos_metros_se_une_si_ahorra_un_rodeo(self):
+        # Un andén en U cuya punta queda a 5 m del camino de enfrente.
+        nodos, aristas, por_id = _red([
+            [(10.37000, -75.46600), (10.37000, -75.46500)],
+            [(10.37000, -75.46500), (10.37050, -75.46500), (10.37050, -75.46595)],
+        ])
+        punta = grafo.clave(10.37050, -75.46595)
+        hecho = grafo.reparar_topologia(nodos, aristas, por_id, [])
+        self.assertEqual(len(hecho["puntas"]), 0, "a 55 m no es un hueco de trazado")
+        nodos, aristas, por_id = _red([
+            [(10.37000, -75.46600), (10.37000, -75.46500)],
+            [(10.37000, -75.46500), (10.37050, -75.46500), (10.37050, -75.46560), (10.370045, -75.46560)],
+        ])
+        punta = nodos[grafo.clave(10.370045, -75.46560)]["id"]
+        hecho = grafo.reparar_topologia(nodos, aristas, por_id, [])
+        self.assertEqual(len(hecho["puntas"]), 1)
+        union = next(e for e in aristas if e.get("inferido"))
+        self.assertIn(punta, (union["a"], union["b"]))
+        self.assertLess(union["metros"], 6)
+
+    def test_no_se_une_una_punta_a_traves_de_un_edificio(self):
+        nodos, aristas, por_id = _red([
+            [(10.37000, -75.46600), (10.37000, -75.46500)],
+            [(10.37000, -75.46500), (10.37050, -75.46500), (10.37050, -75.46560), (10.370045, -75.46560)],
+        ])
+        edificio = [(10.37001, -75.46565), (10.37001, -75.46555), (10.37003, -75.46555), (10.37003, -75.46565)]
+        hecho = grafo.reparar_topologia(nodos, aristas, por_id, [edificio])
+        self.assertEqual(hecho["puntas"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

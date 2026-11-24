@@ -170,13 +170,33 @@ def main() -> None:
     CONTENIDO_API.write_text(api, encoding="utf-8")
     DEMO_APP.write_text(demo, encoding="utf-8")
     DEMO_PANEL.write_text(panel, encoding="utf-8")
+    previo = SQL_ACTUALIZAR.read_text(encoding="utf-8") if SQL_ACTUALIZAR.exists() else ""
     SQL_ACTUALIZAR.write_text(
-        f"-- Pines ajustados con el levantamiento del campus ({hoy}).\n"
+        f"-- Pines ajustados con el levantamiento del campus (último cambio: {hoy}).\n"
         "-- Generado por scripts/aplicar_pines.py. Correr una vez en el editor SQL de Supabase:\n"
-        "-- la carga inicial (pois_campus.sql) no cambia lugares que ya existen.\n"
-        "begin;\n" + "\n".join(actualizaciones) + "\ncommit;\n",
+        "-- la carga inicial (pois_campus.sql) no cambia lugares que ya existen. Son updates\n"
+        "-- por nombre: correrlo otra vez no cambia nada que ya esté bien.\n"
+        "begin;\n" + "\n".join(combinar_actualizaciones(previo, actualizaciones)) + "\ncommit;\n",
         encoding="utf-8")
     print(f"\n{len(actualizaciones)} pines movidos. Para la base en uso: {SQL_ACTUALIZAR.relative_to(RAIZ)}")
+
+
+_NOMBRE_SQL = re.compile(r"\"Nombre\" = '((?:[^']|'')*)';")
+
+
+def combinar_actualizaciones(previo: str, nuevas: list[str]) -> list[str]:
+    """Los updates del SQL anterior más los nuevos, uno por lugar.
+
+    Se conservan los que nadie haya corrido todavía: solo se reemplaza la línea
+    de un lugar que se volvió a mover. Antes el archivo se reescribía entero y
+    ajustar un solo lugar borraba los demás.
+    """
+    por_lugar: dict[str, str] = {}
+    for linea in [*previo.splitlines(), *nuevas]:
+        m = _NOMBRE_SQL.search(linea)
+        if linea.startswith("update ") and m:
+            por_lugar[m.group(1)] = linea
+    return list(por_lugar.values())
 
 
 if __name__ == "__main__":

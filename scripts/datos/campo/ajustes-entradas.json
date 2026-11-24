@@ -76,10 +76,10 @@
     {
       "poi_id": 7,
       "nombre": "Edificio A2",
-      "lat": 10.3705033,
-      "lng": -75.4656954,
+      "lat": 10.3706609,
+      "lng": -75.4656804,
       "estado": "movido",
-      "nota": "",
+      "nota": "fachada sur del A2, donde llega el andén del patio; confirmado por el equipo el 2026-11-23 con OSM, la maqueta de ElMapita y MAPSUTB (antes, 18 m al sur, en el patio)",
       "principal": true,
       "pin": null
     },

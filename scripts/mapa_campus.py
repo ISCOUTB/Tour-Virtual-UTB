@@ -189,7 +189,7 @@ CATALOGO = [
     },
     # --- Lugares del campus, todavia sin panoramica ni medios ---------------
     {"nombre": "Edificio A1", "categoria": "Academico", "posicion": ("equipo", 10.3699525, -75.4654466)},
-    {"nombre": "Edificio A2", "categoria": "Academico", "posicion": ("equipo", 10.3705033, -75.4656954)},
+    {"nombre": "Edificio A2", "categoria": "Academico", "posicion": ("equipo", 10.3706609, -75.4656804)},
     {"nombre": "Edificio A3", "categoria": "Academico", "posicion": ("equipo", 10.3693457, -75.4646923)},
     {"nombre": "Edificio A4", "categoria": "Academico", "posicion": ("equipo", 10.3694377, -75.4646386)},
     {"nombre": "Edificio A5", "categoria": "Academico", "posicion": ("equipo", 10.3691514, -75.4646644)},

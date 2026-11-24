@@ -90,9 +90,9 @@
     "nombre": "Edificio A2",
     "categoria": "Academico",
     "id": 7,
-    "lat": 10.3705033,
-    "lng": -75.4656954,
-    "fuente_posicion": "ajustado por el equipo sobre la foto satelital con el levantamiento (2026-11-22)",
+    "lat": 10.3706609,
+    "lng": -75.4656804,
+    "fuente_posicion": "ajustado por el equipo sobre la foto satelital con el levantamiento (2026-11-23)",
     "audiencias": "externo,estudiante,docente",
     "es_parada": false,
     "descripcion": null

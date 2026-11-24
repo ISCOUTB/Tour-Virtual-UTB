@@ -193,8 +193,8 @@ class RepositorioDemo implements RepositorioContenido {
       lugarId: 1,
       nombre: 'Edificio A2',
       categoria: 'Academico',
-      lat: 10.3705033,
-      lng: -75.4656954,
+      lat: 10.3706609,
+      lng: -75.4656804,
       audiencias: _todas,
     ),
     Poi(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -49,11 +51,13 @@ class BuscadorDestinos extends ConsumerStatefulWidget {
   ConsumerState<BuscadorDestinos> createState() => _BuscadorDestinosState();
 }
 
-class _BuscadorDestinosState extends ConsumerState<BuscadorDestinos> {
+class _BuscadorDestinosState extends ConsumerState<BuscadorDestinos>
+    with WidgetsBindingObserver {
   final _texto = TextEditingController();
   final _foco = FocusNode();
   IndiceBusqueda? _indice;
   (List<Poi>, CatalogoEspacios?)? _base;
+  Timer? _subir;
 
   /// Cuántos resultados se ven sin pedir más: la lista sigue debajo.
   static const _visibles = 6;
@@ -62,23 +66,37 @@ class _BuscadorDestinosState extends ConsumerState<BuscadorDestinos> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _foco.addListener(_alEnfocar);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _subir?.cancel();
     _foco.removeListener(_alEnfocar);
     _texto.dispose();
     _foco.dispose();
     super.dispose();
   }
 
-  /// Al tocar el campo, la lista sube hasta dejarlo arriba: si no, el teclado
-  /// tapaba los resultados, que salen debajo.
   void _alEnfocar() {
-    if (!_foco.hasFocus) return;
-    // Después de que el teclado reduzca la ventana.
-    Future<void>.delayed(const Duration(milliseconds: 350), () {
+    if (_foco.hasFocus) _programarSubida();
+  }
+
+  /// El teclado cambia el tamaño de la ventana mientras se abre.
+  @override
+  void didChangeMetrics() {
+    if (_foco.hasFocus) _programarSubida();
+  }
+
+  /// Al tocar el campo, la lista sube hasta dejarlo arriba: si no, el teclado
+  /// tapaba los resultados, que salen debajo. Se espera a que la ventana deje
+  /// de cambiar de tamaño: en el Xiaomi de pruebas, el teclado tarda más de
+  /// 350 ms en abrirse y el desplazamiento quedaba corto.
+  void _programarSubida() {
+    _subir?.cancel();
+    _subir = Timer(const Duration(milliseconds: 180), () {
       if (!mounted || !_foco.hasFocus) return;
       Scrollable.ensureVisible(
         context,

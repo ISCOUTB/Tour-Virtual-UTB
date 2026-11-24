@@ -30,6 +30,16 @@ Al final, [cuándo está terminada](#4-cuándo-está-terminada).
   lo que falta: [levantamiento/campo-2026-11.md](levantamiento/campo-2026-11.md).
 - App de levantamiento separada (`apps/levantamiento`) para el trabajo de
   campo, con la misma lógica de navegación que la app.
+- **23 de noviembre: validación con MAPSUTB**
+  ([integracion-mapsutb.md](integracion-mapsutb.md)). Cambios:
+  - grafo reparado: 7 cruces sin nodo y 3 puntas sueltas de OSM; 204 nodos,
+    227 tramos; 8.978 rutas de prueba más cortas y ninguna más larga;
+  - flecha estable: brújula con giroscopio, la brújula manda (RF-29) y la
+    flecha mira 15 m adelante sobre la ruta;
+  - filtro de lecturas del GPS y aviso sin señal;
+  - ruta sin GPS con sus pasos;
+  - «Cómo llegar» en los 26 lugares;
+  - buscador de salones con el catálogo de MAPSUTB.
 
 ---
 

@@ -680,7 +680,7 @@ class TextosFr extends Textos {
 
   @override
   String get navFueraDelCampus =>
-      'Vous êtes hors du campus. Le guide fonctionne dans l’UTB : ouvrez-le à votre arrivée.';
+      'Vous êtes hors du campus. Le guide démarre tout seul à votre arrivée à l’UTB ; en attendant, vous pouvez voir l’itinéraire sans GPS.';
 
   @override
   String get navCaminandoHacia => 'En route vers';
@@ -726,4 +726,70 @@ class TextosFr extends Textos {
 
   @override
   String get mapa3dCargando => 'Chargement de la carte 3D';
+
+  @override
+  String get navSinSenal =>
+      'Pas de signal GPS. Allez dans un espace dégagé : le guide reprend tout seul dès qu’il y en a un.';
+
+  @override
+  String get navVerRutaSinGps => 'Voir l’itinéraire sans GPS';
+
+  @override
+  String get navEntradaPrincipal => 'Entrée principale';
+
+  @override
+  String get navDesde => 'Depuis';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos min · $metros m';
+  }
+
+  @override
+  String get navConEscaleras => 'Avec escaliers';
+
+  @override
+  String get navPasoAPaso => 'Étape par étape';
+
+  @override
+  String get navPreviaNota =>
+      'Cet itinéraire part du point choisi, pas de l’endroit où vous êtes.';
+
+  @override
+  String get navGuiarmeConGps => 'Me guider avec le GPS';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio se trouve ici, au : $piso.';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio se trouve dans ce lieu.';
+  }
+
+  @override
+  String get buscarTitulo => 'Où allez-vous ?';
+
+  @override
+  String get buscarPista => 'Cherchez un lieu, une salle ou un bureau';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return 'Aucun résultat pour « $consulta ». Essayez le numéro de salle ou le nom du bâtiment.';
+  }
+
+  @override
+  String get buscarBorrar => 'Effacer la recherche';
+
+  @override
+  String get buscarCredito => 'Salles et bureaux : MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => 'Itinéraire';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return 'Voir les $cantidad résultats';
+  }
 }

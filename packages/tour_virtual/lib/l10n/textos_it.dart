@@ -676,7 +676,7 @@ class TextosIt extends Textos {
 
   @override
   String get navFueraDelCampus =>
-      'Sei fuori dal campus. La guida funziona dentro l’UTB: aprila quando arrivi.';
+      'Sei fuori dal campus. La guida parte da sola quando arrivi all’UTB; intanto puoi vedere il percorso senza GPS.';
 
   @override
   String get navCaminandoHacia => 'In cammino verso';
@@ -723,4 +723,70 @@ class TextosIt extends Textos {
 
   @override
   String get mapa3dCargando => 'Caricamento della mappa 3D';
+
+  @override
+  String get navSinSenal =>
+      'Nessun segnale GPS. Spostati in uno spazio aperto: la guida riprende da sola appena c’è segnale.';
+
+  @override
+  String get navVerRutaSinGps => 'Vedi il percorso senza GPS';
+
+  @override
+  String get navEntradaPrincipal => 'Ingresso principale';
+
+  @override
+  String get navDesde => 'Da';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos min · $metros m';
+  }
+
+  @override
+  String get navConEscaleras => 'Con scale';
+
+  @override
+  String get navPasoAPaso => 'Passo dopo passo';
+
+  @override
+  String get navPreviaNota =>
+      'Questo percorso parte dal punto scelto, non da dove ti trovi.';
+
+  @override
+  String get navGuiarmeConGps => 'Guidami con il GPS';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio è qui, al: $piso.';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio è in questo luogo.';
+  }
+
+  @override
+  String get buscarTitulo => 'Dove vai?';
+
+  @override
+  String get buscarPista => 'Cerca un luogo, un’aula o un ufficio';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return 'Nessun risultato per «$consulta». Prova con il numero dell’aula o il nome dell’edificio.';
+  }
+
+  @override
+  String get buscarBorrar => 'Cancella ricerca';
+
+  @override
+  String get buscarCredito => 'Aule e uffici: MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => 'Indicazioni';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return 'Mostra tutti i $cantidad risultati';
+  }
 }

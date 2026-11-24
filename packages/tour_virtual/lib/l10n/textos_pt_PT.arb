@@ -73,5 +73,13 @@
   "navPlanoSemantica": "Mapa com o percurso até {lugar}",
   "navIdeaRuta": "Levo-o pelos caminhos do campus e aviso antes de cada curva.",
   "navIdeaCamara": "Levante o telemóvel e verá uma seta sobre a câmara a indicar o caminho.",
-  "navLlegada": "Chegou"
+  "navLlegada": "Chegou",
+  "navSinSenal": "Sem sinal de GPS. Vá para um espaço aberto: o guia continua sozinho assim que houver sinal.",
+  "navPreviaNota": "Este percurso parte do ponto que escolheu, não de onde está.",
+  "navFueraDelCampus": "Está fora do campus. O guia começa sozinho quando chegar à UTB; entretanto, pode ver o percurso sem GPS.",
+  "buscarTitulo": "Para onde vai?",
+  "buscarPista": "Procure um local, sala ou gabinete",
+  "buscarSinResultados": "Nada encontrado para «{consulta}». Experimente o número da sala ou o nome do edifício.",
+  "buscarBorrar": "Limpar pesquisa",
+  "buscarCredito": "Salas e gabinetes: MAPSUTB"
 }

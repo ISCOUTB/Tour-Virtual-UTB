@@ -407,14 +407,14 @@ class _EstadoGuia extends StatelessWidget {
     required this.icono,
     required this.texto,
     required this.principal,
-    this.secundaria,
+    this.secundarias = const [],
     this.postal,
   });
 
   final IconData icono;
   final String texto;
   final (String, VoidCallback?) principal;
-  final (String, VoidCallback)? secundaria;
+  final List<(String, VoidCallback)> secundarias;
   final Widget? postal;
 
   @override
@@ -431,18 +431,18 @@ class _EstadoGuia extends StatelessWidget {
             ],
           ),
         ),
-        _Acciones(principal: principal, secundaria: secundaria),
+        _Acciones(principal: principal, secundarias: secundarias),
       ],
     );
   }
 }
 
-/// El botón lleno principal, abajo, y uno de texto bajo él.
+/// El botón lleno principal, abajo, y los de texto bajo él.
 class _Acciones extends StatelessWidget {
-  const _Acciones({required this.principal, this.secundaria});
+  const _Acciones({required this.principal, this.secundarias = const []});
 
   final (String, VoidCallback?) principal;
-  final (String, VoidCallback)? secundaria;
+  final List<(String, VoidCallback)> secundarias;
 
   @override
   Widget build(BuildContext context) {
@@ -455,9 +455,16 @@ class _Acciones extends StatelessWidget {
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
           child: Text(principal.$1),
         ),
-        if (secundaria case (final etiqueta, final accion)) ...[
+        if (secundarias.isNotEmpty) ...[
           const SizedBox(height: 4),
-          TextButton(onPressed: accion, child: Text(etiqueta)),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 4,
+            children: [
+              for (final (etiqueta, accion) in secundarias)
+                TextButton(onPressed: accion, child: Text(etiqueta)),
+            ],
+          ),
         ],
       ],
     );
@@ -515,6 +522,213 @@ class _TarjetaSiguiente extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// El salón, laboratorio u oficina que se busca: en qué edificio y piso está.
+class _TarjetaEspacio extends StatelessWidget {
+  const _TarjetaEspacio({required this.espacio});
+
+  final DestinoBusqueda espacio;
+
+  @override
+  Widget build(BuildContext context) {
+    final textos = Theme.of(context).textTheme;
+    final paleta = PaletaUtb.de(context);
+    return TarjetaUtb(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: ColoresUtb.azulClaro.withValues(alpha: 0.14),
+            ),
+            child: Icon(
+              iconoEspacio(espacio.tipoEspacio),
+              size: 20,
+              color: ColoresUtb.azulClaro,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextoDeContenido(espacio.titulo, style: textos.titleMedium),
+                if (espacio.donde case final donde?) ...[
+                  const SizedBox(height: 3),
+                  TextoDeContenido(
+                    donde,
+                    style: textos.bodyMedium?.copyWith(
+                      color: paleta.textoSecundario,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Desde dónde se ve la ruta en la vista previa: la entrada principal o un
+/// lugar del campus, en un menú (no en otra pantalla).
+class _SelectorPartida extends StatelessWidget {
+  const _SelectorPartida({
+    required this.nombre,
+    required this.lugares,
+    required this.alElegir,
+  });
+
+  final String nombre;
+  final List<Poi> lugares;
+
+  /// Nulo: la entrada principal.
+  final ValueChanged<int?> alElegir;
+
+  @override
+  Widget build(BuildContext context) {
+    final txt = Textos.of(context);
+    final textos = Theme.of(context).textTheme;
+    final paleta = PaletaUtb.de(context);
+    return TarjetaUtb(
+      padding: EdgeInsets.zero,
+      child: PopupMenuButton<int>(
+        tooltip: txt.navDesde,
+        position: PopupMenuPosition.under,
+        constraints: const BoxConstraints(maxHeight: 420),
+        onSelected: (id) => alElegir(id < 0 ? null : id),
+        itemBuilder: (context) => [
+          PopupMenuItem(value: -1, child: Text(txt.navEntradaPrincipal)),
+          for (final p in lugares)
+            PopupMenuItem(value: p.id, child: TextoDeContenido(p.nombre)),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.trip_origin_rounded,
+                size: 22,
+                color: ColoresUtb.azulClaro,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      txt.navDesde,
+                      style: textos.labelMedium?.copyWith(
+                        color: paleta.textoSecundario,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(nombre, style: textos.titleMedium),
+                  ],
+                ),
+              ),
+              Icon(Icons.expand_more_rounded, color: paleta.textoSecundario),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Minutos, metros y si hay escaleras, como lo resume MAPSUTB.
+class _ResumenRuta extends StatelessWidget {
+  const _ResumenRuta({required this.ruta});
+
+  final RutaCampus ruta;
+
+  @override
+  Widget build(BuildContext context) {
+    final txt = Textos.of(context);
+    final textos = Theme.of(context).textTheme;
+    final metros = ruta.metros.round();
+    final minutos = (ruta.metros / 1.2 / 60).ceil().clamp(1, 99);
+    return _TarjetaDestacada(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.directions_walk_rounded,
+            size: 32,
+            color: ColoresUtb.texto,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  txt.navResumenRuta(minutos, metros),
+                  style: textos.titleLarge?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ChipEtiqueta(
+                  texto: ruta.usaEscaleras
+                      ? txt.navConEscaleras
+                      : txt.navSinEscaleras,
+                  icono: ruta.usaEscaleras
+                      ? Icons.stairs_rounded
+                      : Icons.accessible_rounded,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Un paso de la ruta en la lista de la vista previa.
+class _FilaPaso extends StatelessWidget {
+  const _FilaPaso({
+    required this.icono,
+    required this.texto,
+    this.primero = false,
+    this.ultimo = false,
+  });
+
+  final IconData icono;
+  final String texto;
+  final bool primero;
+  final bool ultimo;
+
+  @override
+  Widget build(BuildContext context) {
+    final textos = Theme.of(context).textTheme;
+    final paleta = PaletaUtb.de(context);
+    return Container(
+      decoration: BoxDecoration(
+        border: primero
+            ? null
+            : Border(top: BorderSide(color: paleta.borde, width: 0.6)),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Icon(
+            icono,
+            size: 24,
+            color: ultimo ? ColoresUtb.amarillo : ColoresUtb.azulClaro,
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Text(texto, style: textos.bodyLarge)),
+        ],
       ),
     );
   }

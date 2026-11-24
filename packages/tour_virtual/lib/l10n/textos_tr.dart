@@ -670,7 +670,7 @@ class TextosTr extends Textos {
 
   @override
   String get navFueraDelCampus =>
-      'Kampüsün dışındasın. Rehber UTB içinde çalışır: vardığında aç.';
+      'Kampüsün dışındasın. UTB’ye vardığında rehber kendiliğinden başlar; bu arada rotayı GPS olmadan görebilirsin.';
 
   @override
   String get navCaminandoHacia => 'Gidilen yer';
@@ -716,4 +716,70 @@ class TextosTr extends Textos {
 
   @override
   String get mapa3dCargando => '3B harita yükleniyor';
+
+  @override
+  String get navSinSenal =>
+      'GPS sinyali yok. Açık bir alana çık: sinyal gelir gelmez rehber kendiliğinden devam eder.';
+
+  @override
+  String get navVerRutaSinGps => 'Rotayı GPS olmadan gör';
+
+  @override
+  String get navEntradaPrincipal => 'Ana giriş';
+
+  @override
+  String get navDesde => 'Başlangıç';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos dk · $metros m';
+  }
+
+  @override
+  String get navConEscaleras => 'Merdivenli';
+
+  @override
+  String get navPasoAPaso => 'Adım adım';
+
+  @override
+  String get navPreviaNota =>
+      'Bu rota bulunduğun yerden değil, seçtiğin noktadan başlar.';
+
+  @override
+  String get navGuiarmeConGps => 'GPS ile yönlendir';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio burada: $piso.';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio bu yerde.';
+  }
+
+  @override
+  String get buscarTitulo => 'Nereye gidiyorsun?';
+
+  @override
+  String get buscarPista => 'Yer, derslik veya ofis ara';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return '“$consulta” için sonuç yok. Derslik numarasını veya bina adını dene.';
+  }
+
+  @override
+  String get buscarBorrar => 'Aramayı temizle';
+
+  @override
+  String get buscarCredito => 'Derslikler ve ofisler: MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => 'Yol tarifi';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return '$cantidad sonucun tümünü göster';
+  }
 }

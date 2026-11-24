@@ -25,7 +25,7 @@ select 1, 'Edificio A1', 'Academico', null, 10.3699525, -75.4654466, 'externo,es
  where not exists (select 1 from "Pois" where "LugarId" = 1 and "Nombre" = 'Edificio A1');
 
 insert into "Pois" ("LugarId", "Nombre", "Categoria", "Descripcion", "Lat", "Lng", "Audiencias", "Activo")
-select 1, 'Edificio A2', 'Academico', null, 10.3705033, -75.4656954, 'externo,estudiante,docente', true
+select 1, 'Edificio A2', 'Academico', null, 10.3706609, -75.4656804, 'externo,estudiante,docente', true
  where not exists (select 1 from "Pois" where "LugarId" = 1 and "Nombre" = 'Edificio A2');
 
 insert into "Pois" ("LugarId", "Nombre", "Categoria", "Descripcion", "Lat", "Lng", "Audiencias", "Activo")

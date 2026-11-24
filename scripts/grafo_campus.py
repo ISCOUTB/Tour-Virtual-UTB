@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import heapq
 import json
 import math
 import statistics
@@ -350,6 +351,18 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
             recalculos = sum(1 for e in eventos if e.get("tipo") == "fuera_de_ruta")
             malas = sum(1 for e in eventos if e.get("tipo") == "indicacion_mala")
             llegada, puerta = p.get("llegada_app"), p.get("puerta_real")
+            if "paso" in p:
+                # Formato de la app de levantamiento: ella ya midió el error
+                # entre la llegada y la puerta, y si la prueba pasó.
+                error = p.get("error_llegada_m")
+                recalculos = p.get("recalculos", recalculos)
+                malas = p.get("indicaciones_malas", malas)
+                error_txt = "—" if error is None else f"{error:.1f} m"
+                ok = bool(p["paso"])
+                detectada = "sí" if error is not None else "no"
+                lineas.append(f"| {p.get('destino', p.get('poi_id'))} | {p.get('metros_ruta', 0):.0f} m | "
+                              f"{detectada} | {error_txt} | {recalculos} | {malas} | {'✅' if ok else '❌'} |")
+                continue
             if llegada and puerta:
                 error = metros((llegada["lat"], llegada["lng"]), (puerta["lat"], puerta["lng"]))
                 error_txt = f"{error:.1f} m"
@@ -418,6 +431,197 @@ def informe(datos: dict[str, list], catalogo: list[dict], accesos_grafo: list[di
             lineas.append("")
 
     return "\n".join(lineas)
+
+
+# --- Topología -----------------------------------------------------------------
+#
+# El trazado de OSM del campus (changeset 189774414, 2026-09-30) tiene senderos
+# que cruzan una vía sin un vértice compartido y andenes que terminan a pocos
+# metros del camino al que llegan. La ruta no puede girar donde no hay nodo:
+# eso daba rodeos de hasta 560 m. Ningún camino del campus está etiquetado como
+# puente, túnel o en otro nivel (comprobado en OSM el 2026-11-23), así que un
+# cruce es un paso a nivel. El grafo de MAPSUTB, sacado del mismo trazado,
+# tiene los mismos huecos.
+
+# Una punta suelta se une al camino más cercano dentro de esto...
+UNION_PUNTA_MAX_M = 8.0
+# ...solo si así se ahorra un rodeo de al menos esto (y de 3 veces el hueco).
+UNION_PUNTA_AHORRO_M = 20.0
+
+
+def _plano_local(lat0: float):
+    c = math.cos(math.radians(lat0))
+    return lambda lat, lng: (math.radians(lng) * c * R_TIERRA, math.radians(lat) * R_TIERRA)
+
+
+def _cruce(p1, p2, p3, p4) -> tuple[float, float] | None:
+    """Parámetros (t, u) del cruce propio de p1-p2 con p3-p4, o None."""
+    d1 = (p2[0] - p1[0], p2[1] - p1[1])
+    d2 = (p4[0] - p3[0], p4[1] - p3[1])
+    den = d1[0] * d2[1] - d1[1] * d2[0]
+    if abs(den) < 1e-9:
+        return None
+    t = ((p3[0] - p1[0]) * d2[1] - (p3[1] - p1[1]) * d2[0]) / den
+    u = ((p3[0] - p1[0]) * d1[1] - (p3[1] - p1[1]) * d1[0]) / den
+    if 0 < t < 1 and 0 < u < 1:
+        return t, u
+    return None
+
+
+def _dentro_poligono(p, anillo) -> bool:
+    x, y = p
+    adentro = False
+    for (x1, y1), (x2, y2) in zip(anillo, anillo[1:] + anillo[:1]):
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            adentro = not adentro
+    return adentro
+
+
+def reparar_topologia(nodos: dict, aristas: list[dict], por_id: dict[str, dict],
+                      edificios: list[list[tuple[float, float]]]) -> dict[str, list]:
+    """Une los cruces sin nodo y las puntas sueltas del trazado de OSM.
+
+    Modifica `nodos`, `aristas` y `por_id` en el lugar y devuelve lo hecho:
+    `cruces` (punto de cada cruce unido) y `puntas` (punta, punto de unión,
+    metros del hueco y metros de rodeo que se ahorran). Es determinista: el
+    mismo plano da siempre el mismo grafo.
+    """
+    if not aristas:
+        return {"cruces": [], "puntas": []}
+    lat0 = statistics.fmean(n["lat"] for n in por_id.values())
+    xy = _plano_local(lat0)
+
+    def pos(nid: str) -> tuple[float, float]:
+        n = por_id[nid]
+        return xy(n["lat"], n["lng"])
+
+    def nuevo_nodo(lat: float, lng: float, tipo: str) -> str:
+        k = clave(lat, lng)
+        if k not in nodos:
+            nodos[k] = {"id": f"n{len(nodos)}", "lat": round(lat, 7), "lng": round(lng, 7), "tipo": tipo}
+        n = nodos[k]
+        por_id[n["id"]] = n
+        return n["id"]
+
+    def partir(e: dict, medio: str) -> None:
+        aristas.remove(e)
+        m = por_id[medio]
+        for extremo in (e["a"], e["b"]):
+            if extremo == medio:
+                continue
+            q = por_id[extremo]
+            aristas.append({**e, "a": extremo, "b": medio,
+                            "metros": round(metros((q["lat"], q["lng"]), (m["lat"], m["lng"])), 2)})
+
+    # 1. Cruces: se parte cada par de tramos que se cruzan sin compartir nodo.
+    cruces = []
+    while True:
+        hallado = None
+        for i, e in enumerate(aristas):
+            for f in aristas[i + 1:]:
+                if len({e["a"], e["b"], f["a"], f["b"]}) < 4:
+                    continue
+                r = _cruce(pos(e["a"]), pos(e["b"]), pos(f["a"]), pos(f["b"]))
+                if r is None:
+                    continue
+                a, b = por_id[e["a"]], por_id[e["b"]]
+                punto = (a["lat"] + r[0] * (b["lat"] - a["lat"]), a["lng"] + r[0] * (b["lng"] - a["lng"]))
+                # Un cruce a menos de un metro de un extremo es ese extremo.
+                cerca = [x for x in (e["a"], e["b"], f["a"], f["b"])
+                         if metros(punto, (por_id[x]["lat"], por_id[x]["lng"])) < 1]
+                hallado = (e, f, punto, cerca)
+                break
+            if hallado:
+                break
+        if not hallado:
+            break
+        e, f, punto, cerca = hallado
+        medio = cerca[0] if cerca else nuevo_nodo(*punto, "cruce")
+        for tramo in (e, f):
+            if medio not in (tramo["a"], tramo["b"]):
+                partir(tramo, medio)
+        cruces.append((round(punto[0], 7), round(punto[1], 7)))
+
+    # 2. Puntas sueltas cerca de otro camino.
+    vecinos: dict[str, list[tuple[str, float]]] = {}
+    for e in aristas:
+        vecinos.setdefault(e["a"], []).append((e["b"], e["metros"]))
+        vecinos.setdefault(e["b"], []).append((e["a"], e["metros"]))
+
+    def distancias(desde: str) -> dict[str, float]:
+        dist = {desde: 0.0}
+        cola = [(0.0, desde)]
+        while cola:
+            c, u = heapq.heappop(cola)
+            if c > dist[u]:
+                continue
+            for v, w in vecinos.get(u, []):
+                if c + w < dist.get(v, math.inf):
+                    dist[v] = c + w
+                    heapq.heappush(cola, (c + w, v))
+        return dist
+
+    edificios_xy = [[xy(lat, lng) for lat, lng in anillo] for anillo in edificios]
+
+    def atraviesa_edificio(p: tuple[float, float], q: tuple[float, float]) -> bool:
+        medio = ((p[0] + q[0]) / 2, (p[1] + q[1]) / 2)
+        for anillo in edificios_xy:
+            if _dentro_poligono(medio, anillo):
+                return True
+            for r1, r2 in zip(anillo, anillo[1:] + anillo[:1]):
+                if _cruce(p, q, r1, r2):
+                    return True
+        return False
+
+    puntas = []
+    for nid in sorted((n for n, v in vecinos.items() if len(v) == 1),
+                      key=lambda n: (por_id[n]["lat"], por_id[n]["lng"])):
+        if len(vecinos.get(nid, [])) != 1:
+            continue
+        propio = vecinos[nid][0][0]
+        p = pos(nid)
+        mejor = None
+        for e in aristas:
+            if nid in (e["a"], e["b"]) or propio in (e["a"], e["b"]):
+                continue
+            pa, pb = pos(e["a"]), pos(e["b"])
+            dx, dy = pb[0] - pa[0], pb[1] - pa[1]
+            largo2 = dx * dx + dy * dy
+            t = 0.0 if largo2 == 0 else max(0.0, min(1.0, ((p[0] - pa[0]) * dx + (p[1] - pa[1]) * dy) / largo2))
+            q = (pa[0] + t * dx, pa[1] + t * dy)
+            hueco = math.hypot(p[0] - q[0], p[1] - q[1])
+            if mejor is None or hueco < mejor[0]:
+                mejor = (hueco, e, t, q)
+        if mejor is None or mejor[0] > UNION_PUNTA_MAX_M:
+            continue
+        hueco, e, t, q = mejor
+        dist = distancias(nid)
+        por_grafo = min(dist.get(e["a"], math.inf) + t * e["metros"],
+                        dist.get(e["b"], math.inf) + (1 - t) * e["metros"])
+        ahorro = por_grafo - hueco
+        if ahorro < max(UNION_PUNTA_AHORRO_M, 3 * hueco) or atraviesa_edificio(p, q):
+            continue
+        a, b = por_id[e["a"]], por_id[e["b"]]
+        punto = (a["lat"] + t * (b["lat"] - a["lat"]), a["lng"] + t * (b["lng"] - a["lng"]))
+        extremo = next((x for x in (e["a"], e["b"])
+                        if metros(punto, (por_id[x]["lat"], por_id[x]["lng"])) < 1), None)
+        if extremo:
+            union = extremo
+        else:
+            union = nuevo_nodo(*punto, "camino")
+            partir(e, union)
+        n = por_id[nid]
+        aristas.append({"a": nid, "b": union, "tipo": "sendero", "escalones": False, "techado": False,
+                        "metros": round(metros((n["lat"], n["lng"]), punto), 2), "osm": None,
+                        "inferido": True})
+        # Las siguientes puntas ven la unión.
+        vecinos.clear()
+        for f in aristas:
+            vecinos.setdefault(f["a"], []).append((f["b"], f["metros"]))
+            vecinos.setdefault(f["b"], []).append((f["a"], f["metros"]))
+        puntas.append({"punta": (n["lat"], n["lng"]), "union": (round(punto[0], 7), round(punto[1], 7)),
+                       "hueco_m": round(hueco, 1), "ahorro_m": round(ahorro)})
+    return {"cruces": cruces, "puntas": puntas}
 
 
 def recorridos_geojson(datos: dict[str, list]) -> dict:
@@ -519,6 +723,13 @@ def main(levantamientos: list[str], solo_informe: bool = False,
             e["escalones"] = bool(t["escalones"])
         if "techado" in t:
             e["techado"] = bool(t["techado"])
+
+    # Después de las marcas, para que las dos mitades de un tramo partido
+    # hereden lo marcado en el campus.
+    edificios = [[(lat, lng) for lng, lat in f["geometry"]["coordinates"][0]]
+                 for f in plano["features"]
+                 if f["properties"].get("clase") == "edificio" and f["geometry"]["type"] == "Polygon"]
+    reparaciones = reparar_topologia(nodos, aristas, por_id, edificios)
 
     def unir(p: tuple[float, float], maximo: float) -> str | None:
         """Nodo en el camino más cercano a p, partiendo el tramo si hace falta."""
@@ -725,6 +936,13 @@ def main(levantamientos: list[str], solo_informe: bool = False,
     print(f"{len(nodos)} nodos, {len(aristas)} aristas, {total:.0f} m de camino "
           f"(se descartan {n_comp - 1} componentes sueltos)")
     print(f"{len(accesos)} accesos, {sum(a['verificado'] for a in accesos)} verificados")
+    print(f"Topología: {len(reparaciones['cruces'])} cruces sin nodo unidos, "
+          f"{len(reparaciones['puntas'])} puntas sueltas unidas")
+    for c in reparaciones["cruces"]:
+        print(f"  cruce en {c[0]}, {c[1]}")
+    for u in reparaciones["puntas"]:
+        print(f"  punta {u['punta'][0]}, {u['punta'][1]}: hueco de {u['hueco_m']} m, "
+              f"ahorra {u['ahorro_m']} m de rodeo")
     for a in sorted(accesos, key=lambda a: -a["metros_al_camino"])[:6]:
         print(f"  {a['nombre']}: {a['metros_al_camino']} m hasta el camino")
     if sueltos:

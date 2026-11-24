@@ -673,7 +673,7 @@ class TextosPt extends Textos {
 
   @override
   String get navFueraDelCampus =>
-      'Você está fora do campus. O guia funciona dentro da UTB: abra-o quando chegar.';
+      'Você está fora do campus. O guia começa sozinho quando você chegar à UTB; enquanto isso, pode ver o percurso sem GPS.';
 
   @override
   String get navCaminandoHacia => 'A caminho de';
@@ -719,6 +719,72 @@ class TextosPt extends Textos {
 
   @override
   String get mapa3dCargando => 'Carregando o mapa 3D';
+
+  @override
+  String get navSinSenal =>
+      'Sem sinal de GPS. Vá para um espaço aberto: o guia continua sozinho assim que houver sinal.';
+
+  @override
+  String get navVerRutaSinGps => 'Ver o percurso sem GPS';
+
+  @override
+  String get navEntradaPrincipal => 'Entrada principal';
+
+  @override
+  String get navDesde => 'De';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos min · $metros m';
+  }
+
+  @override
+  String get navConEscaleras => 'Com escadas';
+
+  @override
+  String get navPasoAPaso => 'Passo a passo';
+
+  @override
+  String get navPreviaNota =>
+      'Este percurso sai do ponto que você escolheu, não de onde você está.';
+
+  @override
+  String get navGuiarmeConGps => 'Guiar com o GPS';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio fica aqui, em: $piso.';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio fica neste lugar.';
+  }
+
+  @override
+  String get buscarTitulo => 'Para onde você vai?';
+
+  @override
+  String get buscarPista => 'Busque um lugar, sala ou escritório';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return 'Nada encontrado para “$consulta”. Tente o número da sala ou o nome do prédio.';
+  }
+
+  @override
+  String get buscarBorrar => 'Limpar busca';
+
+  @override
+  String get buscarCredito => 'Salas e escritórios: MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => 'Como chegar';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return 'Ver os $cantidad resultados';
+  }
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -988,6 +1054,10 @@ class TextosPtPt extends TextosPt {
       'A bússola está imprecisa: mova o telemóvel desenhando um oito.';
 
   @override
+  String get navFueraDelCampus =>
+      'Está fora do campus. O guia começa sozinho quando chegar à UTB; entretanto, pode ver o percurso sem GPS.';
+
+  @override
   String get navLlegada => 'Chegou';
 
   @override
@@ -1002,4 +1072,29 @@ class TextosPtPt extends TextosPt {
   String navPlanoSemantica(String lugar) {
     return 'Mapa com o percurso até $lugar';
   }
+
+  @override
+  String get navSinSenal =>
+      'Sem sinal de GPS. Vá para um espaço aberto: o guia continua sozinho assim que houver sinal.';
+
+  @override
+  String get navPreviaNota =>
+      'Este percurso parte do ponto que escolheu, não de onde está.';
+
+  @override
+  String get buscarTitulo => 'Para onde vai?';
+
+  @override
+  String get buscarPista => 'Procure um local, sala ou gabinete';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return 'Nada encontrado para «$consulta». Experimente o número da sala ou o nome do edifício.';
+  }
+
+  @override
+  String get buscarBorrar => 'Limpar pesquisa';
+
+  @override
+  String get buscarCredito => 'Salas e gabinetes: MAPSUTB';
 }

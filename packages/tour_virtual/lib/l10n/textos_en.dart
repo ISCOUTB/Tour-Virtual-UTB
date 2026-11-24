@@ -667,7 +667,7 @@ class TextosEn extends Textos {
 
   @override
   String get navFueraDelCampus =>
-      'You’re outside the campus. The guide works inside UTB: open it when you arrive.';
+      'You’re outside the campus. The guide starts by itself when you reach UTB; meanwhile, you can view the route without GPS.';
 
   @override
   String get navCaminandoHacia => 'Walking to';
@@ -713,4 +713,70 @@ class TextosEn extends Textos {
 
   @override
   String get mapa3dCargando => 'Loading the 3D map';
+
+  @override
+  String get navSinSenal =>
+      'No GPS signal. Step into an open space: the guide carries on by itself as soon as there is one.';
+
+  @override
+  String get navVerRutaSinGps => 'View the route without GPS';
+
+  @override
+  String get navEntradaPrincipal => 'Main entrance';
+
+  @override
+  String get navDesde => 'From';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos min · $metros m';
+  }
+
+  @override
+  String get navConEscaleras => 'With stairs';
+
+  @override
+  String get navPasoAPaso => 'Step by step';
+
+  @override
+  String get navPreviaNota =>
+      'This route starts from the point you chose, not from where you are.';
+
+  @override
+  String get navGuiarmeConGps => 'Guide me with GPS';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio is here, on: $piso.';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio is in this place.';
+  }
+
+  @override
+  String get buscarTitulo => 'Where are you going?';
+
+  @override
+  String get buscarPista => 'Search for a place, room or office';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return 'No results for “$consulta”. Try the room number or the building name.';
+  }
+
+  @override
+  String get buscarBorrar => 'Clear search';
+
+  @override
+  String get buscarCredito => 'Rooms and offices: MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => 'Directions';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return 'Show all $cantidad results';
+  }
 }

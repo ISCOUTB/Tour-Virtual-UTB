@@ -674,7 +674,7 @@ class TextosEs extends Textos {
 
   @override
   String get navFueraDelCampus =>
-      'Estás fuera del campus. La guía funciona dentro de la UTB: ábrela cuando llegues.';
+      'Estás fuera del campus. La guía empieza sola cuando llegues a la UTB; mientras, puedes ver la ruta sin GPS.';
 
   @override
   String get navCaminandoHacia => 'Caminando hacia';
@@ -720,4 +720,70 @@ class TextosEs extends Textos {
 
   @override
   String get mapa3dCargando => 'Cargando el mapa 3D';
+
+  @override
+  String get navSinSenal =>
+      'No llega la señal del GPS. Sal a un espacio abierto: la guía sigue sola en cuanto la haya.';
+
+  @override
+  String get navVerRutaSinGps => 'Ver la ruta sin GPS';
+
+  @override
+  String get navEntradaPrincipal => 'Entrada principal';
+
+  @override
+  String get navDesde => 'Desde';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos min · $metros m';
+  }
+
+  @override
+  String get navConEscaleras => 'Con escaleras';
+
+  @override
+  String get navPasoAPaso => 'Paso a paso';
+
+  @override
+  String get navPreviaNota =>
+      'Esta ruta sale del punto que elegiste, no de donde estás.';
+
+  @override
+  String get navGuiarmeConGps => 'Guiarme con el GPS';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio está aquí, en: $piso.';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio está en este lugar.';
+  }
+
+  @override
+  String get buscarTitulo => '¿A dónde vas?';
+
+  @override
+  String get buscarPista => 'Busca un lugar, salón u oficina';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return 'No encontré «$consulta». Prueba con el número del salón o el nombre del edificio.';
+  }
+
+  @override
+  String get buscarBorrar => 'Borrar búsqueda';
+
+  @override
+  String get buscarCredito => 'Salones y oficinas: MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => 'Cómo llegar';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return 'Ver los $cantidad resultados';
+  }
 }

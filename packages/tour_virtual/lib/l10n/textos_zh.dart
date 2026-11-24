@@ -645,7 +645,7 @@ class TextosZh extends Textos {
   }
 
   @override
-  String get navFueraDelCampus => '你在校园外。导航只在UTB校内可用：到达后再打开。';
+  String get navFueraDelCampus => '你在校园外。到达 UTB 后导航会自动开始；在此之前，你可以不用 GPS 查看路线。';
 
   @override
   String get navCaminandoHacia => '前往';
@@ -687,4 +687,68 @@ class TextosZh extends Textos {
 
   @override
   String get mapa3dCargando => '正在加载3D地图';
+
+  @override
+  String get navSinSenal => '没有 GPS 信号。请到开阔的地方：一有信号，导航会自动继续。';
+
+  @override
+  String get navVerRutaSinGps => '不用 GPS 查看路线';
+
+  @override
+  String get navEntradaPrincipal => '正门';
+
+  @override
+  String get navDesde => '出发地';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos 分钟 · $metros 米';
+  }
+
+  @override
+  String get navConEscaleras => '有楼梯';
+
+  @override
+  String get navPasoAPaso => '分步指引';
+
+  @override
+  String get navPreviaNota => '这条路线从你选择的地点出发，而不是你所在的位置。';
+
+  @override
+  String get navGuiarmeConGps => '用 GPS 导航';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio就在这里，位于：$piso。';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio就在这个地方。';
+  }
+
+  @override
+  String get buscarTitulo => '你要去哪里？';
+
+  @override
+  String get buscarPista => '搜索地点、教室或办公室';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return '没有找到“$consulta”。试试教室编号或楼名。';
+  }
+
+  @override
+  String get buscarBorrar => '清除搜索';
+
+  @override
+  String get buscarCredito => '教室和办公室：MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => '怎么走';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return '查看全部 $cantidad 个结果';
+  }
 }

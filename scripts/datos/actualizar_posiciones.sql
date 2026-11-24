@@ -1,6 +1,7 @@
--- Pines ajustados con el levantamiento del campus (2026-11-22).
+-- Pines ajustados con el levantamiento del campus (último cambio: 2026-11-23).
 -- Generado por scripts/aplicar_pines.py. Correr una vez en el editor SQL de Supabase:
--- la carga inicial (pois_campus.sql) no cambia lugares que ya existen.
+-- la carga inicial (pois_campus.sql) no cambia lugares que ya existen. Son updates
+-- por nombre: correrlo otra vez no cambia nada que ya esté bien.
 begin;
 update "Pois" set "Lat" = 10.3699308, "Lng" = -75.4651281 where "LugarId" = 1 and "Nombre" = 'Biblioteca';  -- 10 m
 update "Pois" set "Lat" = 10.3693299, "Lng" = -75.4646038 where "LugarId" = 1 and "Nombre" = 'Puente A3 - A5';  -- 18 m
@@ -8,7 +9,7 @@ update "Pois" set "Lat" = 10.3692929, "Lng" = -75.4660428 where "LugarId" = 1 an
 update "Pois" set "Lat" = 10.3695983, "Lng" = -75.4657454 where "LugarId" = 1 and "Nombre" = 'Zona T';  -- 50 m
 update "Pois" set "Lat" = 10.3698371, "Lng" = -75.4658858 where "LugarId" = 1 and "Nombre" = 'Cancha de softbol';  -- 55 m
 update "Pois" set "Lat" = 10.3699525, "Lng" = -75.4654466 where "LugarId" = 1 and "Nombre" = 'Edificio A1';  -- 24 m
-update "Pois" set "Lat" = 10.3705033, "Lng" = -75.4656954 where "LugarId" = 1 and "Nombre" = 'Edificio A2';  -- 31 m
+update "Pois" set "Lat" = 10.3706609, "Lng" = -75.4656804 where "LugarId" = 1 and "Nombre" = 'Edificio A2';  -- fachada sur (2026-11-23)
 update "Pois" set "Lat" = 10.3693457, "Lng" = -75.4646923 where "LugarId" = 1 and "Nombre" = 'Edificio A3';  -- 16 m
 update "Pois" set "Lat" = 10.3694377, "Lng" = -75.4646386 where "LugarId" = 1 and "Nombre" = 'Edificio A4';  -- 19 m
 update "Pois" set "Lat" = 10.3691514, "Lng" = -75.4646644 where "LugarId" = 1 and "Nombre" = 'Edificio A5';  -- 6 m

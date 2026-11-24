@@ -15,8 +15,11 @@ abstract final class Rutas {
   static const recorrido = '/recorrido';
   static const navegar = '/navegar';
 
-  /// Guía a pie hasta un lugar (realidad aumentada, RF-26).
-  static String haciaNavegacion(int poiId) => '$navegar/$poiId';
+  /// Guía a pie hasta un lugar (realidad aumentada, RF-26). Con [espacio], el
+  /// salón u oficina del catálogo que se busca dentro de él.
+  static String haciaNavegacion(int poiId, {String? espacio}) => espacio == null
+      ? '$navegar/$poiId'
+      : '$navegar/$poiId?espacio=${Uri.encodeQueryComponent(espacio)}';
 
   /// Enlace al recorrido de un lugar, opcionalmente entrando por una escena.
   static String haciaRecorrido(int lugarId, {int? escenaId}) {
@@ -84,7 +87,10 @@ GoRouter crearEnrutador({String? ubicacionInicial}) => GoRouter(
         final poiId = int.tryParse(state.pathParameters['poiId'] ?? '');
         return poiId == null
             ? const _RutaInvalida()
-            : PantallaNavegacion(poiId: poiId);
+            : PantallaNavegacion(
+                poiId: poiId,
+                espacioId: state.uri.queryParameters['espacio'],
+              );
       },
     ),
   ],

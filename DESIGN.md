@@ -337,6 +337,30 @@ Pie oscuro con la escena, sus puntos y, a la derecha, dos botones circulares par
 ### Cómo llegar
 La misma cabecera azul con arcos: sobretítulo según la fase («CÓMO LLEGAR», «CAMINANDO HACIA», «LLEGASTE»), el lugar, su categoría y «Parada N de M». A la derecha, Max con la pose del momento (teléfono antes de salir, apenado o pensativo si algo falla, mapa fuera del campus, celebrando al llegar); mientras guía, el anillo de avance con los metros que faltan. La postal del destino (16:9, radio 26) aparece antes de salir, en los avisos y al llegar, para reconocer el lugar. La instrucción va en una tarjeta destacada con la flecha en un círculo de vidrio; «Sin escaleras» y «Terminar» comparten una tarjeta grafito al pie. Al llegar, si queda alguna parada sin ver, una tarjeta destacada lleva directo a su «Cómo llegar».
 
+Desde el 2026-11-23 (validación con MAPSUTB, sin pantallas nuevas):
+
+- **Destinos:** «Cómo llegar» está en todo lugar con entrada medida, no solo en las paradas.
+- **Salón buscado:** encima de todo va una tarjeta grafito con el icono del tipo de espacio en círculo azul claro, el nombre y «Edificio · Piso». Al llegar, un recuadro informativo con icono de escaleras dice el piso.
+- **«Ver la ruta sin GPS»:** es un botón de texto bajo la acción principal. Abre, en la misma pantalla, una vista con estas piezas:
+  - el selector «Desde» (tarjeta grafito con menú emergente, nunca otra pantalla);
+  - el resumen en tarjeta destacada («4 min · 280 m» y debajo el chip con o sin escaleras);
+  - el plano con la ruta;
+  - «PASO A PASO» en versalitas y una tarjeta grafito con un paso por fila: icono de giro en azul claro, la llegada en amarillo.
+- **Cámara:** sobre la imagen, además de la flecha azul, un pin amarillo con píldora negra («Lugar · 120 m») anclado a la altura del horizonte donde está la puerta. Solo aparece si la puerta entra en la imagen, y nunca baja a la mitad inferior, que es de la flecha.
+
+### Buscador «¿A dónde vas?»
+Campo de la lista del tour, bajo la tarjeta de la siguiente parada:
+
+- grafito, radio 22, borde fuerte y azul claro al enfocarse;
+- etiqueta flotante y lupa a la izquierda.
+
+Al enfocarlo, la lista sube para que el teclado no tape los resultados. Los resultados salen debajo, en la misma lista, como filas grafito de radio 22:
+
+- un lugar lleva el icono de su categoría y un chevrón, y abre la ficha;
+- un salón u oficina lleva el icono de su tipo y una persona caminando en azul claro, y abre «Cómo llegar».
+
+Bajo los resultados de salones va el crédito «Salones y oficinas: MAPSUTB», en texto terciario.
+
 ### Anillo de avance
 Trazo de 8 con puntas redondas en azul-claro sobre pista del mismo tono al 18 %; el arranque del trazo es más claro (barrido de gradiente). Se llena desde cero en 850 ms al aparecer. 76 en la cabecera desplegada, 34 compacto.
 

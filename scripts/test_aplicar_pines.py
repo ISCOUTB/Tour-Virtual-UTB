@@ -42,5 +42,21 @@ class CorreccionesDeCampoTest(unittest.TestCase):
                 pines.con_correcciones([], [archivo])
 
 
+class SqlDeActualizacionTest(unittest.TestCase):
+    def test_mover_un_lugar_no_borra_los_updates_pendientes_de_los_demas(self):
+        previo = "\n".join([
+            "-- cabecera",
+            "begin;",
+            "update \"Pois\" set \"Lat\" = 1, \"Lng\" = 2 where \"LugarId\" = 1 and \"Nombre\" = 'Biblioteca';  -- 10 m",
+            "update \"Pois\" set \"Lat\" = 3, \"Lng\" = 4 where \"LugarId\" = 1 and \"Nombre\" = 'Edificio A2';  -- 31 m",
+            "commit;",
+        ])
+        nueva = "update \"Pois\" set \"Lat\" = 5, \"Lng\" = 6 where \"LugarId\" = 1 and \"Nombre\" = 'Edificio A2';  -- 18 m"
+        lineas = pines.combinar_actualizaciones(previo, [nueva])
+        self.assertEqual(len(lineas), 2)
+        self.assertIn("'Biblioteca'", lineas[0])
+        self.assertEqual(lineas[1], nueva)
+
+
 if __name__ == "__main__":
     unittest.main()

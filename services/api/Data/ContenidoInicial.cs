@@ -29,7 +29,7 @@ public static class ContenidoInicial
             Poi(5, "Cancha de softbol", "Deporte", "El campus también se vive en movimiento. Espacio para el deporte, la disciplina, el trabajo en equipo y las experiencias que se construyen más allá del aula.", 10.3698371, -75.4658858),
             // Lugares del campus sin panorámica todavía.
             Poi(6, "Edificio A1", "Academico", null, 10.3699525, -75.4654466),
-            Poi(7, "Edificio A2", "Academico", null, 10.3705033, -75.4656954),
+            Poi(7, "Edificio A2", "Academico", null, 10.3706609, -75.4656804),
             Poi(8, "Edificio A3", "Academico", null, 10.3693457, -75.4646923),
             Poi(9, "Edificio A4", "Academico", null, 10.3694377, -75.4646386),
             Poi(10, "Edificio A5", "Academico", null, 10.3691514, -75.4646644),

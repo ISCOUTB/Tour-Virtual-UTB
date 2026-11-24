@@ -1203,7 +1203,7 @@ abstract class Textos {
   /// La persona está a más de 150 m del grafo del campus: la guía no inventa una ruta (RF-33).
   ///
   /// In es, this message translates to:
-  /// **'Estás fuera del campus. La guía funciona dentro de la UTB: ábrela cuando llegues.'**
+  /// **'Estás fuera del campus. La guía empieza sola cuando llegues a la UTB; mientras, puedes ver la ruta sin GPS.'**
   String get navFueraDelCampus;
 
   /// Sobretítulo de la cabecera mientras guía, sobre el nombre del lugar.
@@ -1283,6 +1283,114 @@ abstract class Textos {
   /// In es, this message translates to:
   /// **'Cargando el mapa 3D'**
   String get mapa3dCargando;
+
+  /// Pasaron 30 s sin una lectura útil del GPS (de MAPSUTB, ADR 0017).
+  ///
+  /// In es, this message translates to:
+  /// **'No llega la señal del GPS. Sal a un espacio abierto: la guía sigue sola en cuanto la haya.'**
+  String get navSinSenal;
+
+  /// Botón: ver la ruta entera sobre el plano sin usar el GPS.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver la ruta sin GPS'**
+  String get navVerRutaSinGps;
+
+  /// Punto de partida por defecto de la vista previa: la portería.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrada principal'**
+  String get navEntradaPrincipal;
+
+  /// Etiqueta del selector del punto de partida de la vista previa.
+  ///
+  /// In es, this message translates to:
+  /// **'Desde'**
+  String get navDesde;
+
+  /// Resumen de la ruta en la vista previa.
+  ///
+  /// In es, this message translates to:
+  /// **'{minutos} min · {metros} m'**
+  String navResumenRuta(int minutos, int metros);
+
+  /// Etiqueta: la ruta tiene escalones.
+  ///
+  /// In es, this message translates to:
+  /// **'Con escaleras'**
+  String get navConEscaleras;
+
+  /// Título de la lista de indicaciones de la vista previa.
+  ///
+  /// In es, this message translates to:
+  /// **'Paso a paso'**
+  String get navPasoAPaso;
+
+  /// Aclaración bajo la vista previa: no usa la ubicación real.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta ruta sale del punto que elegiste, no de donde estás.'**
+  String get navPreviaNota;
+
+  /// Botón de la vista previa: empezar la guía con el GPS.
+  ///
+  /// In es, this message translates to:
+  /// **'Guiarme con el GPS'**
+  String get navGuiarmeConGps;
+
+  /// Al llegar al edificio: en qué piso está el salón buscado. Los dos valores son contenido en español.
+  ///
+  /// In es, this message translates to:
+  /// **'{espacio} está aquí, en: {piso}.'**
+  String navEspacioPiso(String espacio, String piso);
+
+  /// Al llegar: el espacio buscado está en este lugar (sin piso).
+  ///
+  /// In es, this message translates to:
+  /// **'{espacio} está en este lugar.'**
+  String navEspacioAqui(String espacio);
+
+  /// Etiqueta del buscador de la lista del tour.
+  ///
+  /// In es, this message translates to:
+  /// **'¿A dónde vas?'**
+  String get buscarTitulo;
+
+  /// Texto de ayuda dentro del buscador.
+  ///
+  /// In es, this message translates to:
+  /// **'Busca un lugar, salón u oficina'**
+  String get buscarPista;
+
+  /// El buscador no encontró nada.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontré «{consulta}». Prueba con el número del salón o el nombre del edificio.'**
+  String buscarSinResultados(String consulta);
+
+  /// Botón para vaciar el buscador.
+  ///
+  /// In es, this message translates to:
+  /// **'Borrar búsqueda'**
+  String get buscarBorrar;
+
+  /// Crédito del catálogo de salones (proyecto MAPSUTB de la UTB).
+  ///
+  /// In es, this message translates to:
+  /// **'Salones y oficinas: MAPSUTB'**
+  String get buscarCredito;
+
+  /// Pista del lector de pantalla en un resultado: abre «Cómo llegar».
+  ///
+  /// In es, this message translates to:
+  /// **'Cómo llegar'**
+  String get buscarComoLlegar;
+
+  /// Muestra todos los resultados del buscador.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver los {cantidad} resultados'**
+  String buscarVerTodos(int cantidad);
 }
 
 class _TextosDelegate extends LocalizationsDelegate<Textos> {

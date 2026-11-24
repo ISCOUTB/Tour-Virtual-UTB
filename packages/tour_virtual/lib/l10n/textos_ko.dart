@@ -651,7 +651,7 @@ class TextosKo extends Textos {
 
   @override
   String get navFueraDelCampus =>
-      '캠퍼스 밖에 있어요. 길 안내는 UTB 안에서 작동해요. 도착하면 열어 주세요.';
+      '캠퍼스 밖에 있습니다. UTB에 도착하면 안내가 자동으로 시작됩니다. 그동안 GPS 없이 경로를 볼 수 있습니다.';
 
   @override
   String get navCaminandoHacia => '가는 곳';
@@ -693,4 +693,69 @@ class TextosKo extends Textos {
 
   @override
   String get mapa3dCargando => '3D 지도 불러오는 중';
+
+  @override
+  String get navSinSenal =>
+      'GPS 신호가 없습니다. 탁 트인 곳으로 가세요. 신호가 잡히면 안내가 자동으로 이어집니다.';
+
+  @override
+  String get navVerRutaSinGps => 'GPS 없이 경로 보기';
+
+  @override
+  String get navEntradaPrincipal => '정문';
+
+  @override
+  String get navDesde => '출발';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos분 · ${metros}m';
+  }
+
+  @override
+  String get navConEscaleras => '계단 있음';
+
+  @override
+  String get navPasoAPaso => '단계별 안내';
+
+  @override
+  String get navPreviaNota => '이 경로는 현재 위치가 아니라 선택한 지점에서 출발합니다.';
+
+  @override
+  String get navGuiarmeConGps => 'GPS로 안내받기';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio은(는) 여기 있습니다: $piso.';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio은(는) 이곳에 있습니다.';
+  }
+
+  @override
+  String get buscarTitulo => '어디로 가세요?';
+
+  @override
+  String get buscarPista => '장소, 강의실 또는 사무실 검색';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return '“$consulta”에 대한 결과가 없습니다. 강의실 번호나 건물 이름으로 검색해 보세요.';
+  }
+
+  @override
+  String get buscarBorrar => '검색어 지우기';
+
+  @override
+  String get buscarCredito => '강의실 및 사무실: MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => '길 안내';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return '결과 $cantidad개 모두 보기';
+  }
 }

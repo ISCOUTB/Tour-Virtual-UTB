@@ -598,6 +598,7 @@ class _BarraCampo extends ConsumerWidget {
         case _Fase.intro ||
             _Fase.pidiendo ||
             _Fase.fueraDelCampus ||
+            _Fase.vistaPrevia ||
             _Fase.sinRuta) {
       linea = ensayo
           ? 'ENSAYO: la posición caminará sola por la ruta.'

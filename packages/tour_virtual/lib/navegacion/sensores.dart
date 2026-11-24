@@ -77,6 +77,7 @@ class UbicacionGps extends FuenteUbicacion {
         precision: p.accuracy,
         rumbo: p.speed > 0.6 && p.heading >= 0 ? p.heading : null,
         velocidad: p.speed,
+        momento: p.timestamp,
       ),
     );
   }
@@ -128,12 +129,20 @@ class UbicacionSimulada extends FuenteUbicacion {
 
   @override
   Stream<LecturaPosicion> lecturas() async* {
-    yield LecturaPosicion(punto: inicio, precision: precision);
+    yield LecturaPosicion(
+      punto: inicio,
+      precision: precision,
+      momento: DateTime.now(),
+    );
     final azar = math.Random(7);
     while (true) {
       await Future<void>.delayed(intervalo);
       if (_camino.length < 2) {
-        yield LecturaPosicion(punto: inicio, precision: precision);
+        yield LecturaPosicion(
+          punto: inicio,
+          precision: precision,
+          momento: DateTime.now(),
+        );
         continue;
       }
       _recorrido += velocidad * intervalo.inMilliseconds / 1000;
@@ -148,6 +157,7 @@ class UbicacionSimulada extends FuenteUbicacion {
         precision: precision,
         rumbo: rumbo,
         velocidad: velocidad,
+        momento: DateTime.now(),
       );
     }
   }
@@ -201,9 +211,17 @@ abstract class FuenteRumbo {
   Stream<LecturaRumbo> lecturas();
 }
 
-/// Al caminar, el GPS evita los errores de la brújula cerca del metal.
-/// Quieto, solo se usa una brújula calibrada; sin rumbo fiable no hay flecha.
+/// Hacia dónde mira el teléfono, para la flecha y el cono del plano (RF-29:
+/// rumbo al nodo menos rumbo de la brújula).
+///
+/// La brújula manda mientras esté calibrada: es lo único que sigue al
+/// teléfono cuando se gira la cámara. Antes, al caminar mandaba el rumbo del
+/// GPS: se actualiza cada 2 s con ±20° de ruido, no sabe hacia dónde apunta
+/// la cámara y, al pasar de caminar a parar, la flecha saltaba de una fuente a
+/// la otra. Ahora el GPS solo entra si la brújula está interferida (metal
+/// cerca) y la persona camina con buena señal; si no, no hay flecha.
 double? rumboNavegacion(LecturaPosicion? posicion, LecturaRumbo? brujula) {
+  if (brujula != null && !brujula.descalibrada) return brujula.grados;
   final gps = posicion?.rumbo;
   if (gps != null &&
       gps.isFinite &&
@@ -212,8 +230,64 @@ double? rumboNavegacion(LecturaPosicion? posicion, LecturaRumbo? brujula) {
       posicion!.precision <= 20) {
     return normalizarGrados(gps);
   }
-  if (brujula == null || brujula.descalibrada) return null;
-  return brujula.grados;
+  return null;
+}
+
+/// Suaviza el rumbo de la brújula con el giroscopio (filtro complementario).
+///
+/// El giroscopio sigue cada giro del teléfono al instante y sin ruido, pero se
+/// desvía con el tiempo; la brújula no se desvía, pero tiembla con cada paso y
+/// con cada pulso del acelerómetro. El rumbo gira con el giroscopio y se
+/// acerca a la brújula con una constante de [constante] segundos: la flecha ya
+/// no tiembla y sigue respondiendo al instante. Sin giroscopio, sigue a la
+/// brújula con un paso bajo de [constanteSinGiroscopio] segundos.
+class FiltroRumbo {
+  FiltroRumbo({this.constante = 1.5, this.constanteSinGiroscopio = 0.45});
+
+  final double constante;
+  final double constanteSinGiroscopio;
+
+  double? _rumbo;
+  var _conGiroscopio = false;
+
+  double? get rumbo => _rumbo;
+
+  /// Gira el rumbo con la velocidad angular [velocidad] (rad/s, ejes del
+  /// teléfono) durante [segundos]. [arriba] es la gravedad medida (apunta
+  /// hacia arriba en reposo): solo cuenta el giro alrededor de la vertical.
+  void girar(List<double> velocidad, List<double> arriba, double segundos) {
+    final r = _rumbo;
+    final norma = math.sqrt(
+      arriba[0] * arriba[0] + arriba[1] * arriba[1] + arriba[2] * arriba[2],
+    );
+    if (r == null || norma < 0.1 || segundos <= 0 || segundos > 0.5) return;
+    _conGiroscopio = true;
+    final vertical =
+        (velocidad[0] * arriba[0] +
+            velocidad[1] * arriba[1] +
+            velocidad[2] * arriba[2]) /
+        norma;
+    // Un giro positivo alrededor de la vertical es antihorario visto desde
+    // arriba: el rumbo, que crece en sentido horario, baja.
+    _rumbo = normalizarGrados(r - vertical * segundos * 180 / math.pi);
+  }
+
+  /// Acerca el rumbo a la [brujula] según los [segundos] desde la anterior.
+  double corregir(double brujula, double segundos) {
+    final r = _rumbo;
+    final diferencia = r == null ? 0.0 : diferenciaAngular(r, brujula);
+    // Al empezar, o tras un salto grande (el teléfono pasó de acostado a
+    // vertical), se toma la brújula tal cual en vez de girar despacio.
+    if (r == null || diferencia.abs() > 60) return _rumbo = brujula;
+    final tau = _conGiroscopio ? constante : constanteSinGiroscopio;
+    final k = (segundos / tau).clamp(0.0, 1.0);
+    return _rumbo = normalizarGrados(r + k * diferencia);
+  }
+
+  void reiniciar() {
+    _rumbo = null;
+    _conGiroscopio = false;
+  }
 }
 
 /// Rumbo calculado con el acelerómetro y el magnetómetro.
@@ -230,8 +304,13 @@ class RumboSensores extends FuenteRumbo {
     this.declinacion = 0,
     this.campoEsperado,
     this.tolerancia = toleranciaCampo,
+    this.filtrar = true,
     MotionSensors? sensores,
   }) : _sensores = sensores ?? MotionSensors();
+
+  /// Con falso, el rumbo como se calculaba antes del giroscopio: solo el paso
+  /// bajo sobre los vectores. Lo usa la prueba en el teléfono para comparar.
+  final bool filtrar;
 
   /// Declinación magnética (grados, positiva al este): pasa del norte de la
   /// brújula al geográfico.
@@ -249,13 +328,19 @@ class RumboSensores extends FuenteRumbo {
 
   @override
   Stream<LecturaRumbo> lecturas() {
-    // 50 ms (20 Hz): fluido para la flecha sin gastar de más.
+    // 50 ms (20 Hz): fluido para la flecha sin gastar de más. El giroscopio a
+    // 100 Hz: integra mejor los giros rápidos.
     _sensores.accelerometerUpdateInterval = 50000;
     _sensores.magnetometerUpdateInterval = 50000;
+    _sensores.gyroscopeUpdateInterval = 10000;
     late StreamController<LecturaRumbo> salida;
     StreamSubscription<AccelerometerEvent>? acel;
     StreamSubscription<MagnetometerEvent>? mag;
+    StreamSubscription<GyroscopeEvent>? giro;
     List<double>? g, m;
+    final filtro = FiltroRumbo();
+    final reloj = Stopwatch()..start();
+    var ultimaBrujula = 0, ultimoGiro = 0;
 
     void calcular() {
       final gv = g, mv = m;
@@ -267,7 +352,20 @@ class RumboSensores extends FuenteRumbo {
         campoEsperado: campoEsperado,
         tolerancia: tolerancia,
       );
-      if (lectura != null) salida.add(lectura);
+      if (lectura == null) return;
+      final ahora = reloj.elapsedMicroseconds;
+      final grados = filtrar
+          ? filtro.corregir(lectura.grados, (ahora - ultimaBrujula) / 1e6)
+          : lectura.grados;
+      ultimaBrujula = ahora;
+      salida.add(
+        LecturaRumbo(
+          grados: grados,
+          inclinacion: lectura.inclinacion,
+          descalibrada: lectura.descalibrada,
+          intensidad: lectura.intensidad,
+        ),
+      );
     }
 
     salida = StreamController<LecturaRumbo>(
@@ -294,10 +392,21 @@ class RumboSensores extends FuenteRumbo {
                   m![2] + a * (e.z - m![2]),
                 ];
         }, onError: salida.addError);
+        // Sin giroscopio (algunos teléfonos de gama baja) el filtro sigue a la
+        // brújula con un paso bajo: no es un error para la guía.
+        giro = _sensores.gyroscope.listen((e) {
+          final ahora = reloj.elapsedMicroseconds;
+          final arriba = g;
+          if (arriba != null && ultimoGiro > 0) {
+            filtro.girar([e.x, e.y, e.z], arriba, (ahora - ultimoGiro) / 1e6);
+          }
+          ultimoGiro = ahora;
+        }, onError: (Object error) => debugPrint('Giroscopio: $error'));
       },
       onCancel: () async {
         await acel?.cancel();
         await mag?.cancel();
+        await giro?.cancel();
       },
     );
     return salida.stream;

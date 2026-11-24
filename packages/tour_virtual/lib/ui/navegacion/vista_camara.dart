@@ -21,6 +21,7 @@ class VistaCamara extends StatefulWidget {
     required this.inclinacion,
     required this.metros,
     required this.alFallar,
+    this.destino,
   });
 
   /// Cuánto girar para mirar hacia el próximo punto: grados, positivo a la
@@ -31,6 +32,16 @@ class VistaCamara extends StatefulWidget {
   final double inclinacion;
   final int? metros;
   final VoidCallback alFallar;
+
+  /// La puerta del destino vista desde la cámara: cuántos grados a la derecha
+  /// (negativo, a la izquierda) de hacia donde apunta, a cuántos metros y su
+  /// nombre. Nulo mientras no hay rumbo.
+  final ({double giro, int metros, String nombre})? destino;
+
+  /// Mitad del campo de visión horizontal de la cámara trasera en vertical.
+  /// En los teléfonos va de 25° a 30° (lente principal, sensor 4:3); un error
+  /// de unos grados solo corre el marcador unos píxeles.
+  static const medioCampo = 27.0;
 
   @override
   State<VistaCamara> createState() => _VistaCamaraState();
@@ -145,6 +156,21 @@ class _VistaCamaraState extends State<VistaCamara> with WidgetsBindingObserver {
             )
           else
             const ColoredBox(color: Colors.black),
+          // El destino anclado donde está de verdad, si entra en la imagen.
+          // La flecha dice por dónde ir; el marcador, dónde queda.
+          if (widget.destino case final d?
+              when d.giro.abs() < VistaCamara.medioCampo)
+            ExcludeSemantics(
+              child: LayoutBuilder(
+                builder: (context, caja) => _MarcadorDestino(
+                  caja: caja.biggest,
+                  giro: d.giro,
+                  inclinacion: widget.inclinacion,
+                  metros: d.metros,
+                  nombre: d.nombre,
+                ),
+              ),
+            ),
           if (widget.giro != null)
             ExcludeSemantics(
               child: _Flecha(
@@ -211,46 +237,118 @@ class _Flecha extends StatelessWidget {
     // Con la cámara al suelo (-90) la flecha se ve de frente; al frente (0),
     // casi de canto. Hasta 70° para que siga leyéndose.
     final acostada = ((90 + inclinacion).clamp(0.0, 70.0)) * math.pi / 180;
+    // Se encoge si no cabe: en un teléfono con los avisos de la guía y la
+    // barra del modo campo, a la cámara le quedaban 184 px y la flecha con su
+    // distancia se desbordaba.
     return Align(
       alignment: const Alignment(0, 0.45),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.0015)
-              ..rotateX(acostada)
-              ..rotateZ(giro * math.pi / 180),
-            child: const CustomPaint(
-              size: Size(150, 150),
-              painter: _PintorFlecha(),
-            ),
-          ),
-          if (metros != null) ...[
-            const SizedBox(height: 4),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(999),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.0015)
+                ..rotateX(acostada)
+                ..rotateZ(giro * math.pi / 180),
+              child: const CustomPaint(
+                size: Size(150, 150),
+                painter: _PintorFlecha(),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 6,
+            ),
+            if (metros != null) ...[
+              const SizedBox(height: 4),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(
-                  '$metros m',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    '$metros m',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
+    );
+  }
+}
+
+/// Un pin sobre la línea del horizonte, a la altura de la puerta del
+/// destino: se mueve con el teléfono como si estuviera en la calle.
+class _MarcadorDestino extends StatelessWidget {
+  const _MarcadorDestino({
+    required this.caja,
+    required this.giro,
+    required this.inclinacion,
+    required this.metros,
+    required this.nombre,
+  });
+
+  final Size caja;
+  final double giro;
+  final double inclinacion;
+  final int metros;
+  final String nombre;
+
+  @override
+  Widget build(BuildContext context) {
+    final esquina = posicionMarcadorDestino(caja, giro, inclinacion);
+    if (esquina == null) return const SizedBox.shrink();
+    final textos = Theme.of(context).textTheme;
+    return Stack(
+      children: [
+        Positioned(
+          left: esquina.dx,
+          top: esquina.dy,
+          width: anchoMarcadorDestino,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.62),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: ColoresUtb.amarillo, width: 1.4),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    '$nombre · $metros m',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textos.labelLarge?.copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.location_on_rounded,
+                size: 30,
+                color: ColoresUtb.amarillo,
+                shadows: [Shadow(blurRadius: 6)],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -285,4 +383,37 @@ class _PintorFlecha extends CustomPainter {
 
   @override
   bool shouldRepaint(_PintorFlecha old) => false;
+}
+
+/// Ancho del marcador del destino en la vista de cámara.
+const anchoMarcadorDestino = 180.0;
+
+/// Esquina superior izquierda del marcador del destino en una vista de cámara
+/// de tamaño [caja], para un destino [giro] grados a la derecha de hacia donde
+/// apunta y con la cámara inclinada [inclinacion] grados (0 al frente). Nulo si
+/// la vista es demasiado chica para mostrarlo sin tapar la flecha: con el
+/// panel del modo campo abierto puede quedar de menos de 150 px, y un
+/// `clamp` con el mínimo por encima del máximo lanzaba un error en cada cuadro.
+Offset? posicionMarcadorDestino(Size caja, double giro, double inclinacion) {
+  if (caja.width < anchoMarcadorDestino + 16 || caja.height < 220) return null;
+  // Proyección de cámara estenopeica: la distancia focal en píxeles sale del
+  // campo de visión horizontal.
+  final focal =
+      (caja.width / 2) / math.tan(VistaCamara.medioCampo * math.pi / 180);
+  final x =
+      caja.width / 2 +
+      focal * math.tan(giro.clamp(-80.0, 80.0) * math.pi / 180);
+  // El horizonte sube cuando la cámara mira al suelo (inclinación negativa).
+  final horizonte =
+      caja.height / 2 +
+      focal * math.tan(inclinacion.clamp(-80.0, 80.0) * math.pi / 180);
+  // Sin tapar la flecha (va en la mitad de abajo) ni el aviso de arriba.
+  final y = horizonte.clamp(64.0, caja.height * 0.42);
+  return Offset(
+    (x - anchoMarcadorDestino / 2).clamp(
+      8.0,
+      caja.width - anchoMarcadorDestino - 8,
+    ),
+    y - 58,
+  );
 }

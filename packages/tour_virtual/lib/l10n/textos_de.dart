@@ -679,7 +679,7 @@ class TextosDe extends Textos {
 
   @override
   String get navFueraDelCampus =>
-      'Du bist außerhalb des Campus. Die Führung funktioniert auf dem UTB-Gelände: Öffne sie, wenn du ankommst.';
+      'Du bist außerhalb des Campus. Die Führung startet von selbst, wenn du an der UTB ankommst; bis dahin kannst du die Route ohne GPS ansehen.';
 
   @override
   String get navCaminandoHacia => 'Unterwegs zu';
@@ -725,4 +725,70 @@ class TextosDe extends Textos {
 
   @override
   String get mapa3dCargando => '3D-Karte wird geladen';
+
+  @override
+  String get navSinSenal =>
+      'Kein GPS-Signal. Geh an einen offenen Ort: Die Führung läuft von selbst weiter, sobald es eines gibt.';
+
+  @override
+  String get navVerRutaSinGps => 'Route ohne GPS ansehen';
+
+  @override
+  String get navEntradaPrincipal => 'Haupteingang';
+
+  @override
+  String get navDesde => 'Von';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos Min. · $metros m';
+  }
+
+  @override
+  String get navConEscaleras => 'Mit Treppen';
+
+  @override
+  String get navPasoAPaso => 'Schritt für Schritt';
+
+  @override
+  String get navPreviaNota =>
+      'Diese Route beginnt am gewählten Punkt, nicht dort, wo du bist.';
+
+  @override
+  String get navGuiarmeConGps => 'Mit GPS führen';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio ist hier, im: $piso.';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio ist an diesem Ort.';
+  }
+
+  @override
+  String get buscarTitulo => 'Wohin gehst du?';
+
+  @override
+  String get buscarPista => 'Ort, Raum oder Büro suchen';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return 'Keine Treffer für „$consulta“. Versuch es mit der Raumnummer oder dem Gebäudenamen.';
+  }
+
+  @override
+  String get buscarBorrar => 'Suche löschen';
+
+  @override
+  String get buscarCredito => 'Räume und Büros: MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => 'Wegbeschreibung';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return 'Alle $cantidad Treffer anzeigen';
+  }
 }

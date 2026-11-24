@@ -13,6 +13,7 @@ import '../../datos/progreso.dart';
 import '../../datos/proveedores.dart';
 import '../../l10n/textos.dart';
 import '../../navegacion/correcciones.dart';
+import '../../navegacion/espacios.dart';
 import '../../navegacion/geo.dart';
 import '../../navegacion/grafo_campus.dart';
 import '../../navegacion/modo_campo.dart';
@@ -28,6 +29,7 @@ import '../comunes/componentes.dart';
 import '../comunes/fondos.dart';
 import '../comunes/ilustracion_max.dart';
 import '../ficha_poi.dart';
+import '../inicio/buscador_destinos.dart';
 import '../postal_escena.dart';
 import '../vista_async.dart';
 import 'plano_ruta.dart';
@@ -46,9 +48,13 @@ part 'piezas_guia.dart';
 /// ofrece el mapa o el 360 (RF-33). La posición nunca sale del teléfono
 /// (RN-10).
 class PantallaNavegacion extends ConsumerWidget {
-  const PantallaNavegacion({super.key, required this.poiId});
+  const PantallaNavegacion({super.key, required this.poiId, this.espacioId});
 
   final int poiId;
+
+  /// Un salón, laboratorio u oficina del catálogo de espacios: la guía lleva
+  /// a la entrada del edificio y dice en qué piso está.
+  final String? espacioId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,6 +66,9 @@ class PantallaNavegacion extends ConsumerWidget {
     final radio = modoCampo
         ? ref.watch(correccionesCampoProvider).radioLlegada
         : null;
+    final espacio = espacioId == null
+        ? null
+        : ref.watch(catalogoEspaciosProvider).valueOrNull?.destino(espacioId!);
     return Scaffold(
       body: VistaAsync<(List<Poi>, GrafoCampus, PlanoCampus)>(
         valor: switch ((pois, grafo, plano)) {
@@ -89,6 +98,8 @@ class PantallaNavegacion extends ConsumerWidget {
             // El ensayo cambia la fuente de la posición: guía nueva.
             key: ValueKey(ref.watch(ensayoCampoProvider)),
             poi: poi,
+            espacio: espacio,
+            lugares: lista,
             paradas: [...lista.where((p) => p.esParada)],
             grafo: grafoCampus,
             plano: planoCampus,
@@ -109,9 +120,14 @@ enum _Fase {
   guiando,
   sinRuta,
 
-  /// A más de [GrafoCampus.distanciaMaximaEntrada] de cualquier camino.
+  /// A más de [GrafoCampus.distanciaMaximaEntrada] de cualquier camino. El GPS
+  /// sigue escuchando: al entrar al campus, la guía empieza sola.
   fueraDelCampus,
   llegada,
+
+  /// La ruta entera sobre el plano, con sus pasos, desde un punto elegido:
+  /// sin GPS, sin permiso o desde la casa (de MAPSUTB: la partida a mano).
+  vistaPrevia,
 }
 
 enum _Vista { plano, camara }
@@ -120,6 +136,8 @@ class _Guia extends ConsumerStatefulWidget {
   const _Guia({
     super.key,
     required this.poi,
+    this.espacio,
+    this.lugares = const [],
     required this.paradas,
     required this.grafo,
     required this.plano,
@@ -128,6 +146,13 @@ class _Guia extends ConsumerStatefulWidget {
   });
 
   final Poi poi;
+
+  /// El salón u oficina que se busca dentro del lugar, si se llegó por el
+  /// buscador.
+  final DestinoBusqueda? espacio;
+
+  /// Todos los lugares: puntos de partida de la vista previa.
+  final List<Poi> lugares;
   final List<Poi> paradas;
 
   /// En el modo campo cambia con cada corrección: la ruta se recalcula.
@@ -176,6 +201,20 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
 
   /// Tramo que se va a corregir, resaltado en el plano.
   List<PuntoGeo> _resaltado = const [];
+
+  /// Sin una lectura útil en este tiempo, se dice que no llega la señal en
+  /// vez de «Buscando señal» para siempre (de MAPSUTB, su ADR 0017).
+  static const _esperaPrimeraLectura = Duration(seconds: 30);
+  static const _esperaSinSenal = Duration(seconds: 15);
+  Timer? _vigia;
+  var _sinSenal = false;
+
+  /// Última lectura que no era vieja, aunque fuera imprecisa: para decir
+  /// «señal débil» antes de tener ruta.
+  LecturaPosicion? _ultimaLectura;
+
+  /// Vista previa: lugar de partida (nulo: la entrada principal).
+  int? _origenPrevia;
 
   @override
   void initState() {
@@ -243,6 +282,8 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
 
   void _pausar({bool callar = true}) {
     _sesion++;
+    _vigia?.cancel();
+    _vigia = null;
     _cancelacion = Future.wait<void>([
       _cancelacion,
       if (_subPosicion != null) _subPosicion!.cancel(),
@@ -260,7 +301,7 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     _enPrimerPlano = estado == AppLifecycleState.resumed;
     if (!_enPrimerPlano) {
       _pausar();
-    } else if (_fase == _Fase.guiando) {
+    } else if (_fase == _Fase.guiando || _fase == _Fase.fueraDelCampus) {
       _anunciada = null;
       unawaited(_escuchar());
     }
@@ -286,7 +327,9 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     final sesion = ++_sesion;
     await _cancelacion;
     if (!mounted || !_enPrimerPlano || sesion != _sesion) return;
-    unawaited(_pantalla.cambiar(true));
+    final enCampus = _fase != _Fase.fueraDelCampus;
+    if (enCampus) unawaited(_pantalla.cambiar(true));
+    _armarVigia();
     _subPosicion = _ubicacion.lecturas().listen(
       (lectura) {
         if (sesion != _sesion) return;
@@ -302,7 +345,40 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
         }
       },
     );
-    _suscribirBrujula(sesion);
+    if (enCampus) _suscribirBrujula(sesion);
+  }
+
+  /// Se rearma con cada lectura útil: si deja de haberlas, se avisa.
+  void _armarVigia() {
+    _vigia?.cancel();
+    final sesion = _sesion;
+    _vigia = Timer(
+      _ultimaLectura == null ? _esperaPrimeraLectura : _esperaSinSenal,
+      () {
+        if (!mounted || sesion != _sesion) return;
+        setState(() => _sinSenal = true);
+      },
+    );
+  }
+
+  /// Fuera del campus: sin brújula ni pantalla encendida, pero el GPS sigue
+  /// para empezar solo al llegar.
+  void _irFueraDelCampus() {
+    final brujula = _subRumbo;
+    _subRumbo = null;
+    _rumbo = null;
+    if (brujula != null) {
+      _cancelacion = Future.wait<void>([_cancelacion, brujula.cancel()]);
+    }
+    unawaited(_pantalla.cambiar(false));
+    _seguimiento = null;
+    setState(() => _fase = _Fase.fueraDelCampus);
+  }
+
+  void _volverAlCampus() {
+    unawaited(_pantalla.cambiar(true));
+    if (_subRumbo == null) _suscribirBrujula(_sesion);
+    setState(() => _fase = _Fase.guiando);
   }
 
   void _suscribirBrujula(int sesion) {
@@ -334,12 +410,16 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
       sinEscaleras: _sinEscaleras,
     );
     if (ruta == null) {
-      _pausar();
       // Desde la casa, «no encontré un camino» parecía un fallo.
       final lejos =
           widget.grafo.distanciaAlCamino(desde) >
           GrafoCampus.distanciaMaximaEntrada;
-      setState(() => _fase = lejos ? _Fase.fueraDelCampus : _Fase.sinRuta);
+      if (lejos) {
+        _irFueraDelCampus();
+      } else {
+        _pausar();
+        setState(() => _fase = _Fase.sinRuta);
+      }
       return false;
     }
     final ubicacion = _ubicacion;
@@ -351,8 +431,37 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
   }
 
   void _alLeer(LecturaPosicion lectura) {
-    if (!mounted || !_enPrimerPlano || _fase != _Fase.guiando) return;
-    if (_seguimiento == null && !_calcular(lectura.punto)) return;
+    if (!mounted || !_enPrimerPlano) return;
+    if (_fase != _Fase.guiando && _fase != _Fase.fueraDelCampus) return;
+    final uso = usoDeLectura(lectura, DateTime.now());
+    // La última posición conocida al abrir el GPS puede ser de otro lugar.
+    if (uso == UsoLectura.vieja) return;
+    _ultimaLectura = lectura;
+    _armarVigia();
+    if (_sinSenal) setState(() => _sinSenal = false);
+
+    if (_fase == _Fase.fueraDelCampus) {
+      final cerca =
+          uso == UsoLectura.guiar &&
+          widget.grafo.distanciaAlCamino(lectura.punto) <=
+              GrafoCampus.distanciaMaximaEntrada;
+      if (!cerca) return;
+      _volverAlCampus();
+    }
+
+    if (_seguimiento == null) {
+      // Con una lectura imprecisa no se calcula la ruta ni se decide que está
+      // fuera del campus, salvo que lo esté aun con el peor error.
+      if (uso == UsoLectura.debil) {
+        if (fueraDelCampusCon(lectura, widget.grafo)) {
+          _irFueraDelCampus();
+        } else {
+          setState(() {});
+        }
+        return;
+      }
+      if (!_calcular(lectura.punto)) return;
+    }
     final seguimiento = _seguimiento!..actualizar(lectura);
 
     if (seguimiento.estado == EstadoSeguimiento.fueraDeRuta) {
@@ -375,7 +484,10 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
         _pausar(callar: false);
       }
       HapticFeedback.heavyImpact();
-      _anunciar(Textos.of(context).navLlegaste(widget.poi.nombre));
+      final txt = Textos.of(context);
+      _anunciar(
+        [txt.navLlegaste(widget.poi.nombre), ?_textoEspacio(txt)].join('. '),
+      );
       setState(() => _fase = _Fase.llegada);
       return;
     }
@@ -434,6 +546,45 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     Maniobra(giro: Giro.vuelta) => Icons.u_turn_left_rounded,
   };
 
+  /// «El Salón 401 está en el Cuarto Piso.» Nulo si no se busca un espacio.
+  String? _textoEspacio(Textos txt) {
+    final e = widget.espacio;
+    if (e == null) return null;
+    final piso = e.piso;
+    return piso == null
+        ? txt.navEspacioAqui(e.titulo)
+        : txt.navEspacioPiso(e.titulo, piso.nombre);
+  }
+
+  /// La ruta sin GPS: se apagan los sensores y se muestra entera.
+  void _verPrevia() {
+    _pausar();
+    setState(() {
+      _seguimiento = null;
+      _sinSenal = false;
+      _fase = _Fase.vistaPrevia;
+    });
+  }
+
+  ({PuntoGeo punto, String nombre}) _partidaPrevia(Textos txt) {
+    final id = _origenPrevia;
+    if (id != null) {
+      final accesos = widget.grafo.accesosDe(id);
+      final lugar = widget.lugares.where((p) => p.id == id).firstOrNull;
+      if (accesos.isNotEmpty && lugar != null) {
+        final acceso = accesos.firstWhere(
+          (a) => a.principal,
+          orElse: () => accesos.first,
+        );
+        return (punto: acceso.punto, nombre: lugar.nombre);
+      }
+    }
+    return (
+      punto: UbicacionSimulada.puntoDePartida,
+      nombre: txt.navEntradaPrincipal,
+    );
+  }
+
   void _cambiarEscaleras(bool valor) {
     setState(() => _sinEscaleras = valor);
     final ultima = _seguimiento?.ultima;
@@ -491,32 +642,40 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
         principal: _permiso == PermisoUbicacion.denegadoSiempre
             ? (txt.navAbrirAjustes, _ubicacion.abrirAjustes)
             : (txt.navPermitir, _empezar),
-        secundaria: _salidaAl360(txt),
+        secundarias: [(txt.navVerRutaSinGps, _verPrevia), ?_salidaAl360(txt)],
         postal: postal,
       ),
       _Fase.gpsApagado => _EstadoGuia(
         icono: Icons.gps_off_rounded,
         texto: txt.navGpsApagado,
         principal: (txt.reintentar, _empezar),
-        secundaria: _salidaAl360(txt),
+        secundarias: [(txt.navVerRutaSinGps, _verPrevia), ?_salidaAl360(txt)],
         postal: postal,
       ),
       _Fase.sinRuta => _EstadoGuia(
         icono: Icons.wrong_location_outlined,
         texto: txt.navSinRuta(lugar),
         principal: (txt.volver, _salir),
-        secundaria: _salidaAl360(txt),
+        secundarias: [?_salidaAl360(txt)],
         postal: postal,
       ),
       _Fase.fueraDelCampus => _EstadoGuia(
         icono: Icons.explore_outlined,
         texto: txt.navFueraDelCampus,
-        principal: (txt.volver, _salir),
-        secundaria: _salidaAl360(txt),
+        principal: (txt.navVerRutaSinGps, _verPrevia),
+        secundarias: [(txt.volver, _salir), ?_salidaAl360(txt)],
+        postal: postal,
+      ),
+      _Fase.guiando when _seguimiento == null && _sinSenal => _EstadoGuia(
+        icono: Icons.gps_not_fixed_rounded,
+        texto: txt.navSinSenal,
+        principal: (txt.navVerRutaSinGps, _verPrevia),
+        secundarias: [(txt.volver, _salir)],
         postal: postal,
       ),
       _Fase.llegada => _vistaLlegada(txt, postal),
       _Fase.guiando => _vistaGuia(txt),
+      _Fase.vistaPrevia => _vistaPrevia(txt),
     };
 
     final restantes = seguimiento?.metrosRestantes;
@@ -546,8 +705,10 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
               _Fase.intro || _Fase.pidiendo => PoseMax.telefono,
               _Fase.sinPermiso || _Fase.gpsApagado => PoseMax.apenado,
               _Fase.sinRuta => PoseMax.pensativo,
-              _Fase.fueraDelCampus => PoseMax.mapa,
+              _Fase.fueraDelCampus || _Fase.vistaPrevia => PoseMax.mapa,
               _Fase.llegada => PoseMax.celebrando,
+              _Fase.guiando when _seguimiento == null && _sinSenal =>
+                PoseMax.pensativo,
               _Fase.guiando => null,
             },
           ),
@@ -586,6 +747,10 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
           child: ListView(
             padding: const EdgeInsets.only(top: 20),
             children: [
+              if (widget.espacio case final espacio?) ...[
+                _TarjetaEspacio(espacio: espacio),
+                const SizedBox(height: 12),
+              ],
               if (postal != null) ...[postal, const SizedBox(height: 12)],
               _TarjetaComoFunciona(titulo: txt.navPermisoTitulo(lugar)),
               const SizedBox(height: 12),
@@ -604,6 +769,7 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
             txt.navPermitir,
             _fase == _Fase.pidiendo ? null : _empezar,
           ),
+          secundarias: [(txt.navVerRutaSinGps, _verPrevia)],
         ),
       ],
     );
@@ -618,6 +784,10 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     return ListView(
       padding: const EdgeInsets.only(top: 20),
       children: [
+        if (_textoEspacio(txt) case final texto?) ...[
+          RecuadroInfo(icono: Icons.stairs_rounded, texto: texto),
+          const SizedBox(height: 16),
+        ],
         if (postal != null) ...[postal, const SizedBox(height: 16)],
         if (widget.poi.descripcion case final d? when d.isNotEmpty) ...[
           TextoDeContenido(
@@ -657,6 +827,105 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     );
   }
 
+  /// La ruta entera desde un punto elegido, con sus pasos: para verla antes
+  /// de salir, sin GPS o desde la casa.
+  Widget _vistaPrevia(Textos txt) {
+    final textos = Theme.of(context).textTheme;
+    final paleta = PaletaUtb.de(context);
+    final partida = _partidaPrevia(txt);
+    final ruta = widget.grafo.ruta(
+      partida.punto,
+      widget.poi.id,
+      sinEscaleras: _sinEscaleras,
+    );
+    final origenes = [
+      for (final p in widget.lugares)
+        if (p.id != widget.poi.id && widget.grafo.tieneAcceso(p.id)) p,
+    ]..sort((a, b) => a.nombre.compareTo(b.nombre));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(top: 20),
+            children: [
+              if (widget.espacio case final espacio?) ...[
+                _TarjetaEspacio(espacio: espacio),
+                const SizedBox(height: 12),
+              ],
+              _SelectorPartida(
+                nombre: partida.nombre,
+                lugares: origenes,
+                alElegir: (id) => setState(() => _origenPrevia = id),
+              ),
+              const SizedBox(height: 12),
+              if (ruta == null)
+                RecuadroInfo(
+                  icono: Icons.wrong_location_outlined,
+                  texto: txt.navSinRuta(widget.poi.nombre),
+                )
+              else ...[
+                _ResumenRuta(ruta: ruta),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 260,
+                  child: Semantics(
+                    image: true,
+                    label: txt.navPlanoSemantica(widget.poi.nombre),
+                    child: PlanoRuta(
+                      plano: widget.plano,
+                      ruta: ruta.puntos,
+                      destino: ruta.destino.punto,
+                      posicion: partida.punto,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  mayusculasDe(context, txt.navPasoAPaso),
+                  style: estiloSobretitulo(color: paleta.textoSecundario),
+                ),
+                const SizedBox(height: 8),
+                TarjetaUtb(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                  child: Column(
+                    children: [
+                      for (final (i, paso) in pasosDeRuta(ruta.puntos).indexed)
+                        _FilaPaso(
+                          icono: _icono(paso),
+                          texto: _textoManiobra(txt, paso),
+                          ultimo: paso.llegada,
+                          primero: i == 0,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              TarjetaUtb(
+                padding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+                child: _InterruptorEscaleras(
+                  valor: _sinEscaleras,
+                  alCambiar: (v) => setState(() => _sinEscaleras = v),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                txt.navPreviaNota,
+                style: textos.bodySmall?.copyWith(color: paleta.textoTerciario),
+              ),
+            ],
+          ),
+        ),
+        _Acciones(
+          principal: (txt.navGuiarmeConGps, _empezar),
+          secundarias: [(txt.volver, _salir)],
+        ),
+      ],
+    );
+  }
+
   (String, VoidCallback)? _salidaAl360(Textos txt) {
     final escena = widget.poi.escenaPrincipalId;
     if (escena == null) return null;
@@ -674,9 +943,14 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
     final maniobra = seguimiento?.proximaManiobra();
     final textos = Theme.of(context).textTheme;
 
+    final previa = _ultimaLectura;
     final String titular;
     if (seguimiento == null || lectura == null) {
-      titular = txt.navBuscando;
+      titular =
+          previa != null &&
+              previa.precision > SeguimientoRuta.precisionPorDefecto
+          ? txt.navSenalDebil(previa.precision.round())
+          : txt.navBuscando;
     } else if (_recalculando) {
       titular = txt.navRecalculando;
     } else if (seguimiento.estado == EstadoSeguimiento.senalDebil) {
@@ -694,13 +968,15 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
             (restantes / 1.2 / 60).ceil().clamp(1, 99),
           );
 
-    final rumboAlObjetivo = seguimiento?.rumboAlObjetivo;
+    final rumboAlObjetivo = seguimiento?.rumboGuia;
     final rumbo = rumboNavegacion(lectura, _rumbo);
     final giro = (rumboAlObjetivo == null || rumbo == null)
         ? null
         : diferenciaAngular(rumbo, rumboAlObjetivo);
 
     final avisos = <(IconData, String)>[
+      if (widget.espacio case final e?)
+        (Icons.meeting_room_outlined, [e.titulo, ?e.piso?.nombre].join(' · ')),
       if (_ubicacion.simulada) (Icons.science_outlined, txt.navSimulada),
       if (seguimiento != null && !seguimiento.ruta.destino.verificado)
         (Icons.info_outline_rounded, txt.navAproximada),
@@ -713,6 +989,14 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
         giro: giro,
         inclinacion: _rumbo?.inclinacion ?? -30,
         metros: maniobra == null ? null : _redondear(maniobra.metros),
+        destino: switch ((rumbo, seguimiento?.suavizada, seguimiento)) {
+          (final r?, final p?, final s?) => (
+            giro: diferenciaAngular(r, rumboGrados(p, s.ruta.destino.punto)),
+            metros: _redondear(distanciaMetros(p, s.ruta.destino.punto)),
+            nombre: widget.poi.nombre,
+          ),
+          _ => null,
+        },
         alFallar: () {
           setState(() {
             _camaraFallo = true;
@@ -736,8 +1020,8 @@ class _GuiaState extends ConsumerState<_Guia> with WidgetsBindingObserver {
           destino:
               seguimiento?.ruta.destino.punto ??
               widget.grafo.accesosDe(widget.poi.id).first.punto,
-          posicion: lectura?.punto,
-          precision: lectura?.precision,
+          posicion: lectura?.punto ?? previa?.punto,
+          precision: lectura?.precision ?? previa?.precision,
           rumbo: rumbo,
           resaltado: _resaltado,
           trazo: _trazo ?? const [],

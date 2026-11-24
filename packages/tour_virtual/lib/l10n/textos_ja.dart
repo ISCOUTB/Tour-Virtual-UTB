@@ -648,7 +648,8 @@ class TextosJa extends Textos {
   }
 
   @override
-  String get navFueraDelCampus => 'キャンパスの外にいます。案内はUTBの中で使えます。着いたら開いてください。';
+  String get navFueraDelCampus =>
+      'キャンパスの外にいます。UTB に着くとガイドが自動で始まります。それまでは GPS なしでルートを見られます。';
 
   @override
   String get navCaminandoHacia => '目的地';
@@ -690,4 +691,68 @@ class TextosJa extends Textos {
 
   @override
   String get mapa3dCargando => '3Dマップを読み込み中';
+
+  @override
+  String get navSinSenal => 'GPS の信号がありません。開けた場所に移動してください。信号が入るとガイドは自動で続きます。';
+
+  @override
+  String get navVerRutaSinGps => 'GPS なしでルートを見る';
+
+  @override
+  String get navEntradaPrincipal => '正門';
+
+  @override
+  String get navDesde => '出発地';
+
+  @override
+  String navResumenRuta(int minutos, int metros) {
+    return '$minutos 分 · $metros m';
+  }
+
+  @override
+  String get navConEscaleras => '階段あり';
+
+  @override
+  String get navPasoAPaso => 'ステップごとの案内';
+
+  @override
+  String get navPreviaNota => 'このルートは現在地ではなく、選んだ地点から始まります。';
+
+  @override
+  String get navGuiarmeConGps => 'GPS で案内する';
+
+  @override
+  String navEspacioPiso(String espacio, String piso) {
+    return '$espacio はここの $piso にあります。';
+  }
+
+  @override
+  String navEspacioAqui(String espacio) {
+    return '$espacio はこの場所にあります。';
+  }
+
+  @override
+  String get buscarTitulo => 'どこへ行きますか？';
+
+  @override
+  String get buscarPista => '場所・教室・オフィスを検索';
+
+  @override
+  String buscarSinResultados(String consulta) {
+    return '「$consulta」は見つかりませんでした。教室番号か建物名で試してください。';
+  }
+
+  @override
+  String get buscarBorrar => '検索をクリア';
+
+  @override
+  String get buscarCredito => '教室とオフィス: MAPSUTB';
+
+  @override
+  String get buscarComoLlegar => '行き方';
+
+  @override
+  String buscarVerTodos(int cantidad) {
+    return '$cantidad 件の結果をすべて表示';
+  }
 }

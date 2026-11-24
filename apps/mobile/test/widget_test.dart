@@ -744,6 +744,7 @@ void main() {
     await tester.scrollUntilVisible(
       etiquetaSemantica('Parada 3, Murales UTB'),
       200,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(etiquetaSemantica('Parada 3, Murales UTB'), findsOneWidget);
 
@@ -751,6 +752,7 @@ void main() {
     await tester.scrollUntilVisible(
       etiquetaSemantica('Cancha de fútbol, Deporte'),
       200,
+      scrollable: find.byType(Scrollable).first,
     );
     await asentar(tester);
     expect(find.text('Más lugares del campus'), findsOneWidget);
@@ -766,18 +768,55 @@ void main() {
     await tester.scrollUntilVisible(
       etiquetaSemantica('Cancha de fútbol, Deporte'),
       200,
+      scrollable: find.byType(Scrollable).first,
     );
+    await Scrollable.ensureVisible(
+      tester.element(etiquetaSemantica('Cancha de fútbol, Deporte')),
+      alignment: 0.5,
+    );
+    await asentar(tester);
     await tester.tap(etiquetaSemantica('Cancha de fútbol, Deporte'));
     await asentar(tester);
 
     // La ficha abre sin número de parada y dice que no hay 360.
     expect(find.text('DEPORTE'), findsOneWidget);
+    // Tiene su entrada medida en el grafo: «Cómo llegar» ya no es solo de las
+    // cinco paradas.
+    expect(find.text('Cómo llegar'), findsOneWidget);
     expect(
       find.text('Este lugar todavía no tiene recorrido en 360°.'),
       findsOneWidget,
     );
     expect(referencia.read(progresoProvider), isNot(contains(4)));
 
+    await drenarTemporizadores(tester);
+  });
+
+  testWidgets('el buscador encuentra salones y lugares dentro de la lista', (
+    WidgetTester tester,
+  ) async {
+    await montarModulo(tester);
+    final campo = find.byType(TextField);
+    await tester.scrollUntilVisible(
+      campo,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    // Un espacio del catálogo de MAPSUTB, con su edificio y su piso.
+    await tester.enterText(campo, 'maker');
+    await asentar(tester);
+    expect(find.text('Maker Space'), findsOneWidget);
+    expect(find.textContaining('Tercer Piso'), findsOneWidget);
+    expect(find.text('Salones y oficinas: MAPSUTB'), findsOneWidget);
+    // Un lugar del tour, sin tildes.
+    await tester.enterText(campo, 'futbol');
+    await asentar(tester);
+    expect(etiquetaSemantica('Cancha de fútbol, Deporte'), findsWidgets);
+    await tester.enterText(campo, 'zzzz');
+    await asentar(tester);
+    expect(find.textContaining('No encontré «zzzz»'), findsOneWidget);
+    // Sin otra pantalla: la lista sigue ahí.
+    expect(find.byType(HomeScreen), findsOneWidget);
     await drenarTemporizadores(tester);
   });
 
@@ -1139,7 +1178,11 @@ void main() {
       Finder objetivo, {
       Finder? scrollable,
     }) async {
-      await tester.scrollUntilVisible(objetivo, 200, scrollable: scrollable);
+      await tester.scrollUntilVisible(
+        objetivo,
+        200,
+        scrollable: scrollable ?? find.byType(Scrollable).first,
+      );
       await Scrollable.ensureVisible(tester.element(objetivo), alignment: 0.5);
       await asentar(tester);
     }
@@ -1262,7 +1305,11 @@ void main() {
       // ...y no hay aviso en la lista.
       await tester.tap(selector(Icons.route_rounded));
       await asentar(tester);
-      await tester.scrollUntilVisible(find.text(pie), 300);
+      await tester.scrollUntilVisible(
+        find.text(pie),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text(aceptar), findsNothing);
 
       await drenarTemporizadores(tester);
@@ -1284,7 +1331,11 @@ void main() {
 
       await tester.tap(selector(Icons.route_rounded));
       await asentar(tester);
-      await tester.scrollUntilVisible(find.text(pie), 300);
+      await tester.scrollUntilVisible(
+        find.text(pie),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text(aceptar), findsNothing);
 
       await drenarTemporizadores(tester);
@@ -1527,6 +1578,7 @@ void main() {
       await tester.scrollUntilVisible(
         etiquetaSemantica('Cancha de fútbol, Deporte'),
         200,
+        scrollable: find.byType(Scrollable).first,
       );
       tester.semantics.tap(find.semantics.byLabel('Cancha de fútbol, Deporte'));
       await asentar(tester);

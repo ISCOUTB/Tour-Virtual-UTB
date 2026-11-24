@@ -242,10 +242,10 @@ class _FichaPoi extends ConsumerWidget {
           )
         else
           RecuadroInfo(icono: Icons.threesixty_rounded, texto: txt.sin360),
-        // En el modo campo, todos los lugares con entrada: el equipo prueba y
-        // corrige las 27, no solo las de las paradas.
+        // Todo lugar con su entrada en el grafo: las 27 se midieron en el
+        // campus (noviembre de 2026), no solo las de las cinco paradas. Es lo
+        // que MAPSUTB ya hacía con sus zonas.
         if (alComoLlegar != null &&
-            (actual.esParada || ref.watch(modoCampoProvider)) &&
             (ref.watch(grafoGuiaProvider).valueOrNull?.tieneAcceso(actual.id) ??
                 false)) ...[
           const SizedBox(height: 10),

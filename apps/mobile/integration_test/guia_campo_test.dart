@@ -40,6 +40,18 @@ void main() {
     final grafo = GrafoCampus.desdeJson(await _leerGrafo());
 
     // 1. La brújula real, quieta sobre la mesa: intensidad y estabilidad.
+    // Antes, 4 s con el rumbo como se calculaba antes del giroscopio (solo un
+    // paso bajo), para comparar en el mismo teléfono. Una después de la otra:
+    // el canal del paquete de sensores admite un solo oyente a la vez.
+    final antes = <double>[];
+    final subAntes = RumboSensores(
+      declinacion: grafo.declinacion,
+      filtrar: false,
+    ).lecturas().listen((l) => antes.add(l.grados));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(seconds: 4)),
+    );
+    await subAntes.cancel();
     final lecturas = <LecturaRumbo>[];
     final sub = RumboSensores(
       declinacion: grafo.declinacion,
@@ -63,14 +75,34 @@ void main() {
       '${lecturas.where((l) => l.descalibrada).length}, rumbo '
       '${rumbos.last.toStringAsFixed(0)}° ±${dispersion.toStringAsFixed(1)}°',
     );
+    final dispersionAntes = _dispersionAngular([
+      for (final r in antes.skip(antes.length ~/ 2)) r,
+    ]);
+    // ignore: avoid_print
+    print(
+      'FLECHA QUIETA: antes ±${dispersionAntes.toStringAsFixed(2)}°, '
+      'con giroscopio ±${dispersion.toStringAsFixed(2)}° '
+      '(${antes.length} y ${lecturas.length} lecturas)',
+    );
     expect(dispersion, lessThan(5), reason: 'Quieta, la flecha no debe bailar');
 
-    // 2. La guía en ensayo hacia la Biblioteca.
+    // 2. La ruta sin GPS, desde la entrada principal, con sus pasos.
     await tester.pumpWidget(_app());
     await _esperar(tester, () => _hay('Permitir ubicación'));
-    await tester.tap(find.text('Permitir ubicación'));
-    await _esperar(tester, () => _hay('Faltan', contiene: true));
+    await tester.tap(find.text('Ver la ruta sin GPS'));
+    await _esperar(tester, () => _hay('Entrada principal'));
+    await _pausa(tester, segundos: 1);
     await binding.convertFlutterSurfaceToImage();
+    await _pausa(tester);
+    await binding.takeScreenshot('campo-0-ruta-sin-gps');
+    await tester.tap(find.text('Guiarme con el GPS'));
+    await _pausa(tester);
+
+    // 3. La guía en ensayo hacia la Biblioteca.
+    if (_hay('Permitir ubicación')) {
+      await tester.tap(find.text('Permitir ubicación'));
+    }
+    await _esperar(tester, () => _hay('Faltan', contiene: true));
     await _pausa(tester);
     expect(find.textContaining('ENSAYO'), findsOneWidget);
     await binding.takeScreenshot('campo-1-guia');

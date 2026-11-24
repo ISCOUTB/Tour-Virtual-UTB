@@ -51,6 +51,21 @@ List<bool> entradasVerificadas(int poiId) {
   ];
 }
 
+/// La entrada principal de un lugar en el grafo que lleva la app.
+PuntoGeo entradaPrincipal(int poiId) {
+  final grafo =
+      jsonDecode(
+            File(
+              '../../packages/tour_virtual/assets/navegacion/grafo_campus.json',
+            ).readAsStringSync(),
+          )
+          as Map<String, dynamic>;
+  final a = (grafo['accesos'] as List).cast<Map<String, dynamic>>().firstWhere(
+    (a) => a['poi_id'] == poiId && a['principal'] == true,
+  );
+  return PuntoGeo((a['lat'] as num).toDouble(), (a['lng'] as num).toDouble());
+}
+
 class RepositorioFalso implements RepositorioContenido {
   @override
   String get idiomaContenido => 'es';
@@ -96,6 +111,7 @@ Future<void> montar(
   required FuenteUbicacion ubicacion,
   required VozGuia voz,
   bool modoCampo = false,
+  String? espacioId,
 }) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1.0;
@@ -120,7 +136,7 @@ Future<void> montar(
         supportedLocales: Textos.supportedLocales,
         localizationsDelegates: Textos.localizationsDelegates,
         theme: temaUtb(altoContraste: false),
-        home: const PantallaNavegacion(poiId: 1),
+        home: PantallaNavegacion(poiId: 1, espacioId: espacioId),
       ),
     ),
   );
@@ -325,7 +341,7 @@ void main() {
     await ubicacion.cambios.close();
   });
 
-  testWidgets('fuera del campus ofrece el 360 y deja de recalcular', (
+  testWidgets('fuera del campus espera sin inventar ruta y empieza al llegar', (
     tester,
   ) async {
     final ubicacion = UbicacionControlada();
@@ -339,9 +355,142 @@ void main() {
     await tester.pump();
     // Desde otra ciudad no es «no encontré un camino»: está fuera del campus.
     expect(find.textContaining('Estás fuera del campus'), findsOneWidget);
+    expect(find.text('Ver la ruta sin GPS'), findsOneWidget);
     expect(find.text('Ver en 360°'), findsOneWidget);
-    expect(ubicacion.cambios.hasListener, isFalse);
     expect(voz.dichos, isEmpty);
+    // El GPS sigue: al entrar al campus la guía empieza sola, sin volver a
+    // abrirla (antes se apagaba y había que salir y entrar).
+    expect(ubicacion.cambios.hasListener, isTrue);
+    ubicacion.cambios.add(
+      const LecturaPosicion(
+        punto: UbicacionSimulada.puntoDePartida,
+        precision: 5,
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('Estás fuera del campus'), findsNothing);
+    expect(find.textContaining('Faltan'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await ubicacion.cambios.close();
+  });
+
+  testWidgets('una lectura vieja o imprecisa no decide la ruta (de MAPSUTB)', (
+    tester,
+  ) async {
+    final ubicacion = UbicacionControlada();
+    await montar(tester, ubicacion: ubicacion, voz: VozMuda());
+    await tester.tap(find.text('Permitir ubicación'));
+    await tester.pump();
+    // La última posición conocida, de la casa y de hace una hora: se ignora.
+    ubicacion.cambios.add(
+      LecturaPosicion(
+        punto: const PuntoGeo(4.711, -74.0721),
+        precision: 5,
+        momento: DateTime.now().subtract(const Duration(hours: 1)),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('Estás fuera del campus'), findsNothing);
+    expect(find.text('Buscando señal GPS…'), findsOneWidget);
+    // ±300 m en el campus: prueba que hay señal, pero no se guía con ella.
+    ubicacion.cambios.add(
+      const LecturaPosicion(
+        punto: UbicacionSimulada.puntoDePartida,
+        precision: 300,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.textContaining('Señal débil (±300 m)'), findsOneWidget);
+    expect(find.textContaining('Faltan'), findsNothing);
+    ubicacion.cambios.add(
+      const LecturaPosicion(
+        punto: UbicacionSimulada.puntoDePartida,
+        precision: 6,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.textContaining('Faltan'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await ubicacion.cambios.close();
+  });
+
+  testWidgets('sin señal del GPS lo dice y ofrece la ruta sin GPS', (
+    tester,
+  ) async {
+    final ubicacion = UbicacionControlada();
+    await montar(tester, ubicacion: ubicacion, voz: VozMuda());
+    await tester.tap(find.text('Permitir ubicación'));
+    await tester.pump();
+    expect(find.text('Buscando señal GPS…'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 31));
+    expect(find.textContaining('No llega la señal del GPS'), findsOneWidget);
+    expect(find.text('Ver la ruta sin GPS'), findsOneWidget);
+    // Si la señal vuelve, la guía sigue sola.
+    ubicacion.cambios.add(
+      const LecturaPosicion(
+        punto: UbicacionSimulada.puntoDePartida,
+        precision: 6,
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('No llega la señal'), findsNothing);
+    expect(find.textContaining('Faltan'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await ubicacion.cambios.close();
+  });
+
+  testWidgets('la ruta sin GPS se ve entera, con sus pasos y su partida', (
+    tester,
+  ) async {
+    final ubicacion = UbicacionControlada();
+    await montar(tester, ubicacion: ubicacion, voz: VozMuda());
+    await tester.tap(find.text('Ver la ruta sin GPS'));
+    await tester.pump();
+    // Sin pedir permiso: los sensores no se encienden.
+    expect(ubicacion.cambios.hasListener, isFalse);
+    expect(find.text('Entrada principal'), findsOneWidget);
+    expect(find.textContaining(' min · '), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('Biblioteca está a'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('PASO A PASO'), findsOneWidget);
+    expect(find.text('Guiarme con el GPS'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await ubicacion.cambios.close();
+  });
+
+  testWidgets('con un salón buscado dice el piso antes y al llegar', (
+    tester,
+  ) async {
+    final ubicacion = UbicacionControlada();
+    final voz = VozMuda();
+    await montar(
+      tester,
+      ubicacion: ubicacion,
+      voz: voz,
+      espacioId: 'biblioteca-esp-makerspace',
+    );
+    expect(find.text('Maker Space'), findsOneWidget);
+    expect(find.textContaining('Tercer Piso'), findsOneWidget);
+    await tester.tap(find.text('Permitir ubicación'));
+    await tester.pump();
+    ubicacion.cambios.add(
+      LecturaPosicion(punto: entradaPrincipal(1), precision: 4),
+    );
+    await tester.pump();
+    expect(
+      find.text('Maker Space está aquí, en: Tercer Piso.'),
+      findsOneWidget,
+    );
+    expect(voz.dichos.last, contains('Tercer Piso'));
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     await ubicacion.cambios.close();

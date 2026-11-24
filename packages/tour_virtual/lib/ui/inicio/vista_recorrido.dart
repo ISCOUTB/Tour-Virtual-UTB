@@ -20,6 +20,7 @@ import '../comunes/inclinable.dart';
 import '../ficha_poi.dart';
 import '../postal_escena.dart';
 import 'aviso_analitica.dart';
+import 'buscador_destinos.dart';
 
 /// Contenido de «Recorrido» (RF-19, RF-20, RF-21).
 ///
@@ -142,6 +143,11 @@ class ListaRecorrido extends ConsumerWidget {
               },
             ),
             0,
+          ),
+          const SizedBox(height: 18),
+          entrada(
+            BuscadorDestinos(lugares: [...pois, ...otros], paradas: pois),
+            1,
           ),
           const SizedBox(height: 30),
           entrada(
